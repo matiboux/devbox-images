@@ -8,7 +8,7 @@ services:
     # Build
     image: ${IMAGES_PREFIX:-python-devbox}:${IMAGES_TAG:-latest}
     build:
-      context: ./python-devbox
+      context: .
       dockerfile: ./Dockerfile
       target: python_devbox
     # Deploy
