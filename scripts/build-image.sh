@@ -21,45 +21,63 @@ fi
 PYTHON_IMAGE_TAG="${PYTHON_VERSION}-${PYTHON_VARIANT}"
 
 BUILD_VARIANT='base'
-if [ -n "$POETRY_VERSION" ] && [ -n "$UV_VERSION" ]; then
+if [ -n "${POETRY_VERSION}" ] && [ -n "${UV_VERSION}" ]; then
     BUILD_VARIANT='full'
-elif [ -n "$POETRY_VERSION" ]; then
+elif [ -n "${POETRY_VERSION}" ]; then
     BUILD_VARIANT='poetry'
-elif [ -n "$UV_VERSION" ]; then
+elif [ -n "${UV_VERSION}" ]; then
     BUILD_VARIANT='uv'
 fi
 
 IMAGE_TAG_ATOMIC="${REGISTRY_NAMESPACE}/${REGISTRY_REPOSITORY}:${PYTHON_IMAGE_TAG}"
-if [ "$BUILD_VARIANT" == "full" ]; then
+if [ "${BUILD_VARIANT}" == "full" ]; then
     IMAGE_TAG_ATOMIC="${IMAGE_TAG_ATOMIC}-full"
-elif [ "$BUILD_VARIANT" == "poetry" ]; then
+elif [ "${BUILD_VARIANT}" == "poetry" ]; then
     IMAGE_TAG_ATOMIC="${IMAGE_TAG_ATOMIC}-poetry"
-elif [ "$BUILD_VARIANT" == "uv" ]; then
+elif [ "${BUILD_VARIANT}" == "uv" ]; then
     IMAGE_TAG_ATOMIC="${IMAGE_TAG_ATOMIC}-uv"
 fi
-if [ -n "$POETRY_VERSION" ]; then
+if [ -n "${POETRY_VERSION}" ]; then
     IMAGE_TAG_ATOMIC="${IMAGE_TAG_ATOMIC}-poetry${POETRY_VERSION}"
 fi
-if [ -n "$UV_VERSION" ]; then
+if [ -n "${UV_VERSION}" ]; then
     IMAGE_TAG_ATOMIC="${IMAGE_TAG_ATOMIC}-uv${UV_VERSION}"
 fi
 
-echo "Building image: $IMAGE_TAG_ATOMIC"
-echo "  Python image: $PYTHON_IMAGE_TAG"
-echo "  Build variant: $BUILD_VARIANT"
-if [ -n "$POETRY_VERSION" ]; then
-    echo "  Poetry: $POETRY_VERSION"
+echo "Building image: ${IMAGE_TAG_ATOMIC}"
+echo "  Python image: ${PYTHON_IMAGE_TAG}"
+echo "  Build variant: ${BUILD_VARIANT}"
+if [ -n "${POETRY_VERSION}" ]; then
+    echo "  Poetry: ${POETRY_VERSION}"
 fi
-if [ -n "$UV_VERSION" ]; then
-    echo "  uv: $UV_VERSION"
+if [ -n "${UV_VERSION}" ]; then
+    echo "  uv: ${UV_VERSION}"
 fi
 
-docker build \
-    --build-arg "BUILD_VARIANT=${BUILD_VARIANT}" \
-    --build-arg "PYTHON_VERSION=${PYTHON_VERSION}" \
-    --build-arg "PYTHON_IMAGE_TAG=${PYTHON_IMAGE_TAG}" \
-    --build-arg "POETRY_VERSION=${POETRY_VERSION}" \
-    --build-arg "UV_VERSION=${UV_VERSION}" \
-    --tag "$IMAGE_TAG_ATOMIC" \
-    --file "$DOCKERFILE" \
-    "$PROJECT_ROOT"
+if command -v docker buildx &> /dev/null; then
+    docker buildx build \
+        --build-arg "BUILD_VARIANT=${BUILD_VARIANT}" \
+        --build-arg "PYTHON_VERSION=${PYTHON_VERSION}" \
+        --build-arg "PYTHON_IMAGE_TAG=${PYTHON_IMAGE_TAG}" \
+        --build-arg "POETRY_VERSION=${POETRY_VERSION}" \
+        --build-arg "UV_VERSION=${UV_VERSION}" \
+        --tag "${IMAGE_TAG_ATOMIC}" \
+        --load \
+        --file "${DOCKERFILE}" \
+        "${PROJECT_ROOT}"
+elif command -v docker &> /dev/null; then
+    docker build \
+        --build-arg "BUILD_VARIANT=${BUILD_VARIANT}" \
+        --build-arg "PYTHON_VERSION=${PYTHON_VERSION}" \
+        --build-arg "PYTHON_IMAGE_TAG=${PYTHON_IMAGE_TAG}" \
+        --build-arg "POETRY_VERSION=${POETRY_VERSION}" \
+        --build-arg "UV_VERSION=${UV_VERSION}" \
+        --tag "${IMAGE_TAG_ATOMIC}" \
+        --file "${DOCKERFILE}" \
+        "${PROJECT_ROOT}"
+else
+    echo 'Error: Docker is not installed or not found in PATH.'
+    exit 1
+fi
+
+echo "Image built successfully: ${IMAGE_TAG_ATOMIC}"
