@@ -10,6 +10,7 @@
 # --
 # Global build arguments
 
+ARG BUILD_VARIANT=base
 ARG PYTHON_VERSION=3.14.6
 ARG PYTHON_IMAGE_TAG=3.14.6
 ARG POETRY_VERSION=2.4.1
@@ -25,20 +26,13 @@ FROM python:${PYTHON_VERSION} AS python_upstream
 
 
 # ----------------
-# Python Devbox
+# Base stages
 # ----------------
 
 # --
-# Python Devbox image
+# Python base stage
 
-FROM python_upstream AS python_devbox
-
-# Build arguments
-ARG POETRY_VERSION
-ARG UV_VERSION
-ARG USER
-ARG UID
-ARG GID
+FROM python_upstream AS python_base
 
 # Install system development tools and dependencies
 # (hadolint: Ignore non-pinned apt package version)
@@ -53,18 +47,85 @@ RUN --mount=type=cache,sharing=locked,id=apt-cache,target=/var/cache/apt \
         make \
         wget
 
-# Install uv (Python package manager)
-RUN export UV_NO_MODIFY_PATH='1' && \
-    export UV_UNMANAGED_INSTALL='/usr/local/bin' && \
-    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+# Install Python development tools
+RUN pip install --no-cache-dir ruff
+
+
+# ----------------
+# Python Devbox variants
+# ----------------
+
+# --
+# Python Devbox base
+
+FROM python_base AS python_devbox_base
+
+
+# --
+# Python Devbox with Poetry
+
+FROM python_base AS python_devbox_poetry
+
+# Build arguments
+ARG POETRY_VERSION
+ARG USER
+ARG UID
+ARG GID
 
 # Install Poetry (Python dependency manager)
 RUN export POETRY_HOME='/usr/local' && \
     export POETRY_VERSION="${POETRY_VERSION}" && \
     curl -sSL https://install.python-poetry.org | python3 -
 
-# Install Python development tools
-RUN pip install --no-cache-dir ruff
+
+# --
+# Python Devbox with uv
+
+FROM python_base AS python_devbox_uv
+
+# Build arguments
+ARG UV_VERSION
+ARG USER
+ARG UID
+ARG GID
+
+# Install uv (Python package manager)
+RUN export UV_NO_MODIFY_PATH='1' && \
+    export UV_UNMANAGED_INSTALL='/usr/local/bin' && \
+    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+
+
+# --
+# Python Devbox with uv and Poetry
+
+FROM python_base AS python_devbox_full
+
+# Build arguments
+ARG POETRY_VERSION
+ARG UV_VERSION
+ARG USER
+ARG UID
+ARG GID
+
+# Install Poetry (Python dependency manager)
+RUN export POETRY_HOME='/usr/local' && \
+    export POETRY_VERSION="${POETRY_VERSION}" && \
+    curl -sSL https://install.python-poetry.org | python3 -
+
+# Install uv (Python package manager)
+RUN export UV_NO_MODIFY_PATH='1' && \
+    export UV_UNMANAGED_INSTALL='/usr/local/bin' && \
+    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+
+
+# ----------------
+# Python Devbox image
+# ----------------
+
+# --
+# Python Devbox image
+
+FROM python_devbox_${BUILD_VARIANT} AS python_devbox
 
 # Create non-root user
 RUN useradd -lm -u ${UID} -U ${USER}
