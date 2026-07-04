@@ -53,10 +53,15 @@ RUN --mount=type=cache,sharing=locked,id=apt-cache,target=/var/cache/apt \
         make \
         wget
 
-# Install Python package managers
-RUN pip install --no-cache-dir \
-    "poetry==${POETRY_VERSION}" \
-    "uv==${UV_VERSION}"
+# Install uv (Python package manager)
+RUN export UV_NO_MODIFY_PATH='1' && \
+    export UV_UNMANAGED_INSTALL='/usr/local/bin' && \
+    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+
+# Install Poetry (Python dependency manager)
+RUN export POETRY_HOME='/usr/local' && \
+    export POETRY_VERSION="${POETRY_VERSION}" && \
+    curl -sSL https://install.python-poetry.org | python3 -
 
 # Install Python development tools
 RUN pip install --no-cache-dir ruff
