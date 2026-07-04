@@ -70,9 +70,32 @@ FROM python_base AS python_devbox_poetry
 ARG POETRY_VERSION
 
 # Install Poetry (Python dependency manager)
-RUN export POETRY_HOME='/usr/local' && \
-    export POETRY_VERSION="${POETRY_VERSION}" && \
-    curl -sSL https://install.python-poetry.org | python3 -
+RUN <<EOF
+export POETRY_HOME='/usr/local'
+export POETRY_VERSION="${POETRY_VERSION}"
+POETRY_INSTALLER_FILE="$(mktemp)"
+curl -sSL https://install.python-poetry.org -o "${POETRY_INSTALLER_FILE}"
+python3 "${POETRY_INSTALLER_FILE}"
+if [ $? -ne 0 ]; then
+    export POETRY_VERSION="$(
+        pip index versions poetry 2>/dev/null |
+        awk -v prefix="${POETRY_VERSION}" '
+            /^Available versions:/ {
+                sub(/^Available versions: /, "")
+                gsub(/, /, "\n")
+                for (i = 1; i <= NF; i++) {
+                    if ($i ~ ("^" prefix "\\.[0-9]+$")) {
+                        print $i
+                        exit
+                    }
+                }
+            }
+        '
+    )"
+    python3 "${POETRY_INSTALLER_FILE}"
+fi
+rm -f "${POETRY_INSTALLER_FILE}"
+EOF
 
 
 # --
@@ -83,10 +106,33 @@ FROM python_base AS python_devbox_uv
 # Build arguments
 ARG UV_VERSION
 
-# Install uv (Python package manager)
-RUN export UV_NO_MODIFY_PATH='1' && \
-    export UV_UNMANAGED_INSTALL='/usr/local/bin' && \
-    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+# Install uv (Python dependency manager)
+RUN <<EOF
+export UV_NO_MODIFY_PATH='1'
+export UV_UNMANAGED_INSTALL='/usr/local/bin'
+UV_INSTALLER_FILE="$(mktemp)"
+curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
+if [ $? -ne 0 ]; then
+    UV_VERSION="$(
+        pip index versions uv 2>/dev/null |
+        awk -v prefix="${UV_VERSION}" '
+            /^Available versions:/ {
+                sub(/^Available versions: /, "")
+                gsub(/, /, "\n")
+                for (i = 1; i <= NF; i++) {
+                    if ($i ~ ("^" prefix "\\.[0-9]+$")) {
+                        print $i
+                        exit
+                    }
+                }
+            }
+        '
+    )"
+    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
+fi
+sh "${UV_INSTALLER_FILE}"
+rm -f "${UV_INSTALLER_FILE}"
+EOF
 
 
 # --
@@ -99,14 +145,60 @@ ARG POETRY_VERSION
 ARG UV_VERSION
 
 # Install Poetry (Python dependency manager)
-RUN export POETRY_HOME='/usr/local' && \
-    export POETRY_VERSION="${POETRY_VERSION}" && \
-    curl -sSL https://install.python-poetry.org | python3 -
+RUN <<EOF
+export POETRY_HOME='/usr/local'
+export POETRY_VERSION="${POETRY_VERSION}"
+POETRY_INSTALLER_FILE="$(mktemp)"
+curl -sSL https://install.python-poetry.org -o "${POETRY_INSTALLER_FILE}"
+python3 "${POETRY_INSTALLER_FILE}"
+if [ $? -ne 0 ]; then
+    export POETRY_VERSION="$(
+        pip index versions poetry 2>/dev/null |
+        awk -v prefix="${POETRY_VERSION}" '
+            /^Available versions:/ {
+                sub(/^Available versions: /, "")
+                gsub(/, /, "\n")
+                for (i = 1; i <= NF; i++) {
+                    if ($i ~ ("^" prefix "\\.[0-9]+$")) {
+                        print $i
+                        exit
+                    }
+                }
+            }
+        '
+    )"
+    python3 "${POETRY_INSTALLER_FILE}"
+fi
+rm -f "${POETRY_INSTALLER_FILE}"
+EOF
 
-# Install uv (Python package manager)
-RUN export UV_NO_MODIFY_PATH='1' && \
-    export UV_UNMANAGED_INSTALL='/usr/local/bin' && \
-    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+# Install uv (Python dependency manager)
+RUN <<EOF
+export UV_NO_MODIFY_PATH='1'
+export UV_UNMANAGED_INSTALL='/usr/local/bin'
+UV_INSTALLER_FILE="$(mktemp)"
+curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
+if [ $? -ne 0 ]; then
+    UV_VERSION="$(
+        pip index versions uv 2>/dev/null |
+        awk -v prefix="${UV_VERSION}" '
+            /^Available versions:/ {
+                sub(/^Available versions: /, "")
+                gsub(/, /, "\n")
+                for (i = 1; i <= NF; i++) {
+                    if ($i ~ ("^" prefix "\\.[0-9]+$")) {
+                        print $i
+                        exit
+                    }
+                }
+            }
+        '
+    )"
+    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
+fi
+sh "${UV_INSTALLER_FILE}"
+rm -f "${UV_INSTALLER_FILE}"
+EOF
 
 
 # ----------------
