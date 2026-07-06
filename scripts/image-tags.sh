@@ -4,6 +4,7 @@ set -euo pipefail
 # Tag Docker image with specified tags and versions
 
 # Inputs:
+COMPACT_OUTPUT="${COMPACT_OUTPUT:-false}"
 PYTHON_VERSION="${PYTHON_VERSION:-3.14.6}"
 PYTHON_IMAGE_VARIANT="${PYTHON_IMAGE_VARIANT:-}" # [empty], slim, alpine
 POETRY_VERSION="${POETRY_VERSION:-}"
@@ -14,6 +15,9 @@ UV_TAG_LEVEL="${UV_TAG_LEVEL:-patch}" # global, major, minor, patch
 
 # Secondary inputs (derived):
 PYTHON_IMAGE_TAG="${PYTHON_IMAGE_TAG:-${PYTHON_VERSION}-${PYTHON_IMAGE_VARIANT}}"
+
+# Arguments:
+[ "$#" -gt 0 ] && ([ "$1" = "--compact" ] || [ "$1" = "-c" ]) && COMPACT_OUTPUT='true'
 
 # ---
 
@@ -34,30 +38,49 @@ UV_TAG_LEVEL="$(validate_tag_level "${UV_TAG_LEVEL}")"
 get_component_options() {
 	local version="$1"
 	local level="$2"
-	local major minor rest
 
-	major="${version%%.*}"
-	rest="${version#*.}"
-	if [ "${rest}" = "${version}" ]; then
-		# no dot found
-		minor=""
+	local -a version_parts
+	IFS='.' read -ra version_parts <<< "${version}"
+
+	local major minor
+	major="${version_parts[0]}"
+	if [ "${#version_parts[@]}" -ge 2 ]; then
+		minor="${version_parts[0]}.${version_parts[1]}"
 	else
-		minor="${rest%%.*}"
+		# Fallback to the version itself if it has no minor part
+		minor="${version}"
 	fi
 
+	local -a raw_options=()
 	case "${level}" in
-		global) component_options=("${version}" "${major}.${minor}" "${major}" "") ;;
-		major)  component_options=("${version}" "${major}.${minor}" "${major}") ;;
-		minor)  component_options=("${version}" "${major}.${minor}") ;;
-		patch)  component_options=("${version}") ;;
+		global) raw_options=("${version}" "${minor}" "${major}" "") ;;
+		major)  raw_options=("${version}" "${minor}" "${major}") ;;
+		minor)  raw_options=("${version}" "${minor}") ;;
+		patch)  raw_options=("${version}") ;;
 	esac
+
+	# De-duplicate options while preserving order
+	component_options=()
+	local item seen found
+	for item in "${raw_options[@]}"; do
+		found=0
+		for seen in "${component_options[@]:-}"; do
+			if [ "${seen}" = "${item}" ]; then
+				found=1
+				break
+			fi
+		done
+		if [ "${found}" -eq 0 ]; then
+			component_options+=("${item}")
+		fi
+	done
 }
 
 # Compute Python component options
 component_options=()
 get_component_options "${PYTHON_VERSION}" "${PYTHON_TAG_LEVEL}"
 python_component_options=("${component_options[@]}")
-echo "Python component options: ${python_component_options[*]}"
+echo "Python component options: ${python_component_options[*]}" >&2
 
 # Compute Poetry component options
 poetry_component_options=()
@@ -70,7 +93,7 @@ if [ -n "$POETRY_VERSION" ]; then
 else
   poetry_component_options=('')
 fi
-echo "Poetry component options: ${poetry_component_options[*]}"
+echo "Poetry component options: ${poetry_component_options[*]}" >&2
 
 # Compute uv component options
 uv_component_options=()
@@ -83,10 +106,10 @@ if [ -n "$UV_VERSION" ]; then
 else
   uv_component_options=('')
 fi
-echo "uv component options: ${uv_component_options[*]}"
+echo "uv component options: ${uv_component_options[*]}" >&2
 
 # Build list of image tags combinations
-IMAGE_TAGS=""
+IMAGE_TAGS=()
 for python_component in "${python_component_options[@]}"; do
   for poetry_component in "${poetry_component_options[@]}"; do
 	for uv_component in "${uv_component_options[@]}"; do
@@ -102,9 +125,15 @@ for python_component in "${python_component_options[@]}"; do
 		image_tag="$(IFS='-'; echo "${tag_pieces[*]}")"
 	  fi
 
-	  IMAGE_TAGS="${IMAGE_TAGS:+${IMAGE_TAGS},}${image_tag}"
+	  IMAGE_TAGS+=("${image_tag}")
 	done
   done
 done
 
-echo "$IMAGE_TAGS"
+if [ "$COMPACT_OUTPUT" = "true" ]; then
+	(IFS=','; echo "${IMAGE_TAGS[*]}")
+else
+	for tag in "${IMAGE_TAGS[@]}"; do
+		echo "$tag"
+	done
+fi
