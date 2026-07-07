@@ -8,10 +8,9 @@ name: Build & Push CD matrix
 
 on:
 
-  # Run on push on dev branch
-  push:
-    branches:
-      - feat/init # FIXME
+  # Run on schedule
+  schedule:
+    - cron: '0 5 * * *' # Daily at 5 AM UTC
 
   # Run on manual triggers
   workflow_dispatch:
