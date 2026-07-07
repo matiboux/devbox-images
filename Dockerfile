@@ -44,9 +44,11 @@ RUN --mount=type=cache,sharing=locked,id=apt-cache,target=/var/cache/apt \
         ca-certificates \
         curl \
         git \
+        jq \
         make \
         tmux \
-        wget
+        wget \
+        yq
 
 # Install Python development tools
 RUN pip install --no-cache-dir ruff pytest
