@@ -1,0 +1,137 @@
+name: Run build & push matrix
+
+# GitHub variables:
+# (inherit from build-push.yml)
+
+# GitHub secrets:
+# (inherit from build-push.yml)
+
+on:
+
+  # Run on push on dev branch
+  push:
+    branches:
+      - feat/init # FIXME
+
+  # Run on manual triggers
+  workflow_dispatch:
+
+# Set default GITHUB_TOKEN permissions for the workflow
+permissions:
+  contents: read
+
+# Set workflow concurrency rules
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+
+  # Prepare job
+  prepare:
+    name: Prepare build matrix
+
+    # https://github.com/actions/runner-images/blob/main/images/ubuntu-slim/ubuntu-slim-Readme.md
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+
+    # Run if push to some registry is enabled
+    if: |
+      vars.DHCR_ENABLED == 'true' ||
+      vars.GHCR_ENABLED == 'true' ||
+      vars.CUSTOM_CR_ENABLED == 'true'
+
+    # Set environment variables for the job
+    env:
+      IMAGES_SUFFIX: ''
+      PUSH_PLATFORMS: ${{ vars.PUSH_PLATFORMS }}
+
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+
+    steps:
+
+      # Initialization steps
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Dependency steps
+
+      - name: Install jq
+        run: |
+          # apt-get install jq
+          sudo apt-get -q update
+          sudo apt-get -qy install --no-install-recommends jq
+
+      - name: Install yq
+        env:
+          YQ_VERSION: v4.53.3
+          YQ_ARCH: linux_amd64
+        run: |
+          # Install yq
+          sudo curl -SL \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_${YQ_ARCH}" \
+            -o /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d31148d669074a8d0a63714ba94f3201e7020bc3 # v8.3.0
+
+      # Preparation steps
+
+      # Execution steps
+
+      - name: Install deps
+        run: |
+          uv sync --frozen
+
+      - name: Detect Python Devbox versions
+        run: |
+          uv run python ./scripts/detect-versions.py
+
+      - name: Build matrix from detected versions
+        id: matrix
+        run: |
+          # Build job matrix from detected versions
+          set -euo pipefail
+
+          # Load helper scripts
+          . ./.github/workflows/scripts/set_github_output.sh
+
+          # Transform list of build matrix entries
+          # to job matrix configuration in JSON format.
+          MATRIX_JSON="$(
+            yq -o=json e '.build_matrix' dist/versions.yml \
+            | jq -c '{ include: . }'
+          )"
+
+          set_github_output 'matrix' "${MATRIX_JSON}" non-optional verbose
+
+  # Run build-push workflow
+  build-push:
+    name: Run build & push workflow
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    # Job dependencies
+    needs:
+      - prepare
+
+    uses: ./.github/workflows/build-push.yml
+    with:
+      python_version: ${{ matrix.python_version }}
+      python_image_variant: ${{ matrix.python_image_variant }}
+      poetry_version: ${{ matrix.poetry_version }}
+      uv_version: ${{ matrix.uv_version }}
+      python_tag_level: ${{ matrix.python_tag_level }}
+      poetry_tag_level: ${{ matrix.poetry_tag_level }}
+      uv_tag_level: ${{ matrix.uv_tag_level }}
+    secrets: inherit
