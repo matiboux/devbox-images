@@ -300,63 +300,93 @@ class DetectVersions:
         else:
             published_tags = set()
 
+    #   python_version:
+    #   python_image_variant:
+    #   poetry_version:
+    #   uv_version:
+    #   python_tag_level:
+    #   poetry_tag_level:
+    #   uv_tag_level:
+
+        latest_python_version = self.python_versions[0] if self.python_versions else None
+        latest_poetry_version = self.poetry_versions[0] if self.poetry_versions else None
+        latest_uv_version = self.uv_versions[0] if self.uv_versions else None
+
         build_matrix = []
         for python_version in self.python_versions:
+            python_tag_level = 'global' if python_version == latest_python_version else 'minor'
             if f"{python_version}" not in published_tags:
                 build_matrix.append({
                     'image_tag': f"{python_version}",
                     'python_version': python_version,
                     'python_image_variant': '',
+                    'python_tag_level': python_tag_level,
                 })
                 build_matrix.append({
                     'image_tag': f"{python_version}-slim",
                     'python_version': python_version,
                     'python_image_variant': 'slim',
+                    'python_tag_level': python_tag_level,
                 })
                 build_matrix.append({
                     'image_tag': f"{python_version}-alpine",
                     'python_version': python_version,
                     'python_image_variant': 'alpine',
+                    'python_tag_level': python_tag_level,
                 })
             for poetry_version in self.poetry_versions:
+                poetry_tag_level = 'global' if poetry_version == latest_poetry_version else 'minor'
                 if f"{python_version}-poetry{poetry_version}" not in published_tags:
                     build_matrix.append({
                         'image_tag': f"{python_version}-poetry{poetry_version}",
                         'python_version': python_version,
                         'python_image_variant': '',
                         'poetry_version': poetry_version,
+                        'python_tag_level': python_tag_level,
+                        'poetry_tag_level': poetry_tag_level,
                     })
                     build_matrix.append({
                         'image_tag': f"{python_version}-slim-poetry{poetry_version}",
                         'python_version': python_version,
                         'python_image_variant': 'slim',
                         'poetry_version': poetry_version,
+                        'python_tag_level': python_tag_level,
+                        'poetry_tag_level': poetry_tag_level,
                     })
                     build_matrix.append({
                         'image_tag': f"{python_version}-alpine-poetry{poetry_version}",
                         'python_version': python_version,
                         'python_image_variant': 'alpine',
                         'poetry_version': poetry_version,
+                        'python_tag_level': python_tag_level,
+                        'poetry_tag_level': poetry_tag_level,
                     })
             for uv_version in self.uv_versions:
+                uv_tag_level = 'global' if uv_version == latest_uv_version else 'minor'
                 if f"{python_version}-uv{uv_version}" not in published_tags:
                     build_matrix.append({
                         'image_tag': f"{python_version}-uv{uv_version}",
                         'python_version': python_version,
                         'python_image_variant': '',
                         'uv_version': uv_version,
+                        'python_tag_level': python_tag_level,
+                        'uv_tag_level': uv_tag_level,
                     })
                     build_matrix.append({
                         'image_tag': f"{python_version}-slim-uv{uv_version}",
                         'python_version': python_version,
                         'python_image_variant': 'slim',
                         'uv_version': uv_version,
+                        'python_tag_level': python_tag_level,
+                        'uv_tag_level': uv_tag_level,
                     })
                     build_matrix.append({
                         'image_tag': f"{python_version}-alpine-uv{uv_version}",
                         'python_version': python_version,
                         'python_image_variant': 'alpine',
                         'uv_version': uv_version,
+                        'python_tag_level': python_tag_level,
+                        'uv_tag_level': uv_tag_level,
                     })
 
         print(f"Generated {len(build_matrix)} build matrix entries.")
