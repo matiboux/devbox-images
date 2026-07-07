@@ -235,9 +235,9 @@ jobs:
 
       - name: Validate inputs
         env:
-          PYTHON_VERSION: ${{ github.event.inputs.python_version }}
-          POETRY_VERSION: ${{ github.event.inputs.poetry_version }}
-          UV_VERSION: ${{ github.event.inputs.uv_version }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          POETRY_VERSION: ${{ inputs.poetry_version }}
+          UV_VERSION: ${{ inputs.uv_version }}
         run: |
           # Validate inputs
 
@@ -261,8 +261,8 @@ jobs:
 
       - name: Set BUILD_VARIANT
         env:
-          POETRY_VERSION: ${{ github.event.inputs.poetry_version }}
-          UV_VERSION: ${{ github.event.inputs.uv_version }}
+          POETRY_VERSION: ${{ inputs.poetry_version }}
+          UV_VERSION: ${{ inputs.uv_version }}
         run: |
           # Set BUILD_VARIANT output variable
 
@@ -282,8 +282,8 @@ jobs:
 
       - name: Set PYTHON_IMAGE_TAG
         env:
-          PYTHON_VERSION: ${{ github.event.inputs.python_version }}
-          PYTHON_IMAGE_VARIANT: ${{ github.event.inputs.python_image_variant }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          PYTHON_IMAGE_VARIANT: ${{ inputs.python_image_variant }}
         run: |
           # Set PYTHON_IMAGE_TAG output variable
 
@@ -299,13 +299,13 @@ jobs:
 
       - name: Set IMAGE_TAGS
         env:
-          PYTHON_VERSION: ${{ github.event.inputs.python_version }}
-          PYTHON_IMAGE_VARIANT: ${{ github.event.inputs.python_image_variant }}
-          POETRY_VERSION: ${{ github.event.inputs.poetry_version }}
-          UV_VERSION: ${{ github.event.inputs.uv_version }}
-          PYTHON_TAG_LEVEL: ${{ github.event.inputs.python_tag_level }}
-          POETRY_TAG_LEVEL: ${{ github.event.inputs.poetry_tag_level }}
-          UV_TAG_LEVEL: ${{ github.event.inputs.uv_tag_level }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          PYTHON_IMAGE_VARIANT: ${{ inputs.python_image_variant }}
+          POETRY_VERSION: ${{ inputs.poetry_version }}
+          UV_VERSION: ${{ inputs.uv_version }}
+          PYTHON_TAG_LEVEL: ${{ inputs.python_tag_level }}
+          POETRY_TAG_LEVEL: ${{ inputs.poetry_tag_level }}
+          UV_TAG_LEVEL: ${{ inputs.uv_tag_level }}
         run: |
           # Set IMAGE_TAGS environment variable
 
@@ -444,10 +444,10 @@ jobs:
       IMAGE_REFS: ${{ needs.prepare.outputs.image_refs }}
       BUILD_PLATFORM: ${{ matrix.platform }}
       BUILD_VARIANT: ${{ needs.prepare.outputs.build_variant }}
-      PYTHON_VERSION: ${{ github.event.inputs.python_version }}
+      PYTHON_VERSION: ${{ inputs.python_version }}
       PYTHON_IMAGE_TAG: ${{ needs.prepare.outputs.python_image_tag }}
-      POETRY_VERSION: ${{ github.event.inputs.poetry_version }}
-      UV_VERSION: ${{ github.event.inputs.uv_version }}
+      POETRY_VERSION: ${{ inputs.poetry_version }}
+      UV_VERSION: ${{ inputs.uv_version }}
 
     steps:
 
