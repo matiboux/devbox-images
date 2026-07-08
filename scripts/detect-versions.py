@@ -132,7 +132,7 @@ class DetectVersions:
                             continue
                         if version_minor in skip_versions or version_full in skip_versions:
                             continue
-                    elif ((
+                    if ((
                         version_tuple < min_version_tuple and
                         version_minor not in extra_versions and version_full not in extra_versions
                     ) or version_minor in skip_versions or version_full in skip_versions):
@@ -160,7 +160,7 @@ class DetectVersions:
                 if version_filter_tuple:
                     if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
-                elif version_tuple < min_version_tuple:
+                if version_tuple < min_version_tuple:
                     continue
                 minor_versions[version_minor] = version_full
 
@@ -215,7 +215,7 @@ class DetectVersions:
                                 continue
                             if version_minor in skip_versions or version_full in skip_versions:
                                 continue
-                        elif ((
+                        if ((
                             version_tuple < min_version_tuple and
                             version_minor not in extra_versions and version_full not in extra_versions
                         ) or version_minor in skip_versions or version_full in skip_versions):
@@ -238,7 +238,7 @@ class DetectVersions:
                 if version_filter_tuple:
                     if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
-                elif version_tuple < min_version_tuple:
+                if version_tuple < min_version_tuple:
                     continue
                 minor_versions[version_minor] = version_full
 
