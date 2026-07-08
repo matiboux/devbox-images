@@ -15,6 +15,24 @@ on:
 
   # Run on manual triggers
   workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Limit build to a specific Python version (e.g. 3.13.14, 3.14, 3).'
+        type: string
+        required: false
+      poetry_version:
+        description: 'Limit build to a specific Poetry version (e.g. 2.3.4, 2.3, 2).'
+        type: string
+        required: false
+      uv_version:
+        description: 'Limit build to a specific uv version (e.g. 0.9.5, 0.9).'
+        type: string
+        required: false
+      check_published_tags:
+        description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
+        type: boolean
+        required: false
+        default: true
 
 # Set default GITHUB_TOKEN permissions for the workflow
 permissions:
@@ -85,8 +103,17 @@ jobs:
           uv sync --frozen
 
       - name: Detect Python Devbox versions
+        env:
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          POETRY_VERSION: ${{ inputs.poetry_version }}
+          UV_VERSION: ${{ inputs.uv_version }}
+          CHECK_PUBLISHED_TAGS: ${{ inputs.check_published_tags }}
         run: |
-          uv run python ./scripts/detect-versions.py
+          uv run python ./scripts/detect-versions.py \
+            --python-version "${PYTHON_VERSION}" \
+            --poetry-version "${POETRY_VERSION}" \
+            --uv-version "${UV_VERSION}" \
+            --check-published-tags "${CHECK_PUBLISHED_TAGS:-true}"
 
       - name: Build matrix from detected versions
         run: |
