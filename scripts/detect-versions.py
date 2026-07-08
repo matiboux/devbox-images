@@ -242,8 +242,10 @@ class DetectVersions:
         min_poetry_version_tuple = self._get_version_tuple(min_poetry_version)
         min_uv_version_tuple = self._get_version_tuple(min_uv_version)
 
-        url = 'https://hub.docker.com/v2/namespaces/matiboux/repositories/python-devbox/tags?page_size=100'
-        while True:
+        url: str | None = 'https://hub.docker.com/v2/namespaces/matiboux/repositories/python-devbox/tags?page_size=100'
+        for _ in range(100):  # Limit to 100 pages to avoid infinite loop
+            if not url:
+                break
             data = self._fetch_json(url)
             if not data:
                 print(
@@ -252,7 +254,6 @@ class DetectVersions:
                 )
             if 'results' not in data:
                 break
-            found_version = False
             for tag in data['results']:
                 try:
                     tag_name = tag.get('name', '')
@@ -280,10 +281,7 @@ class DetectVersions:
                     published_tags.append(tag_name)
                 except (ValueError, IndexError):
                     pass
-            if not found_version:
-                break
-            if 'next' in data and data['next']:
-                url = data['next']
+            url = data.get('next')
 
         return published_tags
 
