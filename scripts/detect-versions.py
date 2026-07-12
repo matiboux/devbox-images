@@ -33,6 +33,12 @@ class DetectVersions:
         self.version_filter: str | None = version_filter
         self.detected_versions: List[str] = []
 
+        self._detectors = {
+            'python': self._detect_python,
+            'poetry': self._detect_pip_package,
+            'uv': self._detect_pip_package,
+        }
+
     def _load_yaml(self, path: str) -> dict:
         """Load YAML configuration file."""
         try:
@@ -84,12 +90,29 @@ class DetectVersions:
             return True
         return version_tuple[:len(filter_tuple)] == filter_tuple
 
+    def _sort_versions(self, minor_versions: Dict[str, str]) -> List[str]:
+        """Sort and return detected versions in descending order."""
+        detected_versions = list(minor_versions.values())
+        detected_versions.sort(key=lambda v: self._get_version_tuple(v), reverse=True)
+        return detected_versions
+
     def detect_versions(
         self,
         past_detected_versions: List[str] = [],
     ) -> List[str]:
-        """Detect package versions."""
+        """Detect package versions using the appropriate detector."""
         print(f"Detecting '{self.package_name}' versions...")
+
+        if self.package_name not in self._detectors:
+            raise ValueError(f"No detector available for package '{self.package_name}'.")
+
+        detector = self._detectors[self.package_name]
+        self.detected_versions = detector(past_detected_versions)
+        print(f"Detected '{self.package_name}' versions: {self.detected_versions}")
+        return self.detected_versions
+
+    def _detect_python(self, past_detected_versions: List[str]) -> List[str]:
+        """Detect Python versions from Docker Hub."""
 
         min_version = self.constraints[self.package_name]['min_version']
         min_version_tuple = self._get_version_tuple(min_version)
@@ -97,40 +120,6 @@ class DetectVersions:
         skip_versions = self.constraints[self.package_name].get('skip_tags', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         minor_versions = {}
-
-        if self.package_name == 'python':
-            detected_versions = self._detect_python_versions(
-                minor_versions,
-                min_version_tuple,
-                extra_versions,
-                skip_versions,
-                version_filter_tuple,
-                past_detected_versions,
-            )
-        else:
-            detected_versions = self._detect_pip_package_versions(
-                package_name=self.package_name,
-                min_version=min_version,
-                extra_versions=list(extra_versions),
-                skip_versions=skip_versions,
-                past_detected_versions=past_detected_versions,
-                version_filter=self.version_filter,
-            )
-
-        self.detected_versions = detected_versions
-        print(f"Detected '{self.package_name}' versions: {detected_versions}")
-        return detected_versions
-
-    def _detect_python_versions(
-        self,
-        minor_versions: Dict[str, str],
-        min_version_tuple: Tuple[int, int, int],
-        extra_versions: set,
-        skip_versions: List[str],
-        version_filter_tuple: Tuple[int, ...] | None,
-        past_detected_versions: List[str],
-    ) -> List[str]:
-        """Detect latest Python versions and image tags from Docker Hub."""
 
         url = 'https://hub.docker.com/v2/namespaces/library/repositories/python/tags?page_size=100'
         while True:
@@ -188,28 +177,21 @@ class DetectVersions:
                     continue
                 minor_versions[version_minor] = version_full
 
-        detected_versions = list(minor_versions.values())
-        detected_versions.sort(key=lambda v: self._get_version_tuple(v), reverse=True)
-        return detected_versions
+        return self._sort_versions(minor_versions)
 
-    def _detect_pip_package_versions(
-        self,
-        package_name: str,
-        min_version: str,
-        extra_versions: List[str] = [],
-        skip_versions: List[str] = [],
-        past_detected_versions: List[str] = [],
-        version_filter: str | None = None,
-    ) -> List[str]:
+    def _detect_pip_package(self, past_detected_versions: List[str]) -> List[str]:
         """Detect package versions from PyPI using pip."""
 
+        min_version = self.constraints[self.package_name]['min_version']
         min_version_tuple = self._get_version_tuple(min_version)
-        version_filter_tuple = self._get_version_filter_tuple(version_filter)
+        extra_versions = set(self.constraints[self.package_name].get('extra_versions', []))
+        skip_versions = self.constraints[self.package_name].get('skip_tags', [])
+        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         minor_versions = {}
 
         try:
             pip_result = subprocess.run(
-                ['pip', 'index', 'versions', package_name],
+                ['pip', 'index', 'versions', self.package_name],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -264,10 +246,7 @@ class DetectVersions:
                     continue
                 minor_versions[version_minor] = version_full
 
-        detected_versions = list(minor_versions.values())
-        detected_versions.sort(key=lambda v: self._get_version_tuple(v), reverse=True)
-        return detected_versions
-
+        return self._sort_versions(minor_versions)
 
     def save_versions_file(self):
         """Save detected versions to output file."""
