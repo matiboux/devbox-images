@@ -29,6 +29,7 @@ class DetectVersions:
         self.output_path: str = output_path
         self.version_filter: str | None = version_filter
         self.detected_versions: List[str] = []
+        self.latest_version: str | None = None
 
         self._detectors = {
             'python': self._detect_python,
@@ -109,6 +110,11 @@ class DetectVersions:
         detector = self._detectors[self.package_name]
         self.detected_versions = detector(past_detected_versions)
         print(f"Detected '{self.package_name}' versions: {self.detected_versions}")
+
+        if self.detected_versions and not self.version_filter:
+            self.latest_version = self.detected_versions[0]
+            print(f"Latest '{self.package_name}' version: {self.latest_version}")
+
         return self.detected_versions
 
     def _detect_python(
@@ -272,6 +278,10 @@ class DetectVersions:
                 **(existing.get('detected_versions') or {}),
                 self.package_name: self.detected_versions,
             },
+            'latest_version': {
+                **(existing.get('latest_version') or {}),
+                **({ self.package_name: self.latest_version } if self.latest_version else {}),
+            }
         }
 
         # Save to output file
