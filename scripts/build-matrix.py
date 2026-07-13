@@ -122,6 +122,7 @@ class BuildMatrix:
         print(f'Generating build matrix for packages: {", ".join(self.packages)}...')
 
         all_detected_versions = self.versions.get('detected_versions', {})
+        all_latest_versions = self.versions.get('latest_version', {})
         all_base_variants = {
             'python': ['', 'slim', 'alpine'],
         }
@@ -130,17 +131,14 @@ class BuildMatrix:
         other_packages = self.packages[1:]
 
         detected_versions = {}
+        latest_versions = {}
         for package in self.packages:
             package_versions = all_detected_versions.get(package, [])
             if not package_versions:
                 print(f"Error: No detected versions found for package '{package}'.", file=sys.stderr)
                 sys.exit(1)
             detected_versions[package] = package_versions
-
-        latest_versions = {
-            package: package_versions[0]
-            for package, package_versions in detected_versions.items()
-        }
+            latest_versions[package] = all_latest_versions.get(package, package_versions[0])
 
         base_variants = all_base_variants.get(base_package) or [None]
 
