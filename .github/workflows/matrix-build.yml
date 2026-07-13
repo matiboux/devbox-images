@@ -127,9 +127,14 @@ jobs:
         env:
           SKIP_PUBLISHED_TAGS: ${{ inputs.skip_published_tags }}
         run: |
-          # python build-matrix.py --skip-published-tags SKIP_PUBLISHED_TAGS
-          uv run python ./scripts/build-matrix.py \
-            --skip-published-tags "${SKIP_PUBLISHED_TAGS:-true}"
+          # python build-matrix.py PACKAGES --skip-published-tags SKIP_PUBLISHED_TAGS
+          rm -f ./dist/build-matrix.yml
+          uv run python ./scripts/build-matrix.py python \
+            --append --skip-published-tags "${SKIP_PUBLISHED_TAGS:-true}"
+          uv run python ./scripts/build-matrix.py python poetry \
+            --append --skip-published-tags "${SKIP_PUBLISHED_TAGS:-true}"
+          uv run python ./scripts/build-matrix.py python uv \
+            --append --skip-published-tags "${SKIP_PUBLISHED_TAGS:-true}"
 
       - name: Build matrix from detected versions
         run: |
@@ -143,7 +148,7 @@ jobs:
           # to job matrix configuration in JSON format.
           # Limit to 5 entries to avoid overwhelming CI.
           MATRIX_JSON="$(
-            yq -o=json e '.build_matrix' dist/build-matrix.yml \
+            yq -o=json e '.build_matrix' ./dist/build-matrix.yml \
             | jq -c '{ include: .[0:5] }'
           )"
 

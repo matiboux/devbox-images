@@ -182,7 +182,7 @@ class BuildMatrix:
         self.build_matrix = build_matrix
         return build_matrix
 
-    def save_build_matrix_file(self):
+    def save_build_matrix_file(self, append: bool = False) -> None:
         """Save build matrix to output file."""
         print(f"Saving build matrix to {self.output_path}...")
 
@@ -193,7 +193,10 @@ class BuildMatrix:
         except FileNotFoundError:
             existing = {}
 
-        build_matrix = self.build_matrix or existing.get('build_matrix', [])
+        if append:
+            build_matrix = existing.get('build_matrix', []) + self.build_matrix
+        else:
+            build_matrix = self.build_matrix
 
         data = {
             'last_updated': datetime.now(timezone.utc).isoformat() + 'Z',
@@ -217,6 +220,15 @@ def parse_args() -> argparse.Namespace:
         nargs='*',
         default=[],
         help='Packages to include in build matrix. If empty, all are included.',
+    )
+    parser.add_argument(
+        '--append',
+        action='store_true',
+        default=False,
+        help=(
+            'Append to existing build matrix instead of overwriting. '
+            'This will merge new entries with existing ones.'
+        ),
     )
     parser.add_argument(
         '--skip-published-tags',
@@ -244,11 +256,13 @@ def main():
 
     # Generate build matrix
     matrix_builder.generate_build_matrix(
-        skip_published_tags=args.skip_published_tags
+        skip_published_tags=args.skip_published_tags,
     )
 
     # Save build matrix file
-    matrix_builder.save_build_matrix_file()
+    matrix_builder.save_build_matrix_file(
+        append=args.append,
+    )
 
 
 if __name__ == "__main__":
