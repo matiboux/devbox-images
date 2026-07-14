@@ -19,6 +19,7 @@ ARG USER=user
 ARG UID=1000
 ARG GID=1000
 
+
 # --
 # Upstream images
 
@@ -26,13 +27,13 @@ FROM python:${PYTHON_VERSION} AS python_upstream
 
 
 # ----------------
-# Python Devbox variants
+# Devbox Python variants
 # ----------------
 
 # --
-# Python Devbox base
+# Devbox Python base
 
-FROM python_upstream AS python_devbox_base
+FROM python_upstream AS devbox_python_base
 
 # Install system development tools and dependencies
 # (hadolint: Ignore non-pinned apt package version)
@@ -55,9 +56,9 @@ RUN pip install --no-cache-dir ruff pytest
 
 
 # --
-# Python Devbox with Poetry
+# Devbox Python with Poetry
 
-FROM python_devbox_base AS python_devbox_poetry
+FROM devbox_python_base AS devbox_python_poetry
 
 # Build arguments
 ARG POETRY_VERSION
@@ -85,9 +86,9 @@ EOF
 
 
 # --
-# Python Devbox with uv
+# Devbox Python with uv
 
-FROM python_devbox_base AS python_devbox_uv
+FROM devbox_python_base AS devbox_python_uv
 
 # Build arguments
 ARG UV_VERSION
@@ -115,9 +116,9 @@ EOF
 
 
 # --
-# Python Devbox with uv and Poetry
+# Devbox Python with uv and Poetry
 
-FROM python_devbox_base AS python_devbox_full
+FROM devbox_python_base AS devbox_python_full
 
 # Build arguments
 ARG POETRY_VERSION
@@ -167,13 +168,13 @@ EOF
 
 
 # ----------------
-# Python Devbox image
+# Devbox Python image
 # ----------------
 
 # --
-# Python Devbox image
+# Devbox Python image
 
-FROM python_devbox_${BUILD_VARIANT} AS python_devbox
+FROM devbox_python_${BUILD_VARIANT} AS devbox_python
 
 # Build arguments
 ARG USER
