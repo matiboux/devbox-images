@@ -25,11 +25,17 @@ class DetectVersions:
     ):
 
         self.package_name: str = package_name.strip().lower()
-        self.constraints: Dict[str, Any] = self._load_yaml(constraints_path)
+        self.constraints_path: str = constraints_path
         self.output_path: str = output_path
         self.version_filter: str | None = version_filter
         self.detected_versions: List[str] = []
         self.latest_version: str | None = None
+
+        try:
+            self.constraints: Dict[str, Any] = self._load_yaml(constraints_path)
+        except FileNotFoundError:
+            print(f"Warning: Constraints file '{constraints_path}' not found", file=sys.stderr)
+            self.constraints = {}
 
         self._detectors = {
             'python': self._detect_python,
@@ -123,10 +129,26 @@ class DetectVersions:
     ) -> List[str]:
         """Detect Python versions from Docker Hub."""
 
-        min_version = self.constraints[self.package_name]['min_version']
+        constraints_incomplete = False
+
+        package_constraints = self.constraints.get(self.package_name, {})
+        if not package_constraints:
+            print(
+                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+        elif not package_constraints.get('min_version'):
+            print(
+                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+
+        min_version = package_constraints.get('min_version', '0.0.0')
         min_version_tuple = self._get_version_tuple(min_version)
-        extra_versions = set(self.constraints[self.package_name].get('extra_versions', []))
-        skip_versions = self.constraints[self.package_name].get('skip_tags', [])
+        extra_versions = set(package_constraints.get('extra_versions', []))
+        skip_versions = package_constraints.get('skip_tags', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         minor_versions = {}
 
@@ -167,9 +189,14 @@ class DetectVersions:
                             minor_versions[version_minor] = version_full
                     else:
                         minor_versions[version_minor] = version_full
+                    # Stop after first version found if constraints are incomplete
+                    if constraints_incomplete:
+                        break
                 except (ValueError, IndexError):
                     pass
-            if not found_version:
+            # Break if no versions were found on this page
+            # Stop after first page if constraints are incomplete
+            if not found_version or constraints_incomplete:
                 break
             if 'next' in data and data['next']:
                 url = data['next']
@@ -194,10 +221,26 @@ class DetectVersions:
     ) -> List[str]:
         """Detect package versions from PyPI using pip."""
 
-        min_version = self.constraints[self.package_name]['min_version']
+        constraints_incomplete = False
+
+        package_constraints = self.constraints.get(self.package_name, {})
+        if not package_constraints:
+            print(
+                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+        elif not package_constraints.get('min_version'):
+            print(
+                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+
+        min_version = package_constraints.get('min_version', '0.0.0')
         min_version_tuple = self._get_version_tuple(min_version)
-        extra_versions = set(self.constraints[self.package_name].get('extra_versions', []))
-        skip_versions = self.constraints[self.package_name].get('skip_tags', [])
+        extra_versions = set(package_constraints.get('extra_versions', []))
+        skip_versions = package_constraints.get('skip_tags', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         minor_versions = {}
 
@@ -243,6 +286,9 @@ class DetectVersions:
                                 minor_versions[version_minor] = version_full
                         else:
                             minor_versions[version_minor] = version_full
+                        # Stop after first version found if constraints are incomplete
+                        if constraints_incomplete:
+                            break
                     except (ValueError, IndexError):
                         pass
 
