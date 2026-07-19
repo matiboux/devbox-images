@@ -37,7 +37,7 @@ class DetectVersions:
 
         self._detectors = {
             'python': self._detect_docker_image,
-            'node': self._detect_docker_image,
+            'node': self._detect_node_versions,
             'poetry': self._detect_pip_package,
             'uv': self._detect_pip_package,
             'nvm': self._detect_github_repo,
@@ -158,7 +158,6 @@ class DetectVersions:
         if not docker_image:
             known_repos = {
                 'python': 'library/python',
-                'node': 'library/node',
             }
             docker_image = known_repos.get(self.package_name)
             if not docker_image:
@@ -172,7 +171,7 @@ class DetectVersions:
             data = self._fetch_json(url)
             if not data:
                 print(
-                    'Warning: Could not fetch Python versions from Docker Hub, using previously cached versions',
+                    'Warning: Could not fetch package versions from Docker Hub, using previously cached versions',
                     file=sys.stderr,
                 )
             if 'results' not in data:
@@ -216,6 +215,91 @@ class DetectVersions:
                 break
             if 'next' in data and data['next']:
                 url = data['next']
+
+        # Fallback to past detected versions if no versions were found
+        if not minor_versions and past_detected_versions:
+            for version_full in past_detected_versions:
+                version_tuple = self._get_version_tuple(version_full)
+                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
+                if version_filter_tuple:
+                    if not self._version_matches_filter(version_tuple, version_filter_tuple):
+                        continue
+                if version_tuple < min_version_tuple:
+                    continue
+                minor_versions[version_minor] = version_full
+
+        return self._sort_versions(minor_versions)
+
+    def _detect_node_versions(
+        self,
+        past_detected_versions: List[str] = [],
+    ) -> List[str]:
+        """Detect Node.js versions from Node.js API."""
+
+        constraints_incomplete = False
+
+        package_constraints = self.constraints.get(self.package_name, {})
+        if not package_constraints:
+            print(
+                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+        elif not package_constraints.get('min_version'):
+            print(
+                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+
+        min_version = package_constraints.get('min_version', '0.0.0')
+        min_version_tuple = self._get_version_tuple(min_version)
+        extra_versions = set(package_constraints.get('extra_versions', []))
+        skip_versions = package_constraints.get('skip_versions', [])
+        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
+        minor_versions = {}
+
+        url = 'https://nodejs.org/dist/index.json'
+        data = self._fetch_json(url)
+
+        if not data or not isinstance(data, list):
+            print(
+                f'Warning: Could not fetch versions from Node.js API, using previously cached versions',
+                file=sys.stderr,
+            )
+            return []
+
+        for tag in data:
+            try:
+                version = tag.get('version', '').lstrip('v')
+                if not version or not re.match(r'^\d+(\.\d+)*$', version):
+                    continue
+                version_tuple = self._get_version_tuple(version)
+                version_major = f"{version_tuple[0]}"
+                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
+                version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
+                if version_filter_tuple:
+                    if not self._version_matches_filter(version_tuple, version_filter_tuple):
+                        continue
+                    if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
+                        continue
+                if ((
+                    version_tuple < min_version_tuple and
+                    version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
+                ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
+                    continue
+                if version_minor in minor_versions:
+                    existing_full = minor_versions[version_minor]
+                    existing_tuple = self._get_version_tuple(existing_full)
+                    if version_tuple > existing_tuple:
+                        minor_versions[version_minor] = version_full
+                else:
+                    minor_versions[version_minor] = version_full
+                # Stop after first version found if constraints are incomplete
+                if constraints_incomplete:
+                    break
+            except (ValueError, IndexError):
+                pass
 
         # Fallback to past detected versions if no versions were found
         if not minor_versions and past_detected_versions:
