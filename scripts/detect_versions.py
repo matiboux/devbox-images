@@ -41,6 +41,7 @@ class DetectVersions:
             'python': self._detect_python,
             'poetry': self._detect_pip_package,
             'uv': self._detect_pip_package,
+            'nvm': self._detect_github_releases,
         }
 
         if self.package_name not in self._detectors:
@@ -306,6 +307,112 @@ class DetectVersions:
 
         return self._sort_versions(minor_versions)
 
+    def _detect_github_releases(
+        self,
+        past_detected_versions: List[str] = [],
+    ) -> List[str]:
+        """Detect package versions from GitHub releases."""
+
+        constraints_incomplete = False
+
+        package_constraints = self.constraints.get(self.package_name, {})
+        if not package_constraints:
+            print(
+                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+        elif not package_constraints.get('min_version'):
+            print(
+                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
+                file=sys.stderr,
+            )
+            constraints_incomplete = True
+
+        min_version = package_constraints.get('min_version', '0.0.0')
+        min_version_tuple = self._get_version_tuple(min_version)
+        extra_versions = set(package_constraints.get('extra_versions', []))
+        skip_versions = package_constraints.get('skip_tags', [])
+        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
+        minor_versions = {}
+
+        github_repo = package_constraints.get('github_repo')
+        if not github_repo:
+            known_repos = {
+                'nvm': 'nvm-sh/nvm',
+            }
+            github_repo = known_repos.get(self.package_name)
+            if not github_repo:
+                print(f"Warning: No 'github_repo' specified in constraints for {self.package_name}", file=sys.stderr)
+                return past_detected_versions
+
+        url = f'https://api.github.com/repos/{github_repo}/tags'
+        page = 1
+
+        while True:
+            page_url = f"{url}?per_page=100&page={page}"
+            data = self._fetch_json(page_url)
+
+            if not data or not isinstance(data, list):
+                if page == 1:
+                    print(
+                        f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',
+                        file=sys.stderr,
+                    )
+                break
+
+            found_version = False
+            for tag in data:
+                try:
+                    tag_name = tag.get('name', '').lstrip('v')
+                    if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
+                        continue
+                    version_tuple = self._get_version_tuple(tag_name)
+                    version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
+                    version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
+                    if version_filter_tuple:
+                        if not self._version_matches_filter(version_tuple, version_filter_tuple):
+                            continue
+                        if version_minor in skip_versions or version_full in skip_versions:
+                            continue
+                    if ((
+                        version_tuple < min_version_tuple and
+                        version_minor not in extra_versions and version_full not in extra_versions
+                    ) or version_minor in skip_versions or version_full in skip_versions):
+                        continue
+                    found_version = True
+                    if version_minor in minor_versions:
+                        existing_full = minor_versions[version_minor]
+                        existing_tuple = self._get_version_tuple(existing_full)
+                        if version_tuple > existing_tuple:
+                            minor_versions[version_minor] = version_full
+                    else:
+                        minor_versions[version_minor] = version_full
+                    # Stop after first version found if constraints are incomplete
+                    if constraints_incomplete:
+                        break
+                except (ValueError, IndexError):
+                    pass
+            # Break if no versions were found on this page
+            # Stop after first page if constraints are incomplete
+            if not found_version or constraints_incomplete:
+                break
+            page += 1
+
+        # Fallback to past detected versions if no versions were found
+        if not minor_versions and past_detected_versions:
+            for version_full in past_detected_versions:
+                version_tuple = self._get_version_tuple(version_full)
+                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
+                if version_filter_tuple:
+                    if not self._version_matches_filter(version_tuple, version_filter_tuple):
+                        continue
+                if version_tuple < min_version_tuple:
+                    continue
+                minor_versions[version_minor] = version_full
+
+        return self._sort_versions(minor_versions)
+
     def save_versions_file(self):
         """Save detected versions to output file."""
         print(f"Saving '{self.package_name}' versions to {self.output_path}...")
@@ -347,7 +454,7 @@ def parse_args() -> argparse.Namespace:
         nargs='?',
         default='',
         help=(
-            'Package name (\'python\', \'poetry\', or \'uv\'). '
+            'Package name (\'python\', \'poetry\', \'uv\', or \'nvm\'). '
             'Can also be specified via --package option.'
         ),
     )
