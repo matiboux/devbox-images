@@ -33,6 +33,11 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
     # Install for Alpine Linux
     apk add --no-cache sudo
 
+	# Create group 'sudo' if it doesn't exist
+	if ! getent group sudo > /dev/null 2>&1; then
+		addgroup sudo
+	fi
+
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
     # Install for Debian/Ubuntu
