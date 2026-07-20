@@ -92,7 +92,13 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-NVM_DIR="${NVM_DIR}" bash "${NVM_INSTALLER_FILE}"
+BASH_ENV="/etc/bash_env"
+touch "${BASH_ENV}"
+if ! grep -q '. /etc/bash_env' /etc/bash.bashrc 2>/dev/null; then
+	echo '. /etc/bash_env' >> /etc/bash.bashrc
+fi
+
+NVM_DIR="${NVM_DIR}" PROFILE="${BASH_ENV}" bash "${NVM_INSTALLER_FILE}"
 if [ $? -ne 0 ]; then
 	echo "Failed to install nvm." >&2
 fi
@@ -106,12 +112,6 @@ done <<EOF
 .cache
 alias
 versions
-EOF
-
-# Create system-wide NVM initialization in bash.bashrc so all bash shells source it
-cat <<'EOF' >> /etc/bash.bashrc
-export NVM_DIR="${NVM_DIR:-/opt/nvm}"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 EOF
 
 echo "Installed nvm version ${NVM_VERSION} to ${NVM_DIR}."
