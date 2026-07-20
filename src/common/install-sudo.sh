@@ -31,12 +31,7 @@ PACKAGE_MANAGER_NAME="$(basename "${PACKAGE_MANAGER}")"
 if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 
     # Install for Alpine Linux
-    apk add --no-cache sudo
-
-	# Create group 'sudo' if it doesn't exist
-	if ! getent group sudo > /dev/null 2>&1; then
-		addgroup -g 27 sudo
-	fi
+    apk add --no-cache doas doas-sudo-shim
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
