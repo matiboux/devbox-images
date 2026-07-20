@@ -38,22 +38,14 @@ get_nvm_version() {
     local version="$1"
     if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
         curl -sSL "https://api.github.com/repos/nvm-sh/nvm/releases/latest" \
-            | grep -Po '"tag_name": "\K.*?(?=")' \
+            | sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p' \
             | sed 's/^v//'
     else
-        local tags_page=1
-        local inferred_version=''
-        while [ -z "${inferred_version}" ]; do
-            inferred_version="$(
-                curl -sSL "https://api.github.com/repos/nvm-sh/nvm/tags?per_page=100&page=${tags_page}" \
-                    | grep -Po '"name": "\K.*?(?=")' \
-                    | sed 's/^v//' \
-                    | grep -E "^$(echo "${version}" | sed 's/\.*$//; s/\./\\./g')(\\.[0-9]+)*$" \
-                    | head -n1
-            )"
-            tags_page=$((tags_page + 1))
-        done
-        echo "${inferred_version}"
+        curl -sSL "https://api.github.com/repos/nvm-sh/nvm/git/matching-refs/tags/v${version}" \
+            | sed -n 's/.*"ref": "\([^"]*\)".*/\1/p' \
+            | sed 's|refs/tags/v||' \
+            | sort -V \
+            | tail -n1
     fi
 }
 
