@@ -33,11 +33,17 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
     # Install for Alpine Linux
     apk add --no-cache doas doas-sudo-shim
 
+	# Allow members of group 'wheel' to execute commands without a password
+	echo 'permit nopass :wheel' >> /etc/doas.conf
+
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
     # Install for Debian/Ubuntu
 	apt-get update
 	apt-get install -y --no-install-recommends sudo
+
+	# Allow members of group 'sudo' to execute commands without a password
+	echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 else
 
@@ -45,6 +51,3 @@ else
     exit 1
 
 fi
-
-# Allow members of group 'sudo' to execute commands without a password
-echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
