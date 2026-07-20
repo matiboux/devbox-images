@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1
 
-# This Dockerfile uses the service folder as context.
+# This Dockerfile uses the root folder as context.
 
 
 # ----------------
@@ -12,182 +12,49 @@
 
 ARG BUILD_VARIANT=base
 ARG PYTHON_VERSION=3.14.6
-ARG PYTHON_IMAGE_TAG=3.14.6
-ARG POETRY_VERSION=2.4.1
-ARG UV_VERSION=0.11.26
-ARG USER=user
-ARG UID=1000
-ARG GID=1000
+ARG PYTHON_IMAGE_VARIANT=
+ARG POETRY_VERSION=
+ARG UV_VERSION=
+ARG USERNAME=user
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG SUDO_USER=true
 
 
 # --
 # Upstream images
 
-FROM python:${PYTHON_VERSION} AS python_upstream
+FROM python:${PYTHON_VERSION}${PYTHON_IMAGE_VARIANT:+-${PYTHON_IMAGE_VARIANT}} AS python_upstream
 
 
 # ----------------
-# Devbox Python variants
+# Devbox Python
 # ----------------
 
-# --
-# Devbox Python base
+FROM python_upstream AS devbox_python
 
-FROM python_upstream AS devbox_python_base
+# Build arguments
+ARG BUILD_VARIANT
+ARG PYTHON_IMAGE_VARIANT
+ARG PYTHON_VERSION
+ARG PYTHON_IMAGE_TAG
+ARG POETRY_VERSION
+ARG UV_VERSION
+ARG USERNAME
+ARG USER_ID
+ARG GROUP_ID
+ARG SUDO_USER
 
-# Install system development tools and dependencies
-# (hadolint: Ignore non-pinned apt package version)
-# hadolint ignore=DL3008
-RUN --mount=type=cache,sharing=locked,id=apt-cache,target=/var/cache/apt \
+# Run installation script for Devbox Python image
+RUN --mount=type=bind,source=./src/common,target=/tmp/devbox/common \
+    --mount=type=bind,source=./src/python,target=/tmp/devbox/python \
+    --mount=type=cache,sharing=locked,id=apt-cache,target=/var/cache/apt \
 	--mount=type=cache,sharing=locked,id=apt-lib,target=/var/lib/apt \
-	apt-get update && \
-	apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        git \
-        jq \
-        make \
-        tmux \
-        wget \
-        yq
-
-# Install Python development tools
-RUN pip install --no-cache-dir ruff pytest
-
-
-# --
-# Devbox Python with Poetry
-
-FROM devbox_python_base AS devbox_python_poetry
-
-# Build arguments
-ARG POETRY_VERSION
-
-# Install Poetry (Python dependency manager)
-RUN <<EOF
-export POETRY_HOME='/usr/local'
-export POETRY_VERSION="${POETRY_VERSION}"
-POETRY_INSTALLER_FILE="$(mktemp)"
-curl -sSL https://install.python-poetry.org -o "${POETRY_INSTALLER_FILE}"
-python3 "${POETRY_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-    export POETRY_VERSION="$(
-        pip index versions poetry 2>/dev/null \
-        | sed -n 's/^Available versions: //p' \
-        | tr ',' '\n' \
-        | sed 's/^ *//' \
-        | grep -E "^$(echo "${POETRY_VERSION}" | sed 's/\.*$//; s/\./\\./g')(\\.[0-9]+)*$" \
-        | head -n1
-    )"
-    python3 "${POETRY_INSTALLER_FILE}"
-fi
-rm -f "${POETRY_INSTALLER_FILE}"
-EOF
-
-
-# --
-# Devbox Python with uv
-
-FROM devbox_python_base AS devbox_python_uv
-
-# Build arguments
-ARG UV_VERSION
-
-# Install uv (Python dependency manager)
-RUN <<EOF
-export UV_NO_MODIFY_PATH='1'
-export UV_UNMANAGED_INSTALL='/usr/local/bin'
-UV_INSTALLER_FILE="$(mktemp)"
-curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-    UV_VERSION="$(
-        pip index versions uv 2>/dev/null \
-        | sed -n 's/^Available versions: //p' \
-        | tr ',' '\n' \
-        | sed 's/^ *//' \
-        | grep -E "^$(echo "${UV_VERSION}" | sed 's/\.*$//; s/\./\\./g')(\\.[0-9]+)*$" \
-        | head -n1
-    )"
-    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
-fi
-sh "${UV_INSTALLER_FILE}"
-rm -f "${UV_INSTALLER_FILE}"
-EOF
-
-
-# --
-# Devbox Python with uv and Poetry
-
-FROM devbox_python_base AS devbox_python_full
-
-# Build arguments
-ARG POETRY_VERSION
-ARG UV_VERSION
-
-# Install Poetry (Python dependency manager)
-RUN <<EOF
-export POETRY_HOME='/usr/local'
-export POETRY_VERSION="${POETRY_VERSION}"
-POETRY_INSTALLER_FILE="$(mktemp)"
-curl -sSL https://install.python-poetry.org -o "${POETRY_INSTALLER_FILE}"
-python3 "${POETRY_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-    export POETRY_VERSION="$(
-        pip index versions poetry 2>/dev/null \
-        | sed -n 's/^Available versions: //p' \
-        | tr ',' '\n' \
-        | sed 's/^ *//' \
-        | grep -E "^$(echo "${POETRY_VERSION}" | sed 's/\.*$//; s/\./\\./g')(\\.[0-9]+)*$" \
-        | head -n1
-    )"
-    python3 "${POETRY_INSTALLER_FILE}"
-fi
-rm -f "${POETRY_INSTALLER_FILE}"
-EOF
-
-# Install uv (Python dependency manager)
-RUN <<EOF
-export UV_NO_MODIFY_PATH='1'
-export UV_UNMANAGED_INSTALL='/usr/local/bin'
-UV_INSTALLER_FILE="$(mktemp)"
-curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-    UV_VERSION="$(
-        pip index versions uv 2>/dev/null \
-        | sed -n 's/^Available versions: //p' \
-        | tr ',' '\n' \
-        | sed 's/^ *//' \
-        | grep -E "^$(echo "${UV_VERSION}" | sed 's/\.*$//; s/\./\\./g')(\\.[0-9]+)*$" \
-        | head -n1
-    )"
-    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
-fi
-sh "${UV_INSTALLER_FILE}"
-rm -f "${UV_INSTALLER_FILE}"
-EOF
-
-
-# ----------------
-# Devbox Python image
-# ----------------
-
-# --
-# Devbox Python image
-
-FROM devbox_python_${BUILD_VARIANT} AS devbox_python
-
-# Build arguments
-ARG USER
-ARG UID
-ARG GID
-
-# Create non-root user
-RUN groupadd -g ${GID} ${USER} && \
-    useradd -lm -u ${UID} -g ${GID} ${USER}
+	sh /tmp/devbox/python/install-python.sh
 
 # Run as created non-root user
-USER ${USER}
-WORKDIR /home/${USER}
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
 
 ENTRYPOINT ["/bin/bash"]
 CMD []
