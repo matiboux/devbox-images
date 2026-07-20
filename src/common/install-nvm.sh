@@ -1,8 +1,8 @@
 #!/bin/sh
 
-NVM_VERSION_INPUT=${1:-latest}
+NVM_VERSION_INPUT="${1:-latest}"
 
-NVM_DIR=${NVM_DIR:-/opt/nvm}
+NVM_DIR="${NVM_DIR:-/opt/nvm}"
 
 # ---
 
