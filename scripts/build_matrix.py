@@ -18,7 +18,7 @@ class BuildMatrix:
         versions_path: str = 'dist/versions.yml',
         published_tags_path: str = 'dist/published_tags.yaml',
         skip_published_tags: bool = True,
-        output_path: str = 'dist/build-matrix.yml',
+        output_path: str = 'dist/build_matrix.yml',
     ):
         self.packages: List[str] = [ package.strip().lower() for package in packages ] if packages else []
         self.versions_path: str = versions_path
