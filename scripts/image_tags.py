@@ -12,12 +12,10 @@ class ImageTagsGenerator:
     def __init__(
         self,
         components: Sequence[Tuple[str, str] | Tuple[str, str, str]],
-        compact_output: bool = False,
     ):
         """
         Initialize the ImageTagGenerator with component versions and tag levels.
         :param components: List of tuples containing (component_name, version, tag_level)
-        :param compact_output: If True, output tags as comma-separated values on a single line
         """
         self.components: List[Tuple[str, str, str]] = [
             (
@@ -27,7 +25,6 @@ class ImageTagsGenerator:
             )
             for comp in components
         ]
-        self.compact_output: bool = compact_output
 
         self.image_tags: List[str] = []
 
@@ -100,8 +97,15 @@ class ImageTagsGenerator:
         self.image_tags = tags
         return tags
 
-    def print_tags(self) -> None:
-        if self.compact_output:
+    def print_tags(
+        self,
+        compact_output: bool = False,
+    ) -> None:
+        """
+        Print the generated image tags to stdout.
+        :param compact_output: If True, output tags as comma-separated values on a single line
+        """
+        if compact_output:
             print(','.join(self.image_tags))
         else:
             for tag in self.image_tags:
@@ -143,11 +147,13 @@ def main():
 
     generator = ImageTagsGenerator(
         components=components,
-        compact_output=args.compact,
     )
 
     generator.generate_tags()
-    generator.print_tags()
+
+    generator.print_tags(
+        compact_output=args.compact,
+    )
 
 
 if __name__ == "__main__":
