@@ -7,18 +7,16 @@ from itertools import product
 from typing import List, Sequence, Tuple
 
 
-class ImageTagGenerator:
+class ImageTagsGenerator:
 
     def __init__(
         self,
         components: Sequence[Tuple[str, str] | Tuple[str, str, str]],
-        python_image_variant: str = '',
         compact_output: bool = False,
     ):
         """
         Initialize the ImageTagGenerator with component versions and tag levels.
         :param components: List of tuples containing (component_name, version, tag_level)
-        :param python_image_variant: Python image variant: empty, slim, or alpine
         :param compact_output: If True, output tags as comma-separated values on a single line
         """
         self.components: List[Tuple[str, str, str]] = [
@@ -29,7 +27,6 @@ class ImageTagGenerator:
             )
             for comp in components
         ]
-        self.python_image_variant: str = python_image_variant
         self.compact_output: bool = compact_output
 
         self.image_tags: List[str] = []
@@ -92,8 +89,6 @@ class ImageTagGenerator:
             for i, (comp_name, _, _) in enumerate(self.components):
                 if component_values[i]:
                     tag_pieces.append(component_values[i])
-                if comp_name == 'python' and self.python_image_variant:
-                    tag_pieces.append(self.python_image_variant)
 
             if not tag_pieces:
                 image_tag = 'latest'
@@ -146,7 +141,7 @@ def main():
         else:
             components.append((comp_name, version_tag))
 
-    generator = ImageTagGenerator(
+    generator = ImageTagsGenerator(
         components=components,
         compact_output=args.compact,
     )
