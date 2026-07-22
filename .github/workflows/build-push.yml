@@ -141,7 +141,6 @@ jobs:
       PUSH_PLATFORMS: ${{ vars.PUSH_PLATFORMS }}
 
     outputs:
-      build_variant: ${{ steps.outputs.outputs.build_variant }}
       python_image_tag: ${{ steps.outputs.outputs.python_image_tag }}
       image_tags: ${{ steps.outputs.outputs.image_tags }}
       matrix: ${{ steps.outputs.outputs.matrix }}
@@ -263,44 +262,6 @@ jobs:
             exit 1
           fi
 
-      - name: Set BUILD_VARIANT
-        env:
-          POETRY_VERSION: ${{ inputs.poetry_version }}
-          UV_VERSION: ${{ inputs.uv_version }}
-        run: |
-          # Set BUILD_VARIANT environment variable
-
-          # Load helper scripts
-          . ./.github/workflows/scripts/set_github_env.sh
-
-          BUILD_VARIANT='base'
-          if [ -n "${POETRY_VERSION}" ] && [ -n "${UV_VERSION}" ]; then
-              BUILD_VARIANT='full'
-          elif [ -n "${POETRY_VERSION}" ]; then
-              BUILD_VARIANT='poetry'
-          elif [ -n "${UV_VERSION}" ]; then
-              BUILD_VARIANT='uv'
-          fi
-
-          set_github_env 'BUILD_VARIANT' "${BUILD_VARIANT}" non-optional non-secret verbose
-
-      - name: Set PYTHON_IMAGE_TAG
-        env:
-          PYTHON_VERSION: ${{ inputs.python_version }}
-          PYTHON_IMAGE_VARIANT: ${{ inputs.python_image_variant }}
-        run: |
-          # Set PYTHON_IMAGE_TAG environment variable
-
-          # Load helper scripts
-          . ./.github/workflows/scripts/set_github_env.sh
-
-          PYTHON_IMAGE_TAG="${PYTHON_VERSION}"
-          if [ -n "${PYTHON_IMAGE_VARIANT}" ]; then
-            PYTHON_IMAGE_TAG="${PYTHON_IMAGE_TAG}-${PYTHON_IMAGE_VARIANT}"
-          fi
-
-          set_github_env 'PYTHON_IMAGE_TAG' "${PYTHON_IMAGE_TAG}" non-optional non-secret verbose
-
       - name: Set IMAGE_TAGS
         env:
           PYTHON_VERSION: ${{ inputs.python_version }}
@@ -369,7 +330,6 @@ jobs:
       - name: Set job outputs
         id: outputs
         env:
-          BUILD_VARIANT: ${{ env.BUILD_VARIANT }}
           PYTHON_IMAGE_TAG: ${{ env.PYTHON_IMAGE_TAG }}
           IMAGE_TAGS: ${{ env.IMAGE_TAGS }}
           MATRIX_JSON: ${{ env.MATRIX_JSON }}
@@ -379,7 +339,6 @@ jobs:
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_output.sh
 
-          set_github_output 'build_variant' "${BUILD_VARIANT}" non-optional verbose
           set_github_output 'python_image_tag' "${PYTHON_IMAGE_TAG}" non-optional verbose
           set_github_output 'image_tags' "${IMAGE_TAGS}" non-optional verbose
           set_github_output 'matrix' "${MATRIX_JSON}" non-optional verbose
@@ -410,7 +369,6 @@ jobs:
     env:
       IMAGE_TAGS: ${{ needs.prepare.outputs.image_tags }}
       BUILD_PLATFORM: ${{ matrix.platform }}
-      BUILD_VARIANT: ${{ needs.prepare.outputs.build_variant }}
       PYTHON_VERSION: ${{ inputs.python_version }}
       PYTHON_IMAGE_TAG: ${{ needs.prepare.outputs.python_image_tag }}
       POETRY_VERSION: ${{ inputs.poetry_version }}
@@ -633,7 +591,6 @@ jobs:
           build-contexts: ${{ env.BUILD_CONTEXTS }}
           target: python_devbox
           build-args: |
-            BUILD_VARIANT=${{ env.BUILD_VARIANT }}
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
             PYTHON_IMAGE_TAG=${{ env.PYTHON_IMAGE_TAG }}
             POETRY_VERSION=${{ env.POETRY_VERSION }}
