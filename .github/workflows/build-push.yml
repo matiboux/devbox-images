@@ -69,22 +69,35 @@ on:
   workflow_dispatch:
     inputs:
       python_version:
-        description: 'Python version (e.g. 3.13.14, 3.14)'
+        description: 'Python version (e.g. 3.14, 3.13.14)'
         type: string
       python_image_variant:
         description: 'Python image variant (e.g. [empty], slim, alpine)'
         type: string
         required: false
+      node_version:
+        description: 'Node.js version (e.g. 26, 24.18.0)'
+        type: string
+        required: false
       poetry_version:
-        description: 'Poetry version (e.g. 1.8.5, 2.4)'
+        description: 'Poetry version (e.g. 2.4, 1.8.5)'
         type: string
         required: false
       uv_version:
-        description: 'uv version (e.g. 0.10.12, 0.11)'
+        description: 'uv version (e.g. 0.11, 0.10.12)'
+        type: string
+        required: false
+      nvm_version:
+        description: 'nvm version (e.g. 0.40, 0.39.7)'
         type: string
         required: false
       python_tag_level:
         description: 'Python tag level (e.g. global, major, minor, patch)'
+        type: string
+        required: false
+        default: 'patch'
+      node_tag_level:
+        description: 'Node.js tag level (e.g. global, major, minor, patch)'
         type: string
         required: false
         default: 'patch'
@@ -98,6 +111,11 @@ on:
         type: string
         required: false
         default: 'patch'
+      nvm_tag_level:
+        description: 'nvm tag level (e.g. global, major, minor, patch)'
+        type: string
+        required: false
+        default: 'patch'
 
 # Set GITHUB_TOKEN permissions for the workflow
 permissions:
@@ -105,7 +123,7 @@ permissions:
 
 # Set workflow concurrency rules
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.python_version }}-${{ inputs.python_image_variant }}-${{ inputs.poetry_version }}-${{ inputs.uv_version }}
+  group: ${{ github.workflow }}-${{ inputs.python_version }}-${{ inputs.python_image_variant }}-${{ inputs.node_version }}-${{ inputs.poetry_version }}-${{ inputs.uv_version }}-${{ inputs.nvm_version }}
   cancel-in-progress: true
 
 # Set environment variables for the workflow
@@ -141,7 +159,6 @@ jobs:
       PUSH_PLATFORMS: ${{ vars.PUSH_PLATFORMS }}
 
     outputs:
-      python_image_tag: ${{ steps.outputs.outputs.python_image_tag }}
       image_tags: ${{ steps.outputs.outputs.image_tags }}
       matrix: ${{ steps.outputs.outputs.matrix }}
 
@@ -241,6 +258,8 @@ jobs:
           PYTHON_VERSION: ${{ inputs.python_version }}
           POETRY_VERSION: ${{ inputs.poetry_version }}
           UV_VERSION: ${{ inputs.uv_version }}
+          NVM_VERSION: ${{ inputs.nvm_version }}
+          NODE_VERSION: ${{ inputs.node_version }}
         run: |
           # Validate inputs
 
@@ -262,15 +281,29 @@ jobs:
             exit 1
           fi
 
+          if [ -n "${NVM_VERSION}" ] && ! echo "${NVM_VERSION}" | grep -Eq '^[0-9]+(\.[0-9]+){,2}$'; then
+            echo "Error: Invalid nvm_version format: ${NVM_VERSION}" >&2
+            exit 1
+          fi
+
+          if [ -n "${NODE_VERSION}" ] && ! echo "${NODE_VERSION}" | grep -Eq '^[0-9]+(\.[0-9]+){,2}$'; then
+            echo "Error: Invalid node_version format: ${NODE_VERSION}" >&2
+            exit 1
+          fi
+
       - name: Set IMAGE_TAGS
         env:
           PYTHON_VERSION: ${{ inputs.python_version }}
           PYTHON_IMAGE_VARIANT: ${{ inputs.python_image_variant }}
           POETRY_VERSION: ${{ inputs.poetry_version }}
           UV_VERSION: ${{ inputs.uv_version }}
+          NVM_VERSION: ${{ inputs.nvm_version }}
+          NODE_VERSION: ${{ inputs.node_version }}
           PYTHON_TAG_LEVEL: ${{ inputs.python_tag_level }}
           POETRY_TAG_LEVEL: ${{ inputs.poetry_tag_level }}
           UV_TAG_LEVEL: ${{ inputs.uv_tag_level }}
+          NVM_TAG_LEVEL: ${{ inputs.nvm_tag_level }}
+          NODE_TAG_LEVEL: ${{ inputs.node_tag_level }}
         run: |
           # Set IMAGE_TAGS environment variable
 
@@ -282,9 +315,13 @@ jobs:
           export PYTHON_IMAGE_VARIANT="${PYTHON_IMAGE_VARIANT}"
           export POETRY_VERSION="${POETRY_VERSION}"
           export UV_VERSION="${UV_VERSION}"
+          export NVM_VERSION="${NVM_VERSION}"
+          export NODE_VERSION="${NODE_VERSION}"
           export PYTHON_TAG_LEVEL="${PYTHON_TAG_LEVEL}"
           export POETRY_TAG_LEVEL="${POETRY_TAG_LEVEL}"
           export UV_TAG_LEVEL="${UV_TAG_LEVEL}"
+          export NVM_TAG_LEVEL="${NVM_TAG_LEVEL}"
+          export NODE_TAG_LEVEL="${NODE_TAG_LEVEL}"
 
           image_tags_file="$(mktemp)"
           ./scripts/image-tags.sh --compact > "${image_tags_file}"
@@ -330,7 +367,6 @@ jobs:
       - name: Set job outputs
         id: outputs
         env:
-          PYTHON_IMAGE_TAG: ${{ env.PYTHON_IMAGE_TAG }}
           IMAGE_TAGS: ${{ env.IMAGE_TAGS }}
           MATRIX_JSON: ${{ env.MATRIX_JSON }}
         run: |
@@ -339,7 +375,6 @@ jobs:
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_output.sh
 
-          set_github_output 'python_image_tag' "${PYTHON_IMAGE_TAG}" non-optional verbose
           set_github_output 'image_tags' "${IMAGE_TAGS}" non-optional verbose
           set_github_output 'matrix' "${MATRIX_JSON}" non-optional verbose
 
@@ -370,9 +405,10 @@ jobs:
       IMAGE_TAGS: ${{ needs.prepare.outputs.image_tags }}
       BUILD_PLATFORM: ${{ matrix.platform }}
       PYTHON_VERSION: ${{ inputs.python_version }}
-      PYTHON_IMAGE_TAG: ${{ needs.prepare.outputs.python_image_tag }}
       POETRY_VERSION: ${{ inputs.poetry_version }}
       UV_VERSION: ${{ inputs.uv_version }}
+      NVM_VERSION: ${{ inputs.nvm_version }}
+      NODE_VERSION: ${{ inputs.node_version }}
 
     steps:
 
@@ -592,9 +628,11 @@ jobs:
           target: python_devbox
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
-            PYTHON_IMAGE_TAG=${{ env.PYTHON_IMAGE_TAG }}
+            PYTHON_IMAGE_VARIANT=${{ env.PYTHON_IMAGE_VARIANT }}
             POETRY_VERSION=${{ env.POETRY_VERSION }}
             UV_VERSION=${{ env.UV_VERSION }}
+            NVM_VERSION=${{ env.NVM_VERSION }}
+            NODE_VERSION=${{ env.NODE_VERSION }}
           platforms: ${{ matrix.platform }}
           push: true
           cache-from: type=gha
