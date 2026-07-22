@@ -78,13 +78,13 @@ class ImageTagGenerator:
     def generate_tags(self) -> List[str]:
 
         component_options_list = []
-        for comp_name, comp_version, comp_tag_level in self.components:
-            if comp_name == 'python':
+        for index, (comp_name, comp_version, comp_tag_level) in enumerate(self.components):
+            if index == 0:
                 options = self._get_component_options(comp_version, comp_tag_level)
             else:
                 options = self._get_prefixed_options(comp_name, comp_version, comp_tag_level)
             component_options_list.append(options)
-            print(f"{comp_name.capitalize()} component options: {options}", file=sys.stderr)
+            print(f"{comp_name.capitalize() or 'Unlabeled'} component options: {options}", file=sys.stderr)
 
         tags: List[str] = []
         for component_values in product(*component_options_list):
@@ -185,8 +185,9 @@ def main():
 
     args = parse_args()
 
-    components: List[Tuple[str, str, str]] = [
+    components: List[Tuple[str, str] | Tuple[str, str, str]] = [
         ('python', args.python_version, args.python_tag_level),
+        ('', args.python_image_variant),
         ('node', args.node_version, args.node_tag_level),
         ('poetry', args.poetry_version, args.poetry_tag_level),
         ('uv', args.uv_version, args.uv_tag_level),
@@ -195,7 +196,6 @@ def main():
 
     generator = ImageTagGenerator(
         components=components,
-        python_image_variant=args.python_image_variant,
         compact_output=args.compact,
     )
 
