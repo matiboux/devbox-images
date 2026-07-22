@@ -26,22 +26,35 @@ on:
   workflow_call:
     inputs:
       python_version:
-        description: 'Python version (e.g. 3.13.14, 3.14)'
+        description: 'Python version (e.g. 3.14, 3.13.14)'
         type: string
       python_image_variant:
         description: 'Python image variant (e.g. [empty], slim, alpine)'
         type: string
         required: false
+      node_version:
+        description: 'Node.js version (e.g. 26, 24.18.0)'
+        type: string
+        required: false
       poetry_version:
-        description: 'Poetry version (e.g. 1.8.5, 2.4)'
+        description: 'Poetry version (e.g. 2.4, 1.8.5)'
         type: string
         required: false
       uv_version:
-        description: 'uv version (e.g. 0.10.12, 0.11)'
+        description: 'uv version (e.g. 0.11, 0.10.12)'
+        type: string
+        required: false
+      nvm_version:
+        description: 'nvm version (e.g. 0.40, 0.39.7)'
         type: string
         required: false
       python_tag_level:
         description: 'Python tag level (e.g. global, major, minor, patch)'
+        type: string
+        required: false
+        default: 'patch'
+      node_tag_level:
+        description: 'Node.js tag level (e.g. global, major, minor, patch)'
         type: string
         required: false
         default: 'patch'
@@ -52,6 +65,11 @@ on:
         default: 'patch'
       uv_tag_level:
         description: 'uv tag level (e.g. global, major, minor, patch)'
+        type: string
+        required: false
+        default: 'patch'
+      nvm_tag_level:
+        description: 'nvm tag level (e.g. global, major, minor, patch)'
         type: string
         required: false
         default: 'patch'

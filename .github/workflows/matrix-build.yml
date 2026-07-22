@@ -18,15 +18,15 @@ on:
   workflow_dispatch:
     inputs:
       python_version:
-        description: 'Limit build to a specific Python version (e.g. 3.13.14, 3.14, 3).'
+        description: 'Limit build to a specific Python version (e.g. 3, 3.14, 3.13.14).'
         type: string
         required: false
       poetry_version:
-        description: 'Limit build to a specific Poetry version (e.g. 2.3.4, 2.3, 2).'
+        description: 'Limit build to a specific Poetry version (e.g. 2, 2.3, 2.3.4).'
         type: string
         required: false
       uv_version:
-        description: 'Limit build to a specific uv version (e.g. 0.9.5, 0.9).'
+        description: 'Limit build to a specific uv version (e.g. 0.9, 0.9.5).'
         type: string
         required: false
       skip_published_tags:
