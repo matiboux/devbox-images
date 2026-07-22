@@ -9,6 +9,8 @@ import sys
 
 import yaml
 
+from scripts.image_tags import ImageTagsGenerator
+
 
 class BuildMatrix:
 
@@ -93,15 +95,24 @@ class BuildMatrix:
         for versions_combo in itertools.product(*detected_versions.values()):
             packages_version = dict(zip(self.packages, versions_combo))
 
-            for variant in base_variants:
+            for base_variant in base_variants:
 
-                tag_parts = [packages_version[base_package]]
-                if variant:
-                    tag_parts.append(variant)
-                for package in other_packages:
-                    tag_parts.append(f"{package}{packages_version[package]}")
-                image_tag = '-'.join(tag_parts)
+                image_tag_generator = ImageTagsGenerator(
+                    components=[
+                        (base_package, packages_version[base_package]),
+                        ('', base_variant or ''),
+                        *[
+                            (other_package, packages_version[other_package])
+                            for other_package in other_packages
+                        ],
+                    ],
+                )
+                image_tag_generator.generate_tags(only_fully_qualified=True)
+                image_tag = image_tag_generator.image_tags[0] if image_tag_generator.image_tags else None
 
+                if not image_tag:
+                    print(f"Warning: Failed to generate image tag for versions {packages_version}.", file=sys.stderr)
+                    continue
                 if image_tag in published_tags:
                     continue  # Skip already published tags
 
@@ -110,8 +121,8 @@ class BuildMatrix:
                     f"{base_package}_version": packages_version[base_package],
                     f"{base_package}_tag_level": 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor',
                 }
-                if variant is not None:
-                    entry[f"{base_package}_image_variant"] = variant
+                if base_variant is not None:
+                    entry[f"{base_package}_image_variant"] = base_variant
 
                 for package in other_packages:
                     entry[f'{package}_version'] = packages_version[package]
