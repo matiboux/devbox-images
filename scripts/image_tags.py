@@ -50,7 +50,7 @@ class ImageTagsGenerator:
             raw_options = [version, minor, major]
         elif level == 'minor':
             raw_options = [version, minor]
-        elif level == 'patch':
+        else:  # 'patch'
             raw_options = [version]
 
         # De-duplicate while preserving order
@@ -69,14 +69,18 @@ class ImageTagsGenerator:
         options = self._get_component_options(version, tag_level)
         return [f"{prefix}{opt}" for opt in options]
 
-    def generate_tags(self) -> List[str]:
+    def generate_tags(
+        self,
+        only_fully_qualified: bool = False,
+    ) -> List[str]:
 
         component_options_list = []
+        tag_level_override = 'patch' if only_fully_qualified else None
         for index, (comp_name, comp_version, comp_tag_level) in enumerate(self.components):
             if index == 0:
-                options = self._get_component_options(comp_version, comp_tag_level)
+                options = self._get_component_options(comp_version, tag_level_override or comp_tag_level)
             else:
-                options = self._get_prefixed_options(comp_name, comp_version, comp_tag_level)
+                options = self._get_prefixed_options(comp_name, comp_version, tag_level_override or comp_tag_level)
             component_options_list.append(options)
 
         tags: List[str] = []
