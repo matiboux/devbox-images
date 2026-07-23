@@ -105,17 +105,16 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
-      # Execution steps
+      # Preparation steps
 
-      - name: Install deps
-        run: |
-          uv sync --frozen
-
-      - name: Detect Python versions
+      - name: Set PACKAGE_VERSIONS
         env:
           PACKAGE_VERSIONS: ${{ inputs.package_versions }}
         run: |
-          # python detect_versions.py ...package_versions
+          # Set PACKAGE_VERSIONS environment variable
+
+          # Load helper scripts
+          . ./.github/workflows/scripts/set_github_env.sh
 
           if [ -z "${PACKAGE_VERSIONS}" ]; then
             echo 'Error: No package versions provided.'
@@ -123,8 +122,8 @@ jobs:
           fi
 
           # Convert PACKAGE_VERSIONS from a comma-separated list or JSON list
-          # to a newline-separated list for iteration
-          PACKAGE_VERSIONS_LIST="$(
+          # to a newline-separated list of package versions
+          CONVERTED_PACKAGE_VERSIONS="$(
             echo "${PACKAGE_VERSIONS}" \
             | jq -Rnrc '
               input
@@ -135,13 +134,30 @@ jobs:
             '
           )"
 
-          # Detect versions for each package in the list
-          while IFS= read -r package_version; do
-            package_name="$(echo "${package_version}" | cut -d'=' -f1)"
-            package_version="$(echo "${package_version}" | cut -d'=' -f2-)"
+          set_github_env 'PACKAGE_VERSIONS' "${CONVERTED_PACKAGE_VERSIONS}" non-optional non-secret verbose
+
+      # Execution steps
+
+      - name: Install deps
+        run: |
+          uv sync --frozen
+
+      - name: Detect Python versions
+        env:
+          PACKAGE_VERSIONS: ${{ env.PACKAGE_VERSIONS }}
+        run: |
+          # python detect_versions.py ...PACKAGE_VERSIONS
+
+          # Detect versions for each specified package
+          while IFS= read -r package_entry; do
+
+            package_name="$(echo "${package_entry}" | cut -d'=' -f1)"
+            package_version="$(echo "${package_entry}" | cut -d'=' -f2-)"
+
             echo "Detecting versions for package '${package_name}' with version '${package_version}'..."
             uv run python -m scripts.detect_versions "${package_name}" --version "${package_version}"
-          done <<< "${PACKAGE_VERSIONS_LIST}"
+
+          done <<< "${PACKAGE_VERSIONS}"
 
       - name: Fetch already published tags
         if: ${{ inputs.skip_published_tags == 'true' }}
@@ -152,12 +168,21 @@ jobs:
           uv run python -m scripts.fetch_published_tags
 
       - name: Compute build matrix
+        env:
+          PACKAGE_VERSIONS: ${{ env.PACKAGE_VERSIONS }}
         run: |
-          # python build_matrix.py PACKAGES
+          # python build_matrix.py ...PACKAGES
+
+          # List specified packages without versions
+          PACKAGES="$(
+            echo "${PACKAGE_VERSIONS}" \
+            | cut -d'=' -f1 \
+            | tr '\n' ','
+          )"
+
+          # Compute build matrix for specified packages
           rm -f ./dist/build_matrix.yml
-          uv run python -m scripts.build_matrix --append python
-          uv run python -m scripts.build_matrix --append python poetry
-          uv run python -m scripts.build_matrix --append python uv
+          uv run python -m scripts.build_matrix --append ${PACKAGES}
 
       - name: Build matrix from detected versions
         run: |
