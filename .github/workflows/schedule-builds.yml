@@ -1,4 +1,4 @@
-name: Schedule Devbox images build
+name: Schedule Devbox images builds
 
 # GitHub variables:
 # - (inherit from matrix-build.yml)

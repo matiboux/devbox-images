@@ -1,4 +1,4 @@
-name: Build & Push CD task
+name: Build & Push Devbox image
 
 # Expected secrets:
 # - DHCR_TOKEN

@@ -1,4 +1,4 @@
-name: Build & Push CD matrix
+name: Orchestrate Devbox image builds
 
 # GitHub variables:
 # - (inherit from build-push.yml)
