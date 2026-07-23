@@ -98,15 +98,19 @@ class BuildMatrix:
 
             for base_variant in base_variants:
 
+                image_tag_components: List[Tuple[str, str, str, bool]] = [
+                    (base_package, packages_version[base_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', False),
+                    ('', base_variant or '', 'patch', False),
+                    *[
+                        (other_package, packages_version[other_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', False)
+                        for other_package in other_packages
+                    ],
+                ]
                 image_tag_generator = ImageTagGenerator(
                     components=[
-                        (base_package, packages_version[base_package]),
-                        ('', base_variant or ''),
-                        *[
-                            (other_package, packages_version[other_package])
-                            for other_package in other_packages
-                        ],
-                    ],
+                        (comp_name, comp_version, 'patch', comp_unlabeled)
+                        for (comp_name, comp_version, _, comp_unlabeled) in image_tag_components
+                    ]
                 )
                 image_tag_generator.generate_tags(only_fully_qualified=True)
                 image_tag = image_tag_generator.image_tags[0] if image_tag_generator.image_tags else None
@@ -117,19 +121,23 @@ class BuildMatrix:
                 if image_tag in published_tags:
                     continue  # Skip already published tags
 
-                entry = {
+                build_matrix.append({
                     'image_tag': image_tag,
-                    f"{base_package}_version": packages_version[base_package],
-                    f"{base_package}_tag_level": 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor',
-                }
-                if base_variant is not None:
-                    entry[f"{base_package}_image_variant"] = base_variant
-
-                for package in other_packages:
-                    entry[f'{package}_version'] = packages_version[package]
-                    entry[f'{package}_tag_level'] = 'global' if packages_version[package] == latest_versions[package] else 'minor'
-
-                build_matrix.append(entry)
+                    'image_tag_components': (
+                        ','.join([
+                            f"{comp_name}{'?' if comp_unlabeled else ''}={comp_version}:{comp_tag_level}"
+                            for (comp_name, comp_version, comp_tag_level, comp_unlabeled) in image_tag_components
+                        ])
+                    ),
+                    'build_args': json.dumps([
+                        f"{base_package.upper()}_VERSION={packages_version[base_package]}",
+                        *([f"{base_package.upper()}_IMAGE_VARIANT={base_variant}"] if base_variant is not None else []),
+                        *[
+                            f"{other_package.upper()}_VERSION={packages_version[other_package]}"
+                            for other_package in other_packages
+                        ],
+                    ]),
+                })
 
         print(f"Generated {len(build_matrix)} build matrix entries.")
         self.build_matrix = build_matrix
