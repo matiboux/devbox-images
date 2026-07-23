@@ -23,11 +23,21 @@ class BuildMatrix:
         skip_published_tags: bool = True,
         output_path: str = 'dist/build_matrix.yml',
     ):
-        self.packages: List[str] = [ package.strip().lower() for package in packages if package ] if packages else []
         self.versions_path: str = versions_path
         self.published_tags_path: str = published_tags_path
         self.skip_published_tags: bool = skip_published_tags
         self.output_path: str = output_path
+
+        self.packages: List[str] = []
+        self.unlabeled_packages: Set[str] = set()
+        for package in packages:
+            package = package.strip().lower()
+            if not package:
+                continue
+            if package.endswith('?'):
+                package = package[:-1]
+                self.unlabeled_packages.add(package)
+            self.packages.append(package)
 
         if not self.packages:
             raise ValueError('No packages specified for build matrix generation.')
@@ -99,10 +109,10 @@ class BuildMatrix:
             for base_variant in base_variants:
 
                 image_tag_components: List[Tuple[str, str, str, bool]] = [
-                    (base_package, packages_version[base_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', False),
-                    ('', base_variant or '', 'patch', False),
+                    (base_package, packages_version[base_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', base_package in self.unlabeled_packages),
+                    *([(f"{base_package}_image_variant", base_variant, 'patch', True)] if base_variant is not None else []),
                     *[
-                        (other_package, packages_version[other_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', False)
+                        (other_package, packages_version[other_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', other_package in self.unlabeled_packages)
                         for other_package in other_packages
                     ],
                 ]
