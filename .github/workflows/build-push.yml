@@ -547,7 +547,7 @@ jobs:
           file: ${{ env.CONTEXT_DIR }}/${{ env.DOCKERFILE_PATH }}
           context: ${{ env.CONTEXT_DIR }}
           build-contexts: ${{ env.BUILD_CONTEXTS }}
-          target: python_devbox
+          target: devbox
           build-args: ${{ env.BUILD_ARGS }}
           platforms: ${{ matrix.platform }}
           push: true

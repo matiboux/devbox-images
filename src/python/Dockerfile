@@ -32,7 +32,7 @@ FROM python:${PYTHON_VERSION}${PYTHON_IMAGE_VARIANT:+-${PYTHON_IMAGE_VARIANT}} A
 # Devbox Python
 # ----------------
 
-FROM python_upstream AS devbox_python
+FROM python_upstream AS devbox
 
 # Build arguments
 ARG PYTHON_VERSION
