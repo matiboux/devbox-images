@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
+import json
 import sys
 from itertools import product
 from typing import List, Sequence, Tuple
@@ -76,7 +76,7 @@ class ImageTagGenerator:
 
         component_options_list = []
         tag_level_override = 'patch' if only_fully_qualified else None
-        for index, (comp_name, comp_version, comp_tag_level, comp_unlabeled) in enumerate(self.components):
+        for (comp_name, comp_version, comp_tag_level, comp_unlabeled) in self.components:
             if comp_unlabeled:
                 options = self._get_component_options(comp_version, tag_level_override or comp_tag_level)
             else:
@@ -137,8 +137,18 @@ def main():
 
     args = parse_args()
 
+    components_input = None
+    if args.components and len(args.components) <= 1:
+        components_input = str(args.components[0]).strip()
+        try:
+            components_input = json.loads(components_input)
+        except json.JSONDecodeError:
+            components_input = components_input.split(',')
+    if not components_input:
+        components_input = args.components
+
     components: List[Tuple[str, str, str, bool]] = []
-    for comp in args.components:
+    for comp in components_input:
         if '=' not in comp:
             print(f"Invalid component format: {comp}. Expected format: component_name=version[:tag_level]", file=sys.stderr)
             sys.exit(1)
