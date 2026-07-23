@@ -23,7 +23,7 @@ class BuildMatrix:
         skip_published_tags: bool = True,
         output_path: str = 'dist/build_matrix.yml',
     ):
-        self.packages: List[str] = [ package.strip().lower() for package in packages ] if packages else []
+        self.packages: List[str] = [ package.strip().lower() for package in packages if package ] if packages else []
         self.versions_path: str = versions_path
         self.published_tags_path: str = published_tags_path
         self.skip_published_tags: bool = skip_published_tags
