@@ -26,6 +26,10 @@ on:
         description: 'Comma-separated list or JSON list of package versions to build'
         type: string
         required: false
+      base_variants:
+        description: 'Comma-separated list or JSON list of base variants to build (e.g. "", "slim", "alpine")'
+        type: string
+        required: false
       skip_published_tags:
         description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
         type: boolean
@@ -53,6 +57,10 @@ on:
         description: 'Comma-separated list or JSON list of package versions to build'
         type: string
         required: false
+      base_variants:
+        description: 'Comma-separated list or JSON list of base variants to build (e.g. "", "slim", "alpine")'
+        type: string
+        required: false
       skip_published_tags:
         description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
         type: boolean
@@ -65,7 +73,7 @@ permissions:
 
 # Set workflow concurrency rules
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.images_prefix }}-${{ inputs.src_dirname }}-${{ inputs.package_versions }}
+  group: ${{ github.workflow }}-${{ inputs.images_prefix }}-${{ inputs.src_dirname }}-${{ inputs.package_versions }}-${{ inputs.base_variants }}
   cancel-in-progress: true
 
 jobs:
@@ -195,6 +203,7 @@ jobs:
 
       - name: Compute build matrix
         env:
+          BASE_VARIANTS: ${{ inputs.base_variants }}
           PACKAGE_VERSIONS: ${{ env.PACKAGE_VERSIONS }}
         run: |
           # python build_matrix.py ...PACKAGES
@@ -210,7 +219,9 @@ jobs:
 
           # Compute build matrix for specified packages
           rm -f ./dist/build_matrix.yml
-          uv run python -m scripts.build_matrix --append ${PACKAGES}
+          uv run python -m scripts.build_matrix --append \
+            --base-variants "${BASE_VARIANTS}" \
+            ${PACKAGES}
 
       - name: Build matrix from detected versions
         run: |
