@@ -58,15 +58,15 @@ jobs:
           - images_prefix: devbox-python-node
             src_dirname: python
             package_versions: python?,node?,nvm
-            base_variants: '["", "slim", "alpine"]'
+            base_variants: '["", "slim"]'
           - images_prefix: devbox-python-node
             src_dirname: python
             package_versions: python?,node?,nvm,poetry
-            base_variants: '["", "slim", "alpine"]'
+            base_variants: '["", "slim"]'
           - images_prefix: devbox-python-node
             src_dirname: python
             package_versions: python?,node?,nvm,uv
-            base_variants: '["", "slim", "alpine"]'
+            base_variants: '["", "slim"]'
 
     # Set GITHUB_TOKEN permissions for the job
     permissions:
