@@ -69,6 +69,7 @@ jobs:
 
     uses: ./.github/workflows/matrix-build.yml
     with:
+      images_prefix: ${{ matrix.images_prefix }}
       src_dirname: ${{ matrix.src_dirname }}
       package_versions: ${{ matrix.package_versions }}
       skip_published_tags: ${{ inputs.skip_published_tags }}
