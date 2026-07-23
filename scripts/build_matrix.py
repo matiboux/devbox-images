@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple, Set
 import argparse
 import itertools
 import os
+import json
 import sys
 
 import yaml
@@ -22,11 +23,21 @@ class BuildMatrix:
         skip_published_tags: bool = True,
         output_path: str = 'dist/build_matrix.yml',
     ):
-        self.packages: List[str] = [ package.strip().lower() for package in packages ] if packages else []
         self.versions_path: str = versions_path
         self.published_tags_path: str = published_tags_path
         self.skip_published_tags: bool = skip_published_tags
         self.output_path: str = output_path
+
+        self.packages: List[str] = []
+        self.unlabeled_packages: Set[str] = set()
+        for package in packages:
+            package = package.strip().lower()
+            if not package:
+                continue
+            if package.endswith('?'):
+                package = package[:-1]
+                self.unlabeled_packages.add(package)
+            self.packages.append(package)
 
         if not self.packages:
             raise ValueError('No packages specified for build matrix generation.')
@@ -97,15 +108,19 @@ class BuildMatrix:
 
             for base_variant in base_variants:
 
+                image_tag_components: List[Tuple[str, str, str, bool]] = [
+                    (base_package, packages_version[base_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', base_package in self.unlabeled_packages),
+                    *([(f"{base_package}_image_variant", base_variant, 'patch', True)] if base_variant is not None else []),
+                    *[
+                        (other_package, packages_version[other_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', other_package in self.unlabeled_packages)
+                        for other_package in other_packages
+                    ],
+                ]
                 image_tag_generator = ImageTagGenerator(
                     components=[
-                        (base_package, packages_version[base_package]),
-                        ('', base_variant or ''),
-                        *[
-                            (other_package, packages_version[other_package])
-                            for other_package in other_packages
-                        ],
-                    ],
+                        (comp_name, comp_version, 'patch', comp_unlabeled)
+                        for (comp_name, comp_version, _, comp_unlabeled) in image_tag_components
+                    ]
                 )
                 image_tag_generator.generate_tags(only_fully_qualified=True)
                 image_tag = image_tag_generator.image_tags[0] if image_tag_generator.image_tags else None
@@ -116,19 +131,23 @@ class BuildMatrix:
                 if image_tag in published_tags:
                     continue  # Skip already published tags
 
-                entry = {
+                build_matrix.append({
                     'image_tag': image_tag,
-                    f"{base_package}_version": packages_version[base_package],
-                    f"{base_package}_tag_level": 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor',
-                }
-                if base_variant is not None:
-                    entry[f"{base_package}_image_variant"] = base_variant
-
-                for package in other_packages:
-                    entry[f'{package}_version'] = packages_version[package]
-                    entry[f'{package}_tag_level'] = 'global' if packages_version[package] == latest_versions[package] else 'minor'
-
-                build_matrix.append(entry)
+                    'image_tag_components': (
+                        ','.join([
+                            f"{comp_name}{'?' if comp_unlabeled else ''}={comp_version}:{comp_tag_level}"
+                            for (comp_name, comp_version, comp_tag_level, comp_unlabeled) in image_tag_components
+                        ])
+                    ),
+                    'build_args': json.dumps([
+                        f"{base_package.upper()}_VERSION={packages_version[base_package]}",
+                        *([f"{base_package.upper()}_IMAGE_VARIANT={base_variant}"] if base_variant is not None else []),
+                        *[
+                            f"{other_package.upper()}_VERSION={packages_version[other_package]}"
+                            for other_package in other_packages
+                        ],
+                    ]),
+                })
 
         print(f"Generated {len(build_matrix)} build matrix entries.")
         self.build_matrix = build_matrix
@@ -176,8 +195,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         'packages',
-        nargs='*',
-        default=[],
+        nargs='+',
         help='Packages to include in build matrix. If empty, all are included.',
     )
     parser.add_argument(
@@ -205,9 +223,19 @@ def main():
 
     args = parse_args()
 
+    packages_input = None
+    if args.packages and len(args.packages) == 1:
+        packages_input = str(args.packages[0]).strip()
+        try:
+            packages_input = json.loads(packages_input)
+        except json.JSONDecodeError:
+            packages_input = packages_input.split(',')
+    if not packages_input:
+        packages_input = args.packages
+
     try:
         matrix_builder = BuildMatrix(
-            packages=args.packages,
+            packages=packages_input,
             skip_published_tags=args.skip_published_tags,
         )
     except ValueError as e:

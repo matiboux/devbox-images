@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
+import json
 import sys
 from itertools import product
 from typing import List, Sequence, Tuple
@@ -11,17 +11,17 @@ class ImageTagGenerator:
 
     def __init__(
         self,
-        components: Sequence[Tuple[str, str] | Tuple[str, str, str]],
+        components: Sequence[Tuple[str, str] | Tuple[str, str, str] | Tuple[str, str, str, bool]],
     ):
         """
         Initialize the ImageTagGenerator with component versions and tag levels.
-        :param components: List of tuples containing (component_name, version, tag_level)
+        :param components: List of tuples containing (component_name, version, tag_level, unlabeled_flag)
         """
-        self.components: List[Tuple[str, str, str]] = [
+        self.components: List[Tuple[str, str, str, bool]] = [
             (
-                (comp[0], comp[1], self._validate_tag_level(comp[2]))
+                (comp[0], comp[1], self._validate_tag_level(comp[2]), comp[3] if len(comp) >= 4 else False)
                 if len(comp) >= 3 else
-                (comp[0], comp[1], 'patch')
+                (comp[0], comp[1], 'patch', False)
             )
             for comp in components
         ]
@@ -76,8 +76,8 @@ class ImageTagGenerator:
 
         component_options_list = []
         tag_level_override = 'patch' if only_fully_qualified else None
-        for index, (comp_name, comp_version, comp_tag_level) in enumerate(self.components):
-            if index == 0:
+        for (comp_name, comp_version, comp_tag_level, comp_unlabeled) in self.components:
+            if comp_unlabeled:
                 options = self._get_component_options(comp_version, tag_level_override or comp_tag_level)
             else:
                 options = self._get_prefixed_options(comp_name, comp_version, tag_level_override or comp_tag_level)
@@ -87,7 +87,7 @@ class ImageTagGenerator:
         for component_values in product(*component_options_list):
             tag_pieces: List[str] = []
 
-            for i, (comp_name, _, _) in enumerate(self.components):
+            for i, (comp_name, _, _, _) in enumerate(self.components):
                 if component_values[i]:
                     tag_pieces.append(component_values[i])
 
@@ -123,7 +123,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         'components',
         nargs='+',
-        help='List of components in the format: component_name=version[:tag_level]. Example: python=3.14.6:global =slim poetry=20.5.1:minor',
+        help='List of components in the format: component_name[?]=version[:tag_level]. Example: python?=3.14.6:global =slim poetry=20.5.1:minor',
     )
     parser.add_argument(
         '-c', '--compact',
@@ -137,17 +137,31 @@ def main():
 
     args = parse_args()
 
-    components: List[Tuple[str, str] | Tuple[str, str, str]] = []
-    for comp in args.components:
+    components_input = None
+    if args.components and len(args.components) == 1:
+        components_input = str(args.components[0]).strip()
+        try:
+            components_input = json.loads(components_input)
+        except json.JSONDecodeError:
+            components_input = components_input.split(',')
+    if not components_input:
+        components_input = args.components
+
+    components: List[Tuple[str, str, str, bool]] = []
+    for comp in components_input:
         if '=' not in comp:
             print(f"Invalid component format: {comp}. Expected format: component_name=version[:tag_level]", file=sys.stderr)
             sys.exit(1)
         comp_name, version_tag = comp.split('=', 1)
+        comp_unlabeled = False
+        if comp_name.endswith('?'):
+            comp_name = comp_name[:-1]
+            comp_unlabeled = True
         if ':' in version_tag:
             version, tag_level = version_tag.split(':', 1)
-            components.append((comp_name, version, tag_level))
+            components.append((comp_name, version, tag_level, comp_unlabeled))
         else:
-            components.append((comp_name, version_tag))
+            components.append((comp_name, version_tag, 'patch', comp_unlabeled))
 
     generator = ImageTagGenerator(
         components=components,
