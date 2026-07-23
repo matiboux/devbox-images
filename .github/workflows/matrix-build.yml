@@ -172,7 +172,12 @@ jobs:
           # Detect versions for each specified package
           while IFS= read -r package_entry; do
 
-            package_name="$(echo "${package_entry}" | cut -d'=' -f1)"
+            package_name="$(
+              echo "${package_entry}" \
+              | cut -d'=' -f1 \
+              | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/?$//' \
+              | tr '[:upper:]' '[:lower:]'
+            )"
             package_version="$(echo "${package_entry}" | cut -d'=' -f2-)"
 
             echo "Detecting versions for package '${package_name}' with version '${package_version}'..."
@@ -198,6 +203,8 @@ jobs:
           PACKAGES="$(
             echo "${PACKAGE_VERSIONS}" \
             | cut -d'=' -f1 \
+            | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/?$//' \
+            | tr '[:upper:]' '[:lower:]' \
             | tr '\n' ','
           )"
 
