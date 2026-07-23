@@ -25,6 +25,10 @@ on:
   # Run on workflow calls
   workflow_call:
     inputs:
+      images_prefix:
+        description: 'Images prefix (e.g. devbox-python, devbox-python-node)'
+        type: string
+        required: false
       src_dirname:
         description: 'Source directory name (e.g. python, node)'
         type: string
@@ -47,6 +51,10 @@ on:
   # Run on manual triggers
   workflow_dispatch:
     inputs:
+      images_prefix:
+        description: 'Images prefix (e.g. devbox-python, devbox-python-node)'
+        type: string
+        required: false
       src_dirname:
         description: 'Source directory name (e.g. python, node)'
         type: string
@@ -63,7 +71,7 @@ permissions:
 
 # Set workflow concurrency rules
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.src_dirname }}-${{ inputs.image_tag_components }}
+  group: ${{ github.workflow }}-${{ inputs.images_prefix }}-${{ inputs.src_dirname }}-${{ inputs.image_tag_components }}
   cancel-in-progress: true
 
 # Set environment variables for the workflow
@@ -71,7 +79,8 @@ env:
   DHCR_ENABLED: ${{ vars.DHCR_ENABLED == 'true' }}
   GHCR_ENABLED: ${{ vars.GHCR_ENABLED == 'true' }}
   CUSTOM_CR_ENABLED: ${{ vars.CUSTOM_CR_ENABLED == 'true' }}
-  IMAGES_PREFIX: ${{ vars.IMAGES_PREFIX }}
+  # IMAGES_PREFIX: ${{ vars.IMAGES_PREFIX }}
+  IMAGES_PREFIX: ${{ inputs.images_prefix || vars.IMAGES_PREFIX }}
   IMAGES_SUFFIX: ''
   CONTEXT_DIR: .
   DOCKERFILE_PATH: ./src/${{ inputs.src_dirname }}/Dockerfile

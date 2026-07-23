@@ -42,19 +42,25 @@ jobs:
       matrix:
         include:
           # Devbox Python
-          - src_dirname: python
-            package_versions: python
-          - src_dirname: python
-            package_versions: python,poetry
-          - src_dirname: python
-            package_versions: python,uv
+          - images_prefix: devbox-python
+            src_dirname: python
+            package_versions: python?
+          - images_prefix: devbox-python
+            src_dirname: python
+            package_versions: python?,poetry
+          - images_prefix: devbox-python
+            src_dirname: python
+            package_versions: python?,uv
           # Devbox Python + Node
-          - src_dirname: python
-            package_versions: python,node,nvm
-          - src_dirname: python
-            package_versions: python,node,nvm,poetry
-          - src_dirname: python
-            package_versions: python,node,nvm,uv
+          - images_prefix: devbox-python-node
+            src_dirname: python
+            package_versions: python?,node?,nvm
+          - images_prefix: devbox-python-node
+            src_dirname: python
+            package_versions: python?,node?,nvm,poetry
+          - images_prefix: devbox-python-node
+            src_dirname: python
+            package_versions: python?,node?,nvm,uv
 
     # Job dependencies
     needs:

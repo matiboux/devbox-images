@@ -12,6 +12,9 @@ on:
   # Run on workflow calls
   workflow_call:
     inputs:
+      images_prefix:
+        description: 'Images prefix (e.g. devbox-python, devbox-python-node)'
+        type: string
       src_dirname:
         description: 'Source directory name (e.g. python, node)'
         type: string
@@ -36,6 +39,9 @@ on:
   # Run on manual triggers
   workflow_dispatch:
     inputs:
+      images_prefix:
+        description: 'Images prefix (e.g. devbox-python, devbox-python-node)'
+        type: string
       src_dirname:
         description: 'Source directory name (e.g. python, node)'
         type: string
@@ -244,6 +250,7 @@ jobs:
 
     uses: ./.github/workflows/build-push.yml
     with:
+      images_prefix: ${{ inputs.images_prefix }}
       src_dirname: ${{ inputs.src_dirname }}
       image_tag_components: ${{ matrix.image_tag_components }}
       build_args: ${{ matrix.build_args }}
