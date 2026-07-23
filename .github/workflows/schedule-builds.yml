@@ -62,10 +62,6 @@ jobs:
             src_dirname: python
             package_versions: python?,node?,nvm,uv
 
-    # Job dependencies
-    needs:
-      - prepare
-
     # Set GITHUB_TOKEN permissions for the job
     permissions:
       contents: read
