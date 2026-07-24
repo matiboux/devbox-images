@@ -4,6 +4,20 @@ YQ_VERSION_INPUT="${1:-latest}"
 
 # ---
 
+YQ_BINARY_ARCHIVE=''
+YQ_BINARY_FILE=''
+
+cleanup() {
+	if [ -n "${YQ_BINARY_ARCHIVE}" ]; then
+		rm -f "${YQ_BINARY_ARCHIVE}"
+	fi
+	if [ -n "${YQ_BINARY_FILE}" ]; then
+		rm -f "${YQ_BINARY_FILE}"
+	fi
+}
+
+trap 'cleanup' EXIT
+
 # Detect CPU platform
 ARCH_INPUT="$(uname -m)"
 case "${ARCH_INPUT}" in
@@ -96,10 +110,6 @@ if [ -z "${YQ_VERSION}" ]; then
 	exit 1
 fi
 
-# wget https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_${PLATFORM}.tar.gz -O - |\
-#   tar xz && sudo mv yq_${PLATFORM} /usr/local/bin/yq
-
-
 YQ_BINARY_ARCHIVE="$(mktemp)"
 curl -sSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/install.sh" \
     -o "${YQ_BINARY_ARCHIVE}"
@@ -120,8 +130,5 @@ if [ $? -ne 0 ]; then
     echo "Failed to install yq binary in /usr/local/bin." >&2
     exit 1
 fi
-
-rm -f "${YQ_BINARY_ARCHIVE}"
-rm -f "${YQ_BINARY_FILE}"
 
 echo "Installed yq version ${YQ_VERSION} to /usr/local/bin/yq."

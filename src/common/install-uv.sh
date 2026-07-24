@@ -6,13 +6,20 @@ UV_VERSION_INPUT=${1:-latest}
 
 UV_INSTALLER_FILE="$(mktemp)"
 
+cleanup() {
+    if [ -n "${UV_INSTALLER_FILE}" ]; then
+        rm -f "${UV_INSTALLER_FILE}"
+    fi
+}
+
+trap 'cleanup' EXIT
+
 install_uv_and_exit() {
     sh "${UV_INSTALLER_FILE}"
     EXIT_CODE=$?
     if [ "${EXIT_CODE}" -ne 0 ]; then
         echo "Failed to install uv." >&2
     fi
-    rm -f "${UV_INSTALLER_FILE}"
     exit ${EXIT_CODE}
 }
 
