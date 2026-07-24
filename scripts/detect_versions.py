@@ -484,8 +484,6 @@ class DetectVersions:
             github_repo, version_prefix = known_repos[self.package_name]
 
         url = f'https://api.github.com/repos/{github_repo}/git/matching-refs/tags/{version_prefix}'
-        print(url)
-
         data = self._fetch_json(url)
         if not data or not isinstance(data, list):
             print(
