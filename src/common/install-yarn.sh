@@ -24,6 +24,7 @@ EOF
 
 get_yarn_version() {
 	local version="$1"
+	local github_repo='yarnpkg/berry'
 	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 	if [ -n "${version_full}" ]; then
 		echo "${version_full}"
@@ -32,7 +33,7 @@ get_yarn_version() {
 	local http_code
 	local response
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
-		response=$(curl -sSL -w "\n%{http_code}" 'https://api.github.com/repos/yarnpkg/berry/releases/latest')
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest")
 		if [ $? -ne 0 ]; then
 			echo 'Failed to connect to GitHub API.' >&2
 			return 1
@@ -57,7 +58,7 @@ get_yarn_version() {
 			| sed 's/^v//'
 		)
 	else
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/yarnpkg/berry/git/matching-refs/tags/v${version}") || {
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/v${version}") || {
 			echo 'Failed to connect to GitHub API.' >&2
 			return 1
 		}

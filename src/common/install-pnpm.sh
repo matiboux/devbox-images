@@ -16,6 +16,7 @@ trap 'cleanup' EXIT
 
 get_pnpm_version() {
 	local version="$1"
+	local github_repo='pnpm/pnpm'
 	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 	if [ -n "${version_full}" ]; then
 		echo "${version_full}"
@@ -24,38 +25,64 @@ get_pnpm_version() {
 	local http_code
 	local response
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
-		response=$(curl -sSL -w "\n%{http_code}" 'https://api.github.com/repos/pnpm/pnpm/releases/latest')
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest")
+		if [ $? -ne 0 ]; then
+			echo 'Failed to connect to GitHub API.' >&2
+			return 1
+		fi
 		http_code=$(echo "${response}" | tail -n1)
 		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
-			echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+			else
+				echo "GitHub API error (HTTP ${http_code})." >&2
+			fi
 			return 1
 		fi
 		if [ -z "${response}" ]; then
 			echo 'Empty response from GitHub API.' >&2
 			return 1
 		fi
-		echo "${response}" \
-			| sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p' \
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"tag_name"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
 			| sed 's/^v//'
+		)
 	else
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/pnpm/pnpm/git/matching-refs/tags/v${version}")
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/v${version}") || {
+			echo 'Failed to connect to GitHub API.' >&2
+			return 1
+		}
 		http_code=$(echo "${response}" | tail -n1)
 		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
-			echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+			elif [ "${http_code}" = '404' ]; then
+				echo "Version '${version}' not found in pnpm repository." >&2
+			else
+				echo "GitHub API error (HTTP ${http_code})." >&2
+			fi
 			return 1
 		fi
 		if [ -z "${response}" ]; then
-			echo 'Empty response from GitHub API.' >&2
+			echo "No matching version found for '${version}'." >&2
 			return 1
 		fi
-		echo "${response}" \
-			| sed -n 's/.*"ref": "\([^"]*\)".*/\1/p' \
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"ref"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
 			| sed 's|refs/tags/v||' \
 			| sort -V \
 			| tail -n1
+		)
 	fi
+	if [ -z "${version_full}" ]; then
+		echo 'Failed to parse version from GitHub API response.' >&2
+		return 1
+	fi
+	echo "${version_full}"
 }
 
 PNPM_VERSION="$(get_pnpm_version "${PNPM_VERSION_INPUT}")"

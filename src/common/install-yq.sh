@@ -70,7 +70,8 @@ esac
 
 get_yq_version() {
 	local version="$1"
-	local version_full="$(echo "${YQ_VERSION_INPUT}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+	local github_repo='mikefarah/yq'
+	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 	if [ -n "${version_full}" ]; then
 		echo "${version_full}"
 		return 0
@@ -78,30 +79,64 @@ get_yq_version() {
 	local http_code
 	local response
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/mikefarah/yq/releases/latest")
-		http_code=$(echo "${response}" | tail -n1)
-		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" = "403" ] || [ "${http_code}" = "429" ]; then
-			echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest")
+		if [ $? -ne 0 ]; then
+			echo 'Failed to connect to GitHub API.' >&2
 			return 1
 		fi
-		echo "${response}" \
-			| sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p' \
+		http_code=$(echo "${response}" | tail -n1)
+		response=$(echo "${response}" | sed '$d')
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+			else
+				echo "GitHub API error (HTTP ${http_code})." >&2
+			fi
+			return 1
+		fi
+		if [ -z "${response}" ]; then
+			echo 'Empty response from GitHub API.' >&2
+			return 1
+		fi
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"tag_name"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
 			| sed 's/^v//'
+		)
 	else
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/mikefarah/yq/git/matching-refs/tags/v${version}")
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/v${version}") || {
+			echo 'Failed to connect to GitHub API.' >&2
+			return 1
+		}
 		http_code=$(echo "${response}" | tail -n1)
 		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" = "403" ] || [ "${http_code}" = "429" ]; then
-			echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+			elif [ "${http_code}" = '404' ]; then
+				echo "Version '${version}' not found in yq repository." >&2
+			else
+				echo "GitHub API error (HTTP ${http_code})." >&2
+			fi
 			return 1
 		fi
-		echo "${response}" \
-			| sed -n 's/.*"ref": "\([^"]*\)".*/\1/p' \
+		if [ -z "${response}" ]; then
+			echo "No matching version found for '${version}'." >&2
+			return 1
+		fi
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"ref"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
 			| sed 's|refs/tags/v||' \
 			| sort -V \
 			| tail -n1
+		)
 	fi
+	if [ -z "${version_full}" ]; then
+		echo 'Failed to parse version from GitHub API response.' >&2
+		return 1
+	fi
+	echo "${version_full}"
 }
 
 YQ_VERSION="$(get_yq_version "${YQ_VERSION_INPUT}")"
