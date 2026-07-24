@@ -290,7 +290,8 @@ jobs:
             uv run python -m scripts.build_matrix --append \
               --common-metadata "${common_metadata}" \
               --base-variants "${base_variants}" \
-              "${packages}"
+              "${packages}" \
+              || true
 
           done <<< "$(jq -c '.[]' <<< "${IMAGES_LIST}")"
 
