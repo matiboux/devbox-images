@@ -1,6 +1,24 @@
 #!/bin/sh
+set -e
 
 YARN_VERSION_INPUT="${1:-latest}"
+
+# ---
+
+# Check for required dependencies
+while read -r command_dep; do
+	if ! command -v "${command_dep}" > /dev/null 2>&1; then
+		echo "Error: Required command '${command_dep}' not found. Please install it first." >&2
+		exit 1
+	fi
+done <<EOF
+corepack
+curl
+grep
+sed
+sort
+tail
+EOF
 
 # ---
 
@@ -15,49 +33,76 @@ get_yarn_version() {
 	local response
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
 		response=$(curl -sSL -w "\n%{http_code}" 'https://api.github.com/repos/yarnpkg/berry/releases/latest')
+		if [ $? -ne 0 ]; then
+			echo 'Failed to connect to GitHub API.' >&2
+			return 1
+		fi
 		http_code=$(echo "${response}" | tail -n1)
 		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
-			echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+			else
+				echo "GitHub API error (HTTP ${http_code})." >&2
+			fi
 			return 1
 		fi
 		if [ -z "${response}" ]; then
 			echo 'Empty response from GitHub API.' >&2
 			return 1
 		fi
-		echo "${response}" \
-			| sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p' \
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"tag_name"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
 			| sed 's/^v//'
+		)
 	else
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/yarnpkg/berry/git/matching-refs/tags/v${version}")
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/yarnpkg/berry/git/matching-refs/tags/v${version}") || {
+			echo 'Failed to connect to GitHub API.' >&2
+			return 1
+		}
 		http_code=$(echo "${response}" | tail -n1)
 		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
-			echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitHub API rate limit exceeded. Please try again later or use a personal access token." >&2
+			elif [ "${http_code}" = '404' ]; then
+				echo "Version '${version}' not found in Yarn repository." >&2
+			else
+				echo "GitHub API error (HTTP ${http_code})." >&2
+			fi
 			return 1
 		fi
 		if [ -z "${response}" ]; then
-			echo 'Empty response from GitHub API.' >&2
+			echo "No matching version found for '${version}'." >&2
 			return 1
 		fi
-		echo "${response}" \
-			| sed -n 's/.*"ref": "\([^"]*\)".*/\1/p' \
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"ref"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
 			| sed 's|refs/tags/v||' \
 			| sort -V \
 			| tail -n1
+		)
 	fi
+	if [ -z "${version_full}" ]; then
+		echo 'Failed to parse version from GitHub API response.' >&2
+		return 1
+	fi
+	echo "${version_full}"
 }
 
-YARN_VERSION="$(get_yarn_version "${YARN_VERSION_INPUT}")"
+YARN_VERSION="$(get_yarn_version "${YARN_VERSION_INPUT}")" || exit 1
+
 if [ -z "${YARN_VERSION}" ]; then
-	echo "Failed to find a valid yarn version for '${YARN_VERSION_INPUT}'." >&2
+	echo "Failed to find a valid Yarn version for '${YARN_VERSION_INPUT}'." >&2
 	exit 1
 fi
 
-corepack install -g "yarn@${YARN_VERSION}"
-if [ $? -ne 0 ]; then
-	echo "Failed to install yarn version ${YARN_VERSION}." >&2
+echo "Installing yarn version ${YARN_VERSION}..."
+corepack install -g "yarn@${YARN_VERSION}" || {
+	echo "Failed to install Yarn version ${YARN_VERSION}." >&2
 	exit 1
-fi
+}
 
-echo "Installed yarn version ${YARN_VERSION}."
+echo "Successfully installed Yarn version ${YARN_VERSION}."
