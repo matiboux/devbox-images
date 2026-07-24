@@ -468,72 +468,61 @@ class DetectVersions:
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         grouped_versions = {}
 
-        github_repo = package_constraints.get('github_repo')
+        github_repo, version_prefix = package_constraints.get('github_repo'), 'v'
         if not github_repo:
             known_repos = {
-                'nvm': 'nvm-sh/nvm',
-                'yarn': 'yarnpkg/berry',
-                'pnpm': 'pnpm/pnpm',
+                'nvm': ('nvm-sh/nvm', 'v'),
+                'yarn': ('yarnpkg/berry', '@yarnpkg/cli/'),
+                'pnpm': ('pnpm/pnpm', 'v'),
             }
-            github_repo = known_repos.get(self.package_name)
-            if not github_repo:
+            if self.package_name not in known_repos:
                 print(f"Warning: No 'github_repo' specified in constraints for {self.package_name}", file=sys.stderr)
                 return past_detected_versions
+            github_repo, version_prefix = known_repos[self.package_name]
 
-        url = f'https://api.github.com/repos/{github_repo}/tags'
-        page = 1
+        url = f'https://api.github.com/repos/{github_repo}/git/matching-refs/tags/{version_prefix}'
+        print(url)
 
-        while True:
-            page_url = f"{url}?per_page=100&page={page}"
-            data = self._fetch_json(page_url)
+        data = self._fetch_json(url)
+        if not data or not isinstance(data, list):
+            print(
+                f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',
+                file=sys.stderr,
+            )
+            return past_detected_versions
 
-            if not data or not isinstance(data, list):
-                if page == 1:
-                    print(
-                        f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',
-                        file=sys.stderr,
-                    )
-                break
-
-            found_version = False
-            for tag in data:
-                try:
-                    tag_name = tag.get('name', '').lstrip('v')
-                    if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
+        for tag in data:
+            try:
+                tag_name = tag.get('ref', '').lstrip(f"refs/tags/{version_prefix}")
+                if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
+                    continue
+                version_tuple = self._get_version_tuple(tag_name)
+                version_major = f"{version_tuple[0]}"
+                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
+                version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
+                if version_filter_tuple:
+                    if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
-                    version_tuple = self._get_version_tuple(tag_name)
-                    version_major = f"{version_tuple[0]}"
-                    version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
-                    version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
-                    if version_filter_tuple:
-                        if not self._version_matches_filter(version_tuple, version_filter_tuple):
-                            continue
-                        if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
-                            continue
-                    if ((
-                        version_tuple < min_version_tuple and
-                        version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
-                    ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
+                    if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
                         continue
-                    found_version = True
-                    version_key = self._get_version_key(version_tuple)
-                    if version_key in grouped_versions:
-                        existing_full = grouped_versions[version_key]
-                        existing_tuple = self._get_version_tuple(existing_full)
-                        if version_tuple > existing_tuple:
-                            grouped_versions[version_key] = version_full
-                    else:
+                if ((
+                    version_tuple < min_version_tuple and
+                    version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
+                ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
+                    continue
+                version_key = self._get_version_key(version_tuple)
+                if version_key in grouped_versions:
+                    existing_full = grouped_versions[version_key]
+                    existing_tuple = self._get_version_tuple(existing_full)
+                    if version_tuple > existing_tuple:
                         grouped_versions[version_key] = version_full
-                    # Stop after first version found if constraints are incomplete
-                    if constraints_incomplete:
-                        break
-                except (ValueError, IndexError):
-                    pass
-            # Break if no versions were found on this page
-            # Stop after first page if constraints are incomplete
-            if not found_version or constraints_incomplete:
-                break
-            page += 1
+                else:
+                    grouped_versions[version_key] = version_full
+                # Stop after first version found if constraints are incomplete
+                if constraints_incomplete:
+                    break
+            except (ValueError, IndexError):
+                pass
 
         # Fallback to past detected versions if no versions were found
         if not grouped_versions and past_detected_versions:
