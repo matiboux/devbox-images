@@ -39,8 +39,8 @@ class DetectVersions:
         self._detectors = {
             'python': self._detect_docker_image,
             'node': self._detect_node_versions,
-            'poetry': self._detect_pip_package,
-            'uv': self._detect_pip_package,
+            'poetry': self._detect_github_repo,
+            'uv': self._detect_github_repo,
             'nvm': self._detect_github_repo,
             'yarn': self._detect_github_repo,
             'pnpm': self._detect_github_repo,
@@ -471,6 +471,8 @@ class DetectVersions:
         github_repo, version_prefix = package_constraints.get('github_repo'), 'v'
         if not github_repo:
             known_repos = {
+                'poetry': ('python-poetry/poetry', ''),
+                'uv': ('astral-sh/uv', ''),
                 'nvm': ('nvm-sh/nvm', 'v'),
                 'yarn': ('yarnpkg/berry', '@yarnpkg/cli/'),
                 'pnpm': ('pnpm/pnpm', 'v'),
