@@ -34,8 +34,8 @@ if [ -z "${PYTHON_VERSION}" ]; then
     exit 1
 fi
 
-SOURCE_DIR="$(dirname "$0")"
-PROJECT_DIR="$(dirname "$(dirname "$(dirname "$0")")")"
+SOURCE_DIR="$(dirname "$(realpath "$0")")"
+PROJECT_DIR="$(dirname "$(dirname "${SOURCE_DIR}")")"
 
 BUILD_DOCKERFILE="${SOURCE_DIR}/Dockerfile"
 if [ ! -f "${BUILD_DOCKERFILE}" ]; then
@@ -49,19 +49,12 @@ PYTHON_IMAGE_TAG="${PYTHON_VERSION}${PYTHON_VARIANT:+-${PYTHON_VARIANT}}"
 
 # Image tags for the targetted Docker build
 IMAGE_TAGS="$(
-    "${PYTHON_COMMAND}" "${PROJECT_DIR}/scripts/image-tags.py" \
-        --python-version "${PYTHON_VERSION}" \
-        --python-variant "${PYTHON_VARIANT}" \
-        --poetry-version "${POETRY_VERSION}" \
-        --uv-version "${UV_VERSION}" \
-        --nvm-version "${NVM_VERSION}" \
-        --node-version "${NODE_VERSION}" \
-        --python-tag-level "${PYTHON_TAG_LEVEL}" \
-        --poetry-tag-level "${POETRY_TAG_LEVEL}" \
-        --uv-tag-level "${UV_TAG_LEVEL}" \
-        --nvm-tag-level "${NVM_TAG_LEVEL}" \
-        --node-tag-level "${NODE_TAG_LEVEL}" \
-        2> /dev/null
+    "${PYTHON_COMMAND}" "${PROJECT_DIR}/scripts/image_tag.py" \
+        python="${PYTHON_IMAGE_TAG}":"${PYTHON_TAG_LEVEL}" \
+        poetry="${POETRY_VERSION}":"${POETRY_TAG_LEVEL}" \
+        uv="${UV_VERSION}":"${UV_TAG_LEVEL}" \
+        nvm="${NVM_VERSION}":"${NVM_TAG_LEVEL}" \
+        node="${NODE_VERSION}":"${NODE_TAG_LEVEL}"
 )"
 
 IMAGE_TAG_FIRST="$(echo "${IMAGE_TAGS}" | head -n 1)"
@@ -115,4 +108,4 @@ else
     exit 1
 fi
 
-echo "Image built successfully: ${IMAGE_TAG_FIRST}"
+echo "Image built successfully: ${REGISTRY_NAMESPACE}/${REGISTRY_REPOSITORY}:${IMAGE_TAG_FIRST}"
