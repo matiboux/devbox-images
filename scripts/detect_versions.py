@@ -42,6 +42,8 @@ class DetectVersions:
             'poetry': self._detect_pip_package,
             'uv': self._detect_pip_package,
             'nvm': self._detect_github_repo,
+            'yarn': self._detect_github_repo,
+            'pnpm': self._detect_github_repo,
         }
 
         if self.package_name not in self._detectors:
@@ -62,6 +64,8 @@ class DetectVersions:
             'uv': 'minor',
             'node': 'major',
             'nvm': 'minor',
+            'yarn': 'major',
+            'pnpm': 'major',
         }
         return defaults.get(self.package_name, 'minor')
 
@@ -468,6 +472,8 @@ class DetectVersions:
         if not github_repo:
             known_repos = {
                 'nvm': 'nvm-sh/nvm',
+                'yarn': 'yarnpkg/berry',
+                'pnpm': 'pnpm/pnpm',
             }
             github_repo = known_repos.get(self.package_name)
             if not github_repo:
@@ -582,7 +588,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         'package_name',
         help=(
-            'Package name (\'python\', \'poetry\', \'uv\', or \'nvm\'). '
+            'Package name (\'python\', \'node\', \'poetry\', \'uv\', \'nvm\', \'yarn\', or \'pnpm\'). '
             'Can also be specified via --package option.'
         ),
     )
