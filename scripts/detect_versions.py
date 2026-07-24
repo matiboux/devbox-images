@@ -61,7 +61,7 @@ class DetectVersions:
             'poetry': 'minor',
             'uv': 'minor',
             'node': 'major',
-            'nvm': 'major',
+            'nvm': 'minor',
         }
         return defaults.get(self.package_name, 'minor')
 
