@@ -39,8 +39,8 @@ class DetectVersions:
         self._detectors = {
             'python': self._detect_docker_image,
             'node': self._detect_node_versions,
-            'poetry': self._detect_pip_package,
-            'uv': self._detect_pip_package,
+            'poetry': self._detect_github_repo,
+            'uv': self._detect_github_repo,
             'nvm': self._detect_github_repo,
             'yarn': self._detect_github_repo,
             'pnpm': self._detect_github_repo,
@@ -468,9 +468,12 @@ class DetectVersions:
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         grouped_versions = {}
 
-        github_repo, version_prefix = package_constraints.get('github_repo'), 'v'
+        github_repo = package_constraints.get('github_repo')
+        version_prefix = package_constraints.get('version_prefix', 'v')
         if not github_repo:
             known_repos = {
+                'poetry': ('python-poetry/poetry', ''),
+                'uv': ('astral-sh/uv', ''),
                 'nvm': ('nvm-sh/nvm', 'v'),
                 'yarn': ('yarnpkg/berry', '@yarnpkg/cli/'),
                 'pnpm': ('pnpm/pnpm', 'v'),
@@ -481,8 +484,6 @@ class DetectVersions:
             github_repo, version_prefix = known_repos[self.package_name]
 
         url = f'https://api.github.com/repos/{github_repo}/git/matching-refs/tags/{version_prefix}'
-        print(url)
-
         data = self._fetch_json(url)
         if not data or not isinstance(data, list):
             print(
