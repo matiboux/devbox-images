@@ -39,3 +39,19 @@ nvm:
   extra_versions: []
   # Specific nvm versions to skip
   skip_versions: []
+
+yarn:
+  # Minimum yarn version to support
+  min_version: "4"
+  # Additional legacy yarn versions to include
+  extra_versions: []
+  # Specific yarn versions to skip
+  skip_versions: []
+
+pnpm:
+  # Minimum pnpm version to support
+  min_version: "10"
+  # Additional legacy pnpm versions to include
+  extra_versions: []
+  # Specific pnpm versions to skip
+  skip_versions: []
