@@ -74,7 +74,7 @@ if [ "${SUDO_USER}" = 'true' ]; then
 
 		if ! getent group sudo > /dev/null 2>&1; then
 			echo "Group 'sudo' does not exist" >&2
-			return 1
+			exit 1
 		fi
 
 		if command -v usermod > /dev/null 2>&1; then
@@ -83,14 +83,14 @@ if [ "${SUDO_USER}" = 'true' ]; then
 			adduser "${USERNAME}" sudo
 		else
 			echo "No suitable command found to add user to sudo group" >&2
-			return 1
+			exit 1
 		fi
 
 	elif [ "${SUDO_COMMAND_NAME}" = 'doas' ]; then
 
 		if ! getent group wheel > /dev/null 2>&1; then
 			echo "Group 'wheel' does not exist" >&2
-			return 1
+			exit 1
 		fi
 
 		if command -v usermod > /dev/null 2>&1; then
@@ -99,7 +99,7 @@ if [ "${SUDO_USER}" = 'true' ]; then
 			adduser "${USERNAME}" wheel
 		else
 			echo "No suitable command found to add user to wheel group" >&2
-			return 1
+			exit 1
 		fi
 
 	else
