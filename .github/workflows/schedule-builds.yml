@@ -142,7 +142,7 @@ jobs:
           # Extract unique package names from the matrix JSON, ignoring unlabeled flags ('?')
           PACKAGES="$(
             jq -rc '
-              .include
+              .
               | map(.package_versions // "")
               | map(split(","))
               | add
@@ -166,7 +166,7 @@ jobs:
           # Extract unique image prefixes from the matrix JSON
           IMAGES_PREFIXES="$(
             jq -rc '
-              .include
+              .
               | map(.images_prefix // "")
               | unique
               | .[]
@@ -259,7 +259,7 @@ jobs:
               --base-variants "${base_variants}" \
               "${packages}"
 
-          done <<< "$(jq -c '.include[]' <<< "${IMAGES_LIST}")"
+          done <<< "$(jq -c '.[]' <<< "${IMAGES_LIST}")"
 
       - name: Randomly sample build matrix subset
         run: |
