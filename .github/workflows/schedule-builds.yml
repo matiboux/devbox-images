@@ -54,11 +54,11 @@ env:
       base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
-      package_versions: python?,node?,nvm,poetry
+      package_versions: python?,node?,poetry,nvm
       base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
-      package_versions: python?,node?,nvm,uv
+      package_versions: python?,node?,uv,nvm
       base_variants: '["", "slim"]'
 
 jobs:
