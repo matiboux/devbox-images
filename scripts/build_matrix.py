@@ -34,13 +34,20 @@ class BuildMatrix:
 
         self.packages: List[str] = []
         self.unlabeled_packages: Set[str] = set()
+        self.ghost_packages: Set[str] = set()
         for package in packages:
             package = package.strip().lower()
             if not package:
                 continue
-            if package.endswith('?'):
-                package = package[:-1]
-                self.unlabeled_packages.add(package)
+            while True:
+                if package.endswith('?'):
+                    package = package[:-1]
+                    self.unlabeled_packages.add(package)
+                elif package.endswith('+'):
+                    package = package[:-1]
+                    self.ghost_packages.add(package)
+                else:
+                    break
             self.packages.append(package)
 
         if not self.packages:
@@ -65,6 +72,19 @@ class BuildMatrix:
             int(parts[1]) if len(parts) > 1 else 0,
             int(parts[2]) if len(parts) > 2 else 0
         )
+
+    def _get_component_tag_level(self, packages_version: Dict[str, str], latest_versions: Dict[str, str], package: str) -> str:
+        package_version = packages_version.get(package)
+        if package_version and latest_versions.get(package) == package_version:
+            return 'patch'
+        return 'minor'
+
+    def _get_component_unlabeled_flag(self, package: str) -> str | None:
+        if package in self.unlabeled_packages:
+            return 'always'
+        if package in self.ghost_packages:
+            return 'global'
+        return None
 
     def generate_build_matrix(
         self,
@@ -114,11 +134,24 @@ class BuildMatrix:
 
             for base_variant in selected_base_variants:
 
-                image_tag_components: List[Tuple[str, str, str, bool]] = [
-                    (base_package, packages_version[base_package], 'global' if packages_version[base_package] == latest_versions[base_package] else 'minor', base_package in self.unlabeled_packages),
-                    *([(f"{base_package}_variant", base_variant, 'patch', True)] if base_variant is not None else []),
+                image_tag_components: List[Tuple[str, str, str, str | None]] = [
+                    (
+                        base_package,
+                        packages_version[base_package],
+                        self._get_component_tag_level(packages_version, latest_versions, base_package),
+                        self._get_component_unlabeled_flag(base_package),
+                    ),
+                    *(
+                        [(f"{base_package}_variant", base_variant, 'patch', None)]
+                        if base_variant is not None else []
+                    ),
                     *[
-                        (other_package, packages_version[other_package], 'global' if packages_version[other_package] == latest_versions[other_package] else 'minor', other_package in self.unlabeled_packages)
+                        (
+                            other_package,
+                            packages_version[other_package],
+                            self._get_component_tag_level(packages_version, latest_versions, other_package),
+                            self._get_component_unlabeled_flag(other_package),
+                        )
                         for other_package in other_packages
                     ],
                 ]

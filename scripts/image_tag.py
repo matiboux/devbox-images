@@ -11,17 +11,17 @@ class ImageTagGenerator:
 
     def __init__(
         self,
-        components: Sequence[Tuple[str, str] | Tuple[str, str, str] | Tuple[str, str, str, bool]],
+        components: Sequence[Tuple[str, str] | Tuple[str, str, str] | Tuple[str, str, str, str | None]],
     ):
         """
         Initialize the ImageTagGenerator with component versions and tag levels.
         :param components: List of tuples containing (component_name, version, tag_level, unlabeled_flag)
         """
-        self.components: List[Tuple[str, str, str, bool]] = [
+        self.components: List[Tuple[str, str, str, str | None]] = [
             (
-                (comp[0], comp[1], self._validate_tag_level(comp[2]), comp[3] if len(comp) >= 4 else False)
+                (comp[0], comp[1], self._validate_tag_level(comp[2]), comp[3] if len(comp) >= 4 else None)
                 if len(comp) >= 3 else
-                (comp[0], comp[1], 'patch', False)
+                (comp[0], comp[1], 'patch', None)
             )
             for comp in components
         ]
@@ -34,7 +34,7 @@ class ImageTagGenerator:
             return level
         return 'patch'
 
-    def _get_component_options(self, version: str, level: str) -> List[str]:
+    def _get_component_options(self, package: str, version: str, level: str, unlabeled: str | None = None) -> List[str]:
 
         if not version:
             return ['']
@@ -43,15 +43,18 @@ class ImageTagGenerator:
         major = version_parts[0]
         minor = f"{version_parts[0]}.{version_parts[1]}" if len(version_parts) >= 2 else version
 
+        version_prefix = '' if unlabeled == 'always' else package
+
         raw_options: List[str] = []
         if level == 'global':
-            raw_options = [version, minor, major, '']
+            global_tag = '' if unlabeled in ('always', 'global') else package
+            raw_options = [f"{version_prefix}{version}", f"{version_prefix}{minor}", f"{version_prefix}{major}", global_tag]
         elif level == 'major':
-            raw_options = [version, minor, major]
+            raw_options = [f"{version_prefix}{version}", f"{version_prefix}{minor}", f"{version_prefix}{major}"]
         elif level == 'minor':
-            raw_options = [version, minor]
+            raw_options = [f"{version_prefix}{version}", f"{version_prefix}{minor}"]
         else:  # 'patch'
-            raw_options = [version]
+            raw_options = [f"{version_prefix}{version}"]
 
         # De-duplicate while preserving order
         options: List[str] = []
@@ -61,14 +64,6 @@ class ImageTagGenerator:
 
         return options
 
-    def _get_prefixed_options(self, prefix: str, version: str, tag_level: str) -> List[str]:
-
-        if not version:
-            return ['']
-
-        options = self._get_component_options(version, tag_level)
-        return [f"{prefix}{opt}" for opt in options]
-
     def generate_tags(
         self,
         only_fully_qualified: bool = False,
@@ -77,10 +72,7 @@ class ImageTagGenerator:
         component_options_list = []
         tag_level_override = 'patch' if only_fully_qualified else None
         for (comp_name, comp_version, comp_tag_level, comp_unlabeled) in self.components:
-            if comp_unlabeled:
-                options = self._get_component_options(comp_version, tag_level_override or comp_tag_level)
-            else:
-                options = self._get_prefixed_options(comp_name, comp_version, tag_level_override or comp_tag_level)
+            options = self._get_component_options(comp_name, comp_version, tag_level_override or comp_tag_level, comp_unlabeled)
             component_options_list.append(options)
 
         tags: List[str] = []
@@ -147,16 +139,22 @@ def main():
     if not components_input:
         components_input = args.components
 
-    components: List[Tuple[str, str, str, bool]] = []
+    components: List[Tuple[str, str, str, str | None]] = []
     for comp in components_input:
         if '=' not in comp:
             print(f"Invalid component format: {comp}. Expected format: component_name=version[:tag_level]", file=sys.stderr)
             sys.exit(1)
         comp_name, version_tag = comp.split('=', 1)
-        comp_unlabeled = False
-        if comp_name.endswith('?'):
-            comp_name = comp_name[:-1]
-            comp_unlabeled = True
+        comp_unlabeled: str | None = None
+        while True:
+            if comp_name.endswith('?'):
+                comp_name = comp_name[:-1]
+                comp_unlabeled = 'always'
+            elif comp_name.endswith('+'):
+                comp_name = comp_name[:-1]
+                comp_unlabeled = 'global'
+            else:
+                break
         if ':' in version_tag:
             version, tag_level = version_tag.split(':', 1)
             components.append((comp_name, version, tag_level, comp_unlabeled))

@@ -9,12 +9,16 @@ POETRY_VERSION="${POETRY_VERSION:-}"
 UV_VERSION="${UV_VERSION:-}"
 NVM_VERSION="${NVM_VERSION:-}"
 NODE_VERSION="${NODE_VERSION:-}"
+YARN_VERSION="${YARN_VERSION:-}"
+PNPM_VERSION="${PNPM_VERSION:-}"
 
 PYTHON_TAG_LEVEL="${PYTHON_TAG_LEVEL:-patch}"
 POETRY_TAG_LEVEL="${POETRY_TAG_LEVEL:-patch}"
 UV_TAG_LEVEL="${UV_TAG_LEVEL:-patch}"
 NVM_TAG_LEVEL="${NVM_TAG_LEVEL:-patch}"
 NODE_TAG_LEVEL="${NODE_TAG_LEVEL:-patch}"
+YARN_TAG_LEVEL="${YARN_TAG_LEVEL:-patch}"
+PNPM_TAG_LEVEL="${PNPM_TAG_LEVEL:-patch}"
 
 # ---
 
@@ -34,8 +38,8 @@ if [ -z "${PYTHON_VERSION}" ]; then
     exit 1
 fi
 
-SOURCE_DIR="$(dirname "$0")"
-PROJECT_DIR="$(dirname "$(dirname "$(dirname "$0")")")"
+SOURCE_DIR="$(dirname "$(realpath "$0")")"
+PROJECT_DIR="$(dirname "$(dirname "${SOURCE_DIR}")")"
 
 BUILD_DOCKERFILE="${SOURCE_DIR}/Dockerfile"
 if [ ! -f "${BUILD_DOCKERFILE}" ]; then
@@ -49,19 +53,14 @@ PYTHON_IMAGE_TAG="${PYTHON_VERSION}${PYTHON_VARIANT:+-${PYTHON_VARIANT}}"
 
 # Image tags for the targetted Docker build
 IMAGE_TAGS="$(
-    "${PYTHON_COMMAND}" "${PROJECT_DIR}/scripts/image-tags.py" \
-        --python-version "${PYTHON_VERSION}" \
-        --python-variant "${PYTHON_VARIANT}" \
-        --poetry-version "${POETRY_VERSION}" \
-        --uv-version "${UV_VERSION}" \
-        --nvm-version "${NVM_VERSION}" \
-        --node-version "${NODE_VERSION}" \
-        --python-tag-level "${PYTHON_TAG_LEVEL}" \
-        --poetry-tag-level "${POETRY_TAG_LEVEL}" \
-        --uv-tag-level "${UV_TAG_LEVEL}" \
-        --nvm-tag-level "${NVM_TAG_LEVEL}" \
-        --node-tag-level "${NODE_TAG_LEVEL}" \
-        2> /dev/null
+    "${PYTHON_COMMAND}" "${PROJECT_DIR}/scripts/image_tag.py" \
+        python="${PYTHON_IMAGE_TAG}":"${PYTHON_TAG_LEVEL}" \
+        poetry="${POETRY_VERSION}":"${POETRY_TAG_LEVEL}" \
+        uv="${UV_VERSION}":"${UV_TAG_LEVEL}" \
+        nvm="${NVM_VERSION}":"${NVM_TAG_LEVEL}" \
+        node="${NODE_VERSION}":"${NODE_TAG_LEVEL}" \
+        yarn="${YARN_VERSION}":"${YARN_TAG_LEVEL}" \
+        pnpm="${PNPM_VERSION}":"${PNPM_TAG_LEVEL}" \
 )"
 
 IMAGE_TAG_FIRST="$(echo "${IMAGE_TAGS}" | head -n 1)"
@@ -80,6 +79,12 @@ fi
 if [ -n "${NODE_VERSION}" ]; then
     echo "  Node.js: ${NODE_VERSION}"
 fi
+if [ -n "${YARN_VERSION}" ]; then
+    echo "  Yarn: ${YARN_VERSION}"
+fi
+if [ -n "${PNPM_VERSION}" ]; then
+    echo "  pnpm: ${PNPM_VERSION}"
+fi
 
 # Build arguments
 BUILD_ARGS=(
@@ -89,6 +94,8 @@ BUILD_ARGS=(
     --build-arg "UV_VERSION=${UV_VERSION}"
     --build-arg "NVM_VERSION=${NVM_VERSION}"
     --build-arg "NODE_VERSION=${NODE_VERSION}"
+    --build-arg "YARN_VERSION=${YARN_VERSION}"
+    --build-arg "PNPM_VERSION=${PNPM_VERSION}"
 )
 
 # Build tags
@@ -115,4 +122,4 @@ else
     exit 1
 fi
 
-echo "Image built successfully: ${IMAGE_TAG_FIRST}"
+echo "Image built successfully: ${REGISTRY_NAMESPACE}/${REGISTRY_REPOSITORY}:${IMAGE_TAG_FIRST}"

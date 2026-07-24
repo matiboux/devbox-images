@@ -40,8 +40,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         make \
         musl-dev \
         tmux \
-        wget \
-        yq
+        wget
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
@@ -55,8 +54,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         jq \
         make \
         tmux \
-        wget \
-        yq
+        wget
 
 else
 
