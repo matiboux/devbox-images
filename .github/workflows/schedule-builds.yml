@@ -281,13 +281,6 @@ jobs:
 
           set_github_env 'BUILD_MATRIX' "${BUILD_MATRIX}" non-optional non-secret verbose
 
-      - name: Upload scripts output
-        uses: actions/upload-artifact@v7
-        with:
-          name: scripts-output
-          path: dist/
-          retention-days: 1
-
       - name: Set job outputs
         id: outputs
         env:
@@ -324,68 +317,3 @@ jobs:
       image_tag_components: ${{ matrix.image_tag_components }}
       build_args: ${{ matrix.build_args }}
     secrets: inherit
-
-  # Cleanup job
-  cleanup:
-    name: Cleanup
-
-    # https://github.com/actions/runner-images/blob/main/images/ubuntu-slim/ubuntu-slim-Readme.md
-    runs-on: ubuntu-slim
-    timeout-minutes: 10
-
-    # Job dependencies
-    needs:
-      - build-push
-
-    # Set GITHUB_TOKEN permissions for the job
-    permissions:
-      contents: read
-      packages: read
-
-    # Set environment variables for the job
-    env:
-      GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
-
-    outputs:
-      matrix: ${{ steps.outputs.outputs.matrix }}
-
-    steps:
-
-      # Execution steps
-
-      - name: Delete scripts output artifact
-        uses: actions/github-script@v9
-        env:
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          ARTIFACT_PATTERN: '^scripts-output$'
-        with:
-          script: |
-            const runId = process.env.GITHUB_RUN_ID;
-            const artifactPattern = new RegExp(process.env.ARTIFACT_PATTERN);
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            core.info(`Listing artifacts for run '${runId}' in '${owner}/${repo}'...`);
-            const res = await github.rest.actions.listWorkflowRunArtifacts({
-              owner,
-              repo,
-              run_id: runId,
-            });
-            const artifacts = res.data?.artifacts || [];
-            if (artifacts.length <= 0) {
-              core.info('No artifacts found.');
-              return;
-            }
-            const requiredArtifacts = artifacts.filter(a => artifactPattern.test(a.name));
-            if (requiredArtifacts.length <= 0) {
-              core.info('Required artifact(s) not found.');
-              return;
-            }
-            for (const artifact of requiredArtifacts) {
-              core.info(`Deleting artifact '${artifact.name}' (${artifact.id})...`);
-              await github.rest.actions.deleteArtifact({
-                owner,
-                repo,
-                artifact_id: artifact.id,
-              });
-            }
-            core.info('Done.');
