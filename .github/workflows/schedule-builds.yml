@@ -194,6 +194,7 @@ jobs:
 
       - name: Fetch published tags for devbox-python
         env:
+          GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
           IMAGES_PREFIXES: ${{ env.IMAGES_PREFIXES }}
         run: |
           # Fetch published tags for each specified image prefix
