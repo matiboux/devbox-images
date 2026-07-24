@@ -19,12 +19,14 @@ class BuildMatrix:
         self,
         packages: List[str],
         base_variants: List[str] | Set[str] | None = None,
+        common_metadata: Dict[str, Any] | None = None,
         versions_path: str = 'dist/versions.yml',
         published_tags_path: str = 'dist/published_tags.yml',
         skip_published_tags: bool = True,
         output_path: str = 'dist/build_matrix.yml',
     ):
         self.base_variants: Set[str] | None = set(base_variants) if base_variants else None
+        self.common_metadata: Dict[str, Any] = common_metadata or {}
         self.versions_path: str = versions_path
         self.published_tags_path: str = published_tags_path
         self.skip_published_tags: bool = skip_published_tags
@@ -136,6 +138,7 @@ class BuildMatrix:
                     continue  # Skip already published tags
 
                 build_matrix.append({
+                    **self.common_metadata,
                     'image_tag': image_tag,
                     'image_tag_components': (
                         ','.join([
@@ -203,6 +206,12 @@ def parse_args() -> argparse.Namespace:
         help='Packages to include in build matrix. If empty, all are included.',
     )
     parser.add_argument(
+        '--common-metadata',
+        type=str,
+        default='',
+        help='Comma-separated list or JSON list of common metadata to include in build matrix entries.',
+    )
+    parser.add_argument(
         '--base-variants',
         type=str,
         default='',
@@ -251,9 +260,18 @@ def main():
         except json.JSONDecodeError:
             base_variants_input = base_variants_input.split(',')
 
+    common_metadata_input = {}
+    if args.common_metadata:
+        common_metadata_input = str(args.common_metadata).strip()
+        try:
+            common_metadata_input = json.loads(common_metadata_input)
+        except json.JSONDecodeError:
+            common_metadata_input = dict(pair.split('=', 1) for pair in common_metadata_input.split(',') if '=' in pair)
+
     try:
         matrix_builder = BuildMatrix(
             packages=packages_input,
+            common_metadata=common_metadata_input,
             base_variants=base_variants_input,
             skip_published_tags=args.skip_published_tags,
         )
