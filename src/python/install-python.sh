@@ -16,6 +16,7 @@ COMMON_SCRIPTS_DIR="$(dirname "$(dirname "$0")")/common"
 
 # Install system development tools
 sh "${COMMON_SCRIPTS_DIR}/install-system-tools.sh"
+sh "${COMMON_SCRIPTS_DIR}/install-yq.sh"
 
 # Install Python development tools
 sh "${COMMON_SCRIPTS_DIR}/install-python-tools.sh"
