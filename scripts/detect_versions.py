@@ -29,7 +29,6 @@ class DetectVersions:
         self.constraints_path: str = constraints_path
         self.output_path: str = output_path
         self.version_filter: str | None = version_filter
-        self.scope: str | None = scope
 
         try:
             self.constraints: Dict[str, Any] = self._load_yaml(constraints_path)
@@ -48,8 +47,23 @@ class DetectVersions:
         if self.package_name not in self._detectors:
             raise ValueError(f"Invalid package name '{self.package_name}'.")
 
+        self.scope: str = scope or self._get_default_scope()
+        if self.scope not in ('major', 'minor', 'patch'):
+            raise ValueError(f"Invalid scope '{self.scope}'. Must be 'major', 'minor', or 'patch'.")
+
         self.detected_versions: List[str] = []
         self.latest_version: str | None = None
+
+    def _get_default_scope(self) -> str:
+        """Get default scope for the package type."""
+        defaults = {
+            'python': 'minor',
+            'poetry': 'minor',
+            'uv': 'minor',
+            'node': 'major',
+            'nvm': 'major',
+        }
+        return defaults.get(self.package_name, 'minor')
 
     def _load_yaml(self, path: str) -> dict:
         """Load YAML configuration file."""
@@ -101,9 +115,18 @@ class DetectVersions:
             return True
         return version_tuple[:len(filter_tuple)] == filter_tuple
 
-    def _sort_versions(self, minor_versions: Dict[str, str]) -> List[str]:
+    def _get_version_key(self, version_tuple: Tuple[int, int, int]) -> str:
+        """Get grouping key for version based on current scope."""
+        if self.scope == 'patch':
+            return f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
+        elif self.scope == 'major':
+            return f"{version_tuple[0]}"
+        else:  # minor (default)
+            return f"{version_tuple[0]}.{version_tuple[1]}"
+
+    def _sort_versions(self, grouped_versions: Dict[str, str]) -> List[str]:
         """Sort and return detected versions in descending order."""
-        detected_versions = list(minor_versions.values())
+        detected_versions = list(grouped_versions.values())
         detected_versions.sort(key=lambda v: self._get_version_tuple(v), reverse=True)
         return detected_versions
 
@@ -154,7 +177,7 @@ class DetectVersions:
         extra_versions = set(package_constraints.get('extra_versions', []))
         skip_versions = package_constraints.get('skip_versions', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        minor_versions = {}
+        grouped_versions = {}
 
         docker_image = package_constraints.get('docker_image')
         if not docker_image:
@@ -199,13 +222,14 @@ class DetectVersions:
                     ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
                         continue
                     found_version = True
-                    if version_minor in minor_versions:
-                        existing_full = minor_versions[version_minor]
+                    version_key = self._get_version_key(version_tuple)
+                    if version_key in grouped_versions:
+                        existing_full = grouped_versions[version_key]
                         existing_tuple = self._get_version_tuple(existing_full)
                         if version_tuple > existing_tuple:
-                            minor_versions[version_minor] = version_full
+                            grouped_versions[version_key] = version_full
                     else:
-                        minor_versions[version_minor] = version_full
+                        grouped_versions[version_key] = version_full
                     # Stop after first version found if constraints are incomplete
                     if constraints_incomplete:
                         break
@@ -219,18 +243,18 @@ class DetectVersions:
                 url = data['next']
 
         # Fallback to past detected versions if no versions were found
-        if not minor_versions and past_detected_versions:
+        if not grouped_versions and past_detected_versions:
             for version_full in past_detected_versions:
                 version_tuple = self._get_version_tuple(version_full)
-                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
                 if version_filter_tuple:
                     if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
                 if version_tuple < min_version_tuple:
                     continue
-                minor_versions[version_minor] = version_full
+                version_key = self._get_version_key(version_tuple)
+                grouped_versions[version_key] = version_full
 
-        return self._sort_versions(minor_versions)
+        return self._sort_versions(grouped_versions)
 
     def _detect_node_versions(
         self,
@@ -259,7 +283,7 @@ class DetectVersions:
         extra_versions = set(package_constraints.get('extra_versions', []))
         skip_versions = package_constraints.get('skip_versions', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        minor_versions = {}
+        grouped_versions = {}
 
         url = 'https://nodejs.org/dist/index.json'
         data = self._fetch_json(url)
@@ -290,13 +314,14 @@ class DetectVersions:
                     version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
                 ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
                     continue
-                if version_minor in minor_versions:
-                    existing_full = minor_versions[version_minor]
+                version_key = self._get_version_key(version_tuple)
+                if version_key in grouped_versions:
+                    existing_full = grouped_versions[version_key]
                     existing_tuple = self._get_version_tuple(existing_full)
                     if version_tuple > existing_tuple:
-                        minor_versions[version_minor] = version_full
+                        grouped_versions[version_key] = version_full
                 else:
-                    minor_versions[version_minor] = version_full
+                    grouped_versions[version_key] = version_full
                 # Stop after first version found if constraints are incomplete
                 if constraints_incomplete:
                     break
@@ -304,18 +329,18 @@ class DetectVersions:
                 pass
 
         # Fallback to past detected versions if no versions were found
-        if not minor_versions and past_detected_versions:
+        if not grouped_versions and past_detected_versions:
             for version_full in past_detected_versions:
                 version_tuple = self._get_version_tuple(version_full)
-                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
                 if version_filter_tuple:
                     if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
                 if version_tuple < min_version_tuple:
                     continue
-                minor_versions[version_minor] = version_full
+                version_key = self._get_version_key(version_tuple)
+                grouped_versions[version_key] = version_full
 
-        return self._sort_versions(minor_versions)
+        return self._sort_versions(grouped_versions)
 
     def _detect_pip_package(
         self,
@@ -344,7 +369,7 @@ class DetectVersions:
         extra_versions = set(package_constraints.get('extra_versions', []))
         skip_versions = package_constraints.get('skip_versions', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        minor_versions = {}
+        grouped_versions = {}
 
         try:
             pip_result = subprocess.run(
@@ -382,13 +407,14 @@ class DetectVersions:
                             version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
                         ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
                             continue
-                        if version_minor in minor_versions:
-                            existing_full = minor_versions[version_minor]
+                        version_key = self._get_version_key(version_tuple)
+                        if version_key in grouped_versions:
+                            existing_full = grouped_versions[version_key]
                             existing_tuple = self._get_version_tuple(existing_full)
                             if version_tuple > existing_tuple:
-                                minor_versions[version_minor] = version_full
+                                grouped_versions[version_key] = version_full
                         else:
-                            minor_versions[version_minor] = version_full
+                            grouped_versions[version_key] = version_full
                         # Stop after first version found if constraints are incomplete
                         if constraints_incomplete:
                             break
@@ -396,18 +422,18 @@ class DetectVersions:
                         pass
 
         # Fallback to past detected versions if no versions were found
-        if not minor_versions and past_detected_versions:
+        if not grouped_versions and past_detected_versions:
             for version_full in past_detected_versions:
                 version_tuple = self._get_version_tuple(version_full)
-                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
                 if version_filter_tuple:
                     if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
                 if version_tuple < min_version_tuple:
                     continue
-                minor_versions[version_minor] = version_full
+                version_key = self._get_version_key(version_tuple)
+                grouped_versions[version_key] = version_full
 
-        return self._sort_versions(minor_versions)
+        return self._sort_versions(grouped_versions)
 
     def _detect_github_repo(
         self,
@@ -436,7 +462,7 @@ class DetectVersions:
         extra_versions = set(package_constraints.get('extra_versions', []))
         skip_versions = package_constraints.get('skip_versions', [])
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        minor_versions = {}
+        grouped_versions = {}
 
         github_repo = package_constraints.get('github_repo')
         if not github_repo:
@@ -484,13 +510,14 @@ class DetectVersions:
                     ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
                         continue
                     found_version = True
-                    if version_minor in minor_versions:
-                        existing_full = minor_versions[version_minor]
+                    version_key = self._get_version_key(version_tuple)
+                    if version_key in grouped_versions:
+                        existing_full = grouped_versions[version_key]
                         existing_tuple = self._get_version_tuple(existing_full)
                         if version_tuple > existing_tuple:
-                            minor_versions[version_minor] = version_full
+                            grouped_versions[version_key] = version_full
                     else:
-                        minor_versions[version_minor] = version_full
+                        grouped_versions[version_key] = version_full
                     # Stop after first version found if constraints are incomplete
                     if constraints_incomplete:
                         break
@@ -503,18 +530,18 @@ class DetectVersions:
             page += 1
 
         # Fallback to past detected versions if no versions were found
-        if not minor_versions and past_detected_versions:
+        if not grouped_versions and past_detected_versions:
             for version_full in past_detected_versions:
                 version_tuple = self._get_version_tuple(version_full)
-                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
                 if version_filter_tuple:
                     if not self._version_matches_filter(version_tuple, version_filter_tuple):
                         continue
                 if version_tuple < min_version_tuple:
                     continue
-                minor_versions[version_minor] = version_full
+                version_key = self._get_version_key(version_tuple)
+                grouped_versions[version_key] = version_full
 
-        return self._sort_versions(minor_versions)
+        return self._sort_versions(grouped_versions)
 
     def save_versions_file(self):
         """Save detected versions to output file."""
@@ -576,7 +603,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--scope',
         help=(
-            'Restrict detection to a specific scope (e.g., \'major\', \'minor\', or \'full\'). '
+            'Restrict detection to a specific scope (e.g., \'major\', \'minor\', or \'patch\'). '
             'Defaults depending on the package type: for example, Python defaults to \'minor\', while Node.js defaults to \'major\'.'
         ),
     )
@@ -596,7 +623,7 @@ def main():
         detector = DetectVersions(
             package_name=package_name,
             version_filter=(args.version.strip() or None),
-            scope=(args.scope.strip() or None)
+            scope=args.scope,
         )
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
