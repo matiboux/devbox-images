@@ -19,7 +19,7 @@ class FetchPublishedTags:
         image_name: str = 'python-devbox',
         github_read_token: str | None = None,
         ignore_tags_older_than: datetime | None = None,
-        output_path: str = 'dist/published_tags.yaml'
+        output_path: str = 'dist/published_tags.yml'
     ):
         self.image_name: str = image_name
         self.github_read_token: str | None = github_read_token or os.environ.get('GITHUB_READ_TOKEN') or os.environ.get('GITHUB_TOKEN')
