@@ -60,6 +60,30 @@ env:
       src_dirname: python
       package_versions: python?,node?,uv,nvm+
       base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node
+      src_dirname: python
+      package_versions: python?,node?,nvm+,yarn
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node
+      src_dirname: python
+      package_versions: python?,node?,poetry,nvm+,yarn
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node
+      src_dirname: python
+      package_versions: python?,node?,uv,nvm+,yarn
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node
+      src_dirname: python
+      package_versions: python?,node?,nvm+,pnpm
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node
+      src_dirname: python
+      package_versions: python?,node?,poetry,nvm+,pnpm
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node
+      src_dirname: python
+      package_versions: python?,node?,uv,nvm+,pnpm
+      base_variants: '["", "slim"]'
 
 jobs:
 
