@@ -468,7 +468,8 @@ class DetectVersions:
         version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
         grouped_versions = {}
 
-        github_repo, version_prefix = package_constraints.get('github_repo'), 'v'
+        github_repo = package_constraints.get('github_repo')
+        version_prefix = package_constraints.get('version_prefix', 'v')
         if not github_repo:
             known_repos = {
                 'poetry': ('python-poetry/poetry', ''),
