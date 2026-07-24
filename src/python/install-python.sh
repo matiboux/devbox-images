@@ -7,6 +7,8 @@ set -e
 # - UV_VERSION: Version of uv to install if set
 # - NVM_VERSION: Version of nvm to install if set
 # - NODE_VERSION: Version of Node.js to install if set
+# - YARN_VERSION: Version of Yarn to install if set
+# - PNPM_VERSION: Version of pnpm to install if set
 # - USERNAME: Non-root username to create if set
 # - USER_ID: Non-root user ID to create if set
 # - GROUP_ID: Non-root group ID to create if set
@@ -39,6 +41,16 @@ fi
 if [ -n "${NODE_VERSION}" ]; then
     # Install Node.js
     sh "${COMMON_SCRIPTS_DIR}/install-node.sh" "${NODE_VERSION}"
+fi
+
+if [ -n "${YARN_VERSION}" ]; then
+    # Install Yarn
+    sh "${COMMON_SCRIPTS_DIR}/install-yarn.sh" "${YARN_VERSION}"
+fi
+
+if [ -n "${PNPM_VERSION}" ]; then
+    # Install pnpm
+    sh "${COMMON_SCRIPTS_DIR}/install-pnpm.sh" "${PNPM_VERSION}"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then

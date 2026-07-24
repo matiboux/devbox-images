@@ -9,12 +9,16 @@ POETRY_VERSION="${POETRY_VERSION:-}"
 UV_VERSION="${UV_VERSION:-}"
 NVM_VERSION="${NVM_VERSION:-}"
 NODE_VERSION="${NODE_VERSION:-}"
+YARN_VERSION="${YARN_VERSION:-}"
+PNPM_VERSION="${PNPM_VERSION:-}"
 
 PYTHON_TAG_LEVEL="${PYTHON_TAG_LEVEL:-patch}"
 POETRY_TAG_LEVEL="${POETRY_TAG_LEVEL:-patch}"
 UV_TAG_LEVEL="${UV_TAG_LEVEL:-patch}"
 NVM_TAG_LEVEL="${NVM_TAG_LEVEL:-patch}"
 NODE_TAG_LEVEL="${NODE_TAG_LEVEL:-patch}"
+YARN_TAG_LEVEL="${YARN_TAG_LEVEL:-patch}"
+PNPM_TAG_LEVEL="${PNPM_TAG_LEVEL:-patch}"
 
 # ---
 
@@ -54,7 +58,9 @@ IMAGE_TAGS="$(
         poetry="${POETRY_VERSION}":"${POETRY_TAG_LEVEL}" \
         uv="${UV_VERSION}":"${UV_TAG_LEVEL}" \
         nvm="${NVM_VERSION}":"${NVM_TAG_LEVEL}" \
-        node="${NODE_VERSION}":"${NODE_TAG_LEVEL}"
+        node="${NODE_VERSION}":"${NODE_TAG_LEVEL}" \
+        yarn="${YARN_VERSION}":"${YARN_TAG_LEVEL}" \
+        pnpm="${PNPM_VERSION}":"${PNPM_TAG_LEVEL}" \
 )"
 
 IMAGE_TAG_FIRST="$(echo "${IMAGE_TAGS}" | head -n 1)"
@@ -73,6 +79,12 @@ fi
 if [ -n "${NODE_VERSION}" ]; then
     echo "  Node.js: ${NODE_VERSION}"
 fi
+if [ -n "${YARN_VERSION}" ]; then
+    echo "  Yarn: ${YARN_VERSION}"
+fi
+if [ -n "${PNPM_VERSION}" ]; then
+    echo "  pnpm: ${PNPM_VERSION}"
+fi
 
 # Build arguments
 BUILD_ARGS=(
@@ -82,6 +94,8 @@ BUILD_ARGS=(
     --build-arg "UV_VERSION=${UV_VERSION}"
     --build-arg "NVM_VERSION=${NVM_VERSION}"
     --build-arg "NODE_VERSION=${NODE_VERSION}"
+    --build-arg "YARN_VERSION=${YARN_VERSION}"
+    --build-arg "PNPM_VERSION=${PNPM_VERSION}"
 )
 
 # Build tags
