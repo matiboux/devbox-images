@@ -44,6 +44,7 @@ class DetectVersions:
             'nvm': self._detect_github_repo,
             'yarn': self._detect_github_repo,
             'pnpm': self._detect_github_repo,
+            'docker': self._return_static_package,
         }
 
         if self.package_name not in self._detectors:
@@ -66,6 +67,7 @@ class DetectVersions:
             'nvm': 'minor',
             'yarn': 'major',
             'pnpm': 'major',
+            'docker': 'major',
         }
         return defaults.get(self.package_name, 'minor')
 
@@ -539,6 +541,12 @@ class DetectVersions:
                 grouped_versions[version_key] = version_full
 
         return self._sort_versions(grouped_versions)
+
+    def _return_static_package(
+        self,
+        past_detected_versions: List[str] = [],
+    ) -> List[str]:
+        return [self.package_name]
 
     def save_versions_file(self):
         """Save detected versions to output file."""
