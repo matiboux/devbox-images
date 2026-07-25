@@ -142,7 +142,7 @@ class BuildMatrix:
                         self._get_component_unlabeled_flag(base_package),
                     ),
                     *(
-                        [(f"{base_package}_variant", base_variant, 'patch', None)]
+                        [(f"{base_package}_variant", base_variant, 'patch', 'always')]
                         if base_variant is not None else []
                     ),
                     *[
