@@ -384,7 +384,7 @@ def test_detect_github_repo_known_repo_uv_no_prefix(tmp_path, monkeypatch):
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        lambda url: [{'ref': 'refs/tags/0.8.13'}, {'ref': 'refs/tags/0.7.0'}],
+        lambda url, auth_token=None: [{'ref': 'refs/tags/0.8.13'}, {'ref': 'refs/tags/0.7.0'}],
     )
     result = detector._detect_github_repo()
     assert result == ['0.8.13']
@@ -395,7 +395,7 @@ def test_detect_github_repo_known_repo_nvm_v_prefix(tmp_path, monkeypatch):
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        lambda url: [{'ref': 'refs/tags/v0.40.3'}, {'ref': 'refs/tags/v0.39.0'}],
+        lambda url, auth_token=None: [{'ref': 'refs/tags/v0.40.3'}, {'ref': 'refs/tags/v0.39.0'}],
     )
     result = detector._detect_github_repo()
     assert result == ['0.40.3']
@@ -416,7 +416,7 @@ def test_detect_github_repo_custom_github_repo_from_constraints(tmp_path, monkey
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        lambda url: [{'ref': 'refs/tags/2.1.5'}],
+        lambda url, auth_token=None: [{'ref': 'refs/tags/2.1.5'}],
     )
     result = detector._detect_github_repo()
     assert result == ['2.1.5']
@@ -427,7 +427,7 @@ def test_detect_github_repo_invalid_response_falls_back_to_past(tmp_path, monkey
     # applies min_version/skip_versions/extra_versions filtering and sorting,
     # same as the successful-but-empty-response fallback path.
     detector = make_detector(tmp_path, 'uv', constraints={'uv': {'min_version': '0.8'}})
-    monkeypatch.setattr(detector, '_fetch_json', lambda url: {})
+    monkeypatch.setattr(detector, '_fetch_json', lambda url, auth_token=None: {})
     result = detector._detect_github_repo(past_detected_versions=['0.8.13', '0.5.0'])
     assert result == ['0.8.13']
     assert 'Could not fetch tags from GitHub' in capsys.readouterr().err
