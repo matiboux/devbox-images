@@ -9,7 +9,7 @@
 # run on a plain dev machine (no os-release -> "unsupported") or inside an
 # Alpine/Debian/Ubuntu container (-> the matching package-manager branch).
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-system-tools.sh"
 

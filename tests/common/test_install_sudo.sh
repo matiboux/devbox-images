@@ -10,7 +10,7 @@
 # recognized /etc/os-release, the risky branches are skipped rather than
 # run, to avoid ever mutating the real system's sudoers/doas config.
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-sudo.sh"
 

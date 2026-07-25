@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for src/common/entrypoint-shell.sh
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/entrypoint-shell.sh"
 

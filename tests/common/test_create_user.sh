@@ -8,7 +8,7 @@
 # sudo-group branches are exercised in practice inside the actual Docker
 # images (see src/python/Dockerfile) and are out of reach for this harness.
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/create-user.sh"
 

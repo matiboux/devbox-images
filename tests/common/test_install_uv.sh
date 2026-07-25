@@ -3,7 +3,7 @@
 # curl and pip are stubbed (tests/shell/stubs/) so no real network/PyPI
 # access happens, and the "downloaded" installer is a script we control.
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-uv.sh"
 

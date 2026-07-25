@@ -10,7 +10,7 @@
 # Alpine-unsupported check. The success path is intentionally left
 # untested here (verified only through the actual Docker image build).
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-nvm.sh"
 

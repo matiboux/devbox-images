@@ -9,7 +9,7 @@
 # "src/python/" directory next to a fake "src/common/" full of logging
 # stubs, and run it from there.
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 REAL_SCRIPT="${PYTHON_DIR}/install-python.sh"
 

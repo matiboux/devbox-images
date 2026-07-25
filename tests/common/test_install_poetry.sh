@@ -3,7 +3,7 @@
 # curl and pip are stubbed; the "downloaded" installer is executed with
 # python3, so we keep its content valid, trivial Python.
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-poetry.sh"
 

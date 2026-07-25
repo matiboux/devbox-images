@@ -2,18 +2,21 @@
 # Minimal POSIX-ish test harness for the shell scripts in src/common and
 # src/python. No external dependencies (bats, shunit2, ...) required.
 #
-# Usage (from a test file):
-#   . "$(dirname "$0")/harness.sh"
+# Usage (from a test file under tests/common/ or tests/python/):
+#   . "$(dirname "$0")/../support/shell/harness.sh"
 #   test_case "description of the test"
 #   ... run script, capture output ...
 #   assert_equal "$actual" "$expected"
 #   ...
 #   summary   # at the end of the file
 
+# $0 here is the *sourcing* test script's own path (POSIX/bash don't change
+# $0 across `.`), which lives in tests/common/ or tests/python/ -- two
+# levels below the repo root.
 REPO_ROOT="$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)"
 COMMON_DIR="${REPO_ROOT}/src/common"
 PYTHON_DIR="${REPO_ROOT}/src/python"
-STUBS_DIR="${REPO_ROOT}/tests/shell/stubs"
+STUBS_DIR="${REPO_ROOT}/tests/support/shell/stubs"
 
 TESTS_RUN=0
 TESTS_FAILED=0

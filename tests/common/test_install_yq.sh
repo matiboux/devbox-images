@@ -6,7 +6,7 @@
 # system path with no override, so we must never let it actually run
 # un-intercepted.
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-yq.sh"
 

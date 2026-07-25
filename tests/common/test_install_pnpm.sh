@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for src/common/install-pnpm.sh
 
-. "$(dirname "$0")/harness.sh"
+. "$(dirname "$0")/../support/shell/harness.sh"
 
 SCRIPT="${COMMON_DIR}/install-pnpm.sh"
 
