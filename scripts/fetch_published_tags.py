@@ -22,7 +22,7 @@ class FetchPublishedTags:
         output_path: str = 'dist/published_tags.yml'
     ):
         self.image_name: str = image_name
-        self.github_read_token: str | None = github_read_token or os.environ.get('GITHUB_READ_TOKEN') or os.environ.get('GITHUB_TOKEN')
+        self.github_read_token: str | None = github_read_token or os.environ.get('GH_READ_TOKEN') or os.environ.get('GITHUB_TOKEN')
         self.ignore_tags_older_than: datetime = ignore_tags_older_than or (datetime.now(timezone.utc) - timedelta(days=30))
         self.output_path: str = output_path
 
@@ -125,7 +125,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             'GitHub token for reading published tags from the GitHub API. '
-            'Fall back to the GITHUB_READ_TOKEN or GITHUB_TOKEN environment variables if not provided. '
+            'Fall back to the GH_READ_TOKEN or GITHUB_TOKEN environment variables if not provided. '
             'Required to skip published tags.'
         ),
     )
