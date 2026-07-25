@@ -3,6 +3,8 @@
 NVM_VERSION_INPUT="${1:-latest}"
 
 NVM_DIR="${NVM_DIR:-/opt/nvm}"
+NVM_BASH_ENV="${NVM_BASH_ENV:-/etc/bash_env}"
+NVM_BASHRC="${NVM_BASHRC:-/etc/bash.bashrc}"
 
 # ---
 
@@ -136,10 +138,10 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-BASH_ENV='/etc/bash_env'
+BASH_ENV="${NVM_BASH_ENV}"
 touch "${BASH_ENV}"
-if ! grep -q '. /etc/bash_env' /etc/bash.bashrc 2>/dev/null; then
-	echo '. /etc/bash_env' >> /etc/bash.bashrc
+if ! grep -q ". ${NVM_BASH_ENV}" "${NVM_BASHRC}" 2>/dev/null; then
+	echo ". ${NVM_BASH_ENV}" >> "${NVM_BASHRC}"
 fi
 
 NVM_DIR="${NVM_DIR}" PROFILE="${BASH_ENV}" bash "${NVM_INSTALLER_FILE}"
