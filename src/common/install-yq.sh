@@ -96,32 +96,28 @@ if [ -z "${YQ_VERSION}" ]; then
 	exit 1
 fi
 
-# wget https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_${PLATFORM}.tar.gz -O - |\
-#   tar xz && sudo mv yq_${PLATFORM} /usr/local/bin/yq
-
-
 YQ_BINARY_ARCHIVE="$(mktemp)"
-curl -sSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/install.sh" \
+curl -sSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${ARCH_PLATFORM}.tar.gz" \
     -o "${YQ_BINARY_ARCHIVE}"
 if [ $? -ne 0 ]; then
 	echo "Failed to download yq binary archive for version ${YQ_VERSION}." >&2
 	exit 1
 fi
 
-YQ_BINARY_FILE="$(mktemp)"
-tar -xzf "${YQ_BINARY_ARCHIVE}" -C "$(dirname "${YQ_BINARY_FILE}")" --strip-components=1
+YQ_EXTRACT_DIR="$(mktemp -d)"
+tar -xzf "${YQ_BINARY_ARCHIVE}" -C "${YQ_EXTRACT_DIR}"
 if [ $? -ne 0 ]; then
     echo "Failed to extract yq binary from archive." >&2
     exit 1
 fi
 
-mv "${YQ_BINARY_FILE}" /usr/local/bin/yq
+mv "${YQ_EXTRACT_DIR}/yq_${ARCH_PLATFORM}" /usr/local/bin/yq
 if [ $? -ne 0 ]; then
     echo "Failed to install yq binary in /usr/local/bin." >&2
     exit 1
 fi
 
 rm -f "${YQ_BINARY_ARCHIVE}"
-rm -f "${YQ_BINARY_FILE}"
+rm -rf "${YQ_EXTRACT_DIR}"
 
 echo "Installed yq version ${YQ_VERSION} to /usr/local/bin/yq."
