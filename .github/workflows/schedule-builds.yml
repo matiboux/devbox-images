@@ -17,6 +17,11 @@ on:
   # Run on manual triggers
   workflow_dispatch:
     inputs:
+      nb_concurrent_builds:
+        description: 'Number of concurrent builds to run. Default is 10.'
+        type: number
+        required: false
+        default: 10
       skip_published_tags:
         description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
         type: boolean
@@ -149,6 +154,7 @@ jobs:
 
     # Set environment variables for the job
     env:
+      NB_CONCURRENT_BUILDS: ${{ inputs.nb_concurrent_builds || 10 }}
       GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
 
     outputs:
@@ -343,6 +349,8 @@ jobs:
           done <<< "$(jq -c '.[]' <<< "${IMAGES_LIST}")"
 
       - name: Randomly sample build matrix subset
+        env:
+          NB_CONCURRENT_BUILDS: ${{ env.NB_CONCURRENT_BUILDS }}
         run: |
           # Randomly sample a subset of builds to run from the build matrix
           # Set BUILD_MATRIX environment variable
@@ -352,11 +360,11 @@ jobs:
 
           # Transform list of build matrix entries
           # to job matrix configuration in JSON format.
-          # Randomly sample a subset of 10 builds to run from the build matrix.
+          # Randomly sample a subset of builds to run from the build matrix.
           BUILD_MATRIX="$(
             yq -o=json e '.build_matrix' ./dist/build_matrix.yml \
             | jq -c '.[]' \
-            | shuf -n 10 \
+            | shuf -n "${NB_CONCURRENT_BUILDS:-10}" \
             | jq -rcs '{ include: . }'
           )"
 
