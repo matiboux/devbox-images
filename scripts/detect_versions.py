@@ -243,8 +243,9 @@ class DetectVersions:
             # Stop after first page if constraints are incomplete
             if not found_version or constraints_incomplete:
                 break
-            if 'next' in data and data['next']:
-                url = data['next']
+            if 'next' not in data or not data['next']:
+                break
+            url = data['next']
 
         # Fallback to past detected versions if no versions were found
         if not grouped_versions and past_detected_versions:
@@ -490,7 +491,7 @@ class DetectVersions:
                 f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',
                 file=sys.stderr,
             )
-            return past_detected_versions
+            data = []
 
         for tag in data:
             try:

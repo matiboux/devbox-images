@@ -72,14 +72,10 @@ def test_init_strips_ghost_flag(tmp_path):
 
 
 def test_init_strips_combined_flags(tmp_path):
-    # The strip loop peels one trailing flag char at a time and checks '?' before
-    # '+', so combining both on one package ("python?+") ends up adding "python?"
-    # to ghost_packages instead of the clean name. Probably a bug, but nothing
-    # combines both flags today, so this just pins the current behavior.
     bm = make_matrix(tmp_path, ['python?+'], {'python': ['3.14.6']})
     assert bm.packages == ['python']
     assert bm.unlabeled_packages == {'python'}
-    assert bm.ghost_packages == {'python?'}
+    assert bm.ghost_packages == {'python'}
 
 
 # --- _get_component_tag_level / _get_component_unlabeled_flag ---
@@ -149,9 +145,6 @@ def test_generate_build_matrix_build_args_contains_uppercased_versions(tmp_path)
 
 
 def test_generate_build_matrix_python_base_variants(tmp_path):
-    # Pins current behavior: the variant component isn't marked 'unlabeled', so
-    # it renders as "python_variantslim" rather than the bare "slim" suffix
-    # README.md documents.
     bm = make_matrix(
         tmp_path,
         ['python'],
@@ -163,8 +156,8 @@ def test_generate_build_matrix_python_base_variants(tmp_path):
     tags = {e['image_tag'] for e in matrix}
     assert tags == {
         'python3.14.6',
-        'python3.14.6-python_variantslim',
-        'python3.14.6-python_variantalpine',
+        'python3.14.6-slim',
+        'python3.14.6-alpine',
     }
 
 
@@ -178,7 +171,7 @@ def test_generate_build_matrix_base_variants_filtered_by_selection(tmp_path):
     )
     matrix = bm.generate_build_matrix(skip_published_tags=False)
     tags = {e['image_tag'] for e in matrix}
-    assert tags == {'python3.14.6-python_variantslim'}
+    assert tags == {'python3.14.6-slim'}
 
 
 def test_generate_build_matrix_base_variants_ignored_for_non_python_base(tmp_path):

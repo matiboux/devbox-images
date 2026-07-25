@@ -3,6 +3,8 @@
 NVM_VERSION_INPUT="${1:-latest}"
 
 NVM_DIR="${NVM_DIR:-/opt/nvm}"
+NVM_BASH_ENV="${NVM_BASH_ENV:-/etc/bash_env}"
+NVM_BASHRC="${NVM_BASHRC:-/etc/bash.bashrc}"
 
 # ---
 
@@ -31,6 +33,7 @@ fi
 get_nvm_version() {
 	local version="$1"
 	local github_repo='nvm-sh/nvm'
+	local version_prefix='v'
 	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 	if [ -n "${version_full}" ]; then
 		echo "${version_full}"
@@ -64,7 +67,7 @@ get_nvm_version() {
 			| sed 's/^v//'
 		)
 	else
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/v${version}") || {
+		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}") || {
 			echo 'Failed to connect to GitHub API.' >&2
 			return 1
 		}
@@ -87,7 +90,7 @@ get_nvm_version() {
 		version_full=$(
 			echo "${response}" \
 			| sed -n 's/.*"ref"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
-			| sed 's|refs/tags/v||' \
+			| sed "s|refs/tags/${version_prefix}||" \
 			| sort -V \
 			| tail -n1
 		)
@@ -135,10 +138,10 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-BASH_ENV='/etc/bash_env'
+BASH_ENV="${NVM_BASH_ENV}"
 touch "${BASH_ENV}"
-if ! grep -q '. /etc/bash_env' /etc/bash.bashrc 2>/dev/null; then
-	echo '. /etc/bash_env' >> /etc/bash.bashrc
+if ! grep -q ". ${NVM_BASH_ENV}" "${NVM_BASHRC}" 2>/dev/null; then
+	echo ". ${NVM_BASH_ENV}" >> "${NVM_BASHRC}"
 fi
 
 NVM_DIR="${NVM_DIR}" PROFILE="${BASH_ENV}" bash "${NVM_INSTALLER_FILE}"
