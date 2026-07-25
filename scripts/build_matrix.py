@@ -82,7 +82,7 @@ class BuildMatrix:
     def _get_component_tag_level(self, packages_version: Dict[str, str], latest_versions: Dict[str, str], package: str) -> str:
         package_version = packages_version.get(package)
         if package_version and latest_versions.get(package) == package_version:
-            return 'patch'
+            return 'global'
         return 'minor'
 
     def _get_component_unlabeled_flag(self, package: str) -> str | None:

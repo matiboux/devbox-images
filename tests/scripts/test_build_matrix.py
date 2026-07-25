@@ -80,9 +80,9 @@ def test_init_strips_combined_flags(tmp_path):
 
 # --- _get_component_tag_level / _get_component_unlabeled_flag ---
 
-def test_component_tag_level_patch_when_matches_latest(tmp_path):
+def test_component_tag_level_global_when_matches_latest(tmp_path):
     bm = make_matrix(tmp_path, ['python'], {'python': ['3.14.6']})
-    assert bm._get_component_tag_level({'python': '3.14.6'}, {'python': '3.14.6'}, 'python') == 'patch'
+    assert bm._get_component_tag_level({'python': '3.14.6'}, {'python': '3.14.6'}, 'python') == 'global'
 
 
 def test_component_tag_level_minor_when_not_latest(tmp_path):
