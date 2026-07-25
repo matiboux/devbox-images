@@ -1,8 +1,7 @@
 #!/bin/sh
 set -e
 
-# Script to install Docker CLI tools (docker, buildx, compose plugins) and socat.
-# Socat allows relaying a host-mounted Docker socket to a container-owned socket.
+# Script to install Docker CLI tools (docker, buildx, compose plugins).
 
 # Detect Linux distribution
 if [ -f /etc/os-release ]; then
@@ -36,9 +35,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
     apk add --no-cache \
         docker-cli \
         docker-cli-buildx \
-        docker-cli-compose \
-        socat \
-        libcap-utils
+        docker-cli-compose
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
@@ -62,9 +59,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
     apt-get install -y --no-install-recommends \
         docker-ce-cli \
         docker-buildx-plugin \
-        docker-compose-plugin \
-        socat \
-        libcap2-bin
+        docker-compose-plugin
 
 else
 
@@ -73,28 +68,11 @@ else
 
 fi
 
-# Grant CAP_DAC_OVERRIDE capability to socat binary
-# (relies on container having this capability, which Docker grants by default)
-SOCAT_BIN="$(command -v socat)"
-if command -v setcap > /dev/null 2>&1; then
-    setcap cap_dac_override+ep "${SOCAT_BIN}" \
-        || echo "Warning: Failed to set capabilities on ${SOCAT_BIN}; Docker socket proxying may not work for non-root users." >&2
-else
-    echo "Warning: Command 'setcap' not available; Docker socket proxying may not work for non-root users." >&2
-fi
-
 # Create a Docker group for non-root users
-DOCKER_GID='998'
 if ! getent group docker > /dev/null 2>&1; then
     if command -v groupadd > /dev/null 2>&1; then
-        groupadd -g "${DOCKER_GID}" docker
+        groupadd --system docker
     elif command -v addgroup > /dev/null 2>&1; then
-        addgroup -g "${DOCKER_GID}" docker
+        addgroup -S docker
     fi
 fi
-
-# Restrict access to the socat binary to Docker group members
-chgrp docker "${SOCAT_BIN}" 2>/dev/null \
-    || echo "Warning: failed to set 'docker' group ownership on ${SOCAT_BIN}." >&2
-chmod 750 "${SOCAT_BIN}" 2>/dev/null \
-    || echo "Warning: failed to restrict execute permission on ${SOCAT_BIN}." >&2
