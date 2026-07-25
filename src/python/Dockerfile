@@ -56,6 +56,7 @@ RUN --mount=type=bind,source=./src/common,target=/tmp/devbox/common \
     --mount=type=bind,source=./src/python/install-python.sh,target=/tmp/devbox/python/install-python.sh \
     --mount=type=cache,sharing=locked,id=apt-cache,target=/var/cache/apt \
 	--mount=type=cache,sharing=locked,id=apt-lib,target=/var/lib/apt \
+	--mount=type=secret,id=GITHUB_TOKEN,env=GITHUB_TOKEN \
 	sh /tmp/devbox/python/install-python.sh
 
 # Run as created non-root user
