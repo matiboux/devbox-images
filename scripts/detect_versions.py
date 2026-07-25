@@ -579,7 +579,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         'package_name',
         help=(
-            'Package name (\'python\', \'node\', \'poetry\', \'uv\', \'nvm\', \'yarn\', or \'pnpm\'). '
+            'Package name (like \'python\' or \'node\'). '
             'Can also be specified via --package option.'
         ),
     )
