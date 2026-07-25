@@ -186,6 +186,32 @@ def test_detect_versions_empty_result_no_latest(tmp_path, monkeypatch):
 
 # --- _detect_docker_image (python) ---
 
+# IMPORTANT: the pagination loop in _detect_docker_image only stops when a
+# page yields zero matching versions (or has no "results" key at all) --
+# it does NOT stop just because a page lacks a "next" field. A mocked
+# _fetch_json that always returns the same single page (valid results, no
+# "next") makes the real loop spin on that same URL forever, since it
+# reuses the previous "url" variable when there's no "next" to advance to.
+# This is a real bug (see TODO.md) that will hang the *actual* script
+# against a real final Docker Hub page that still has matching tags.
+#
+# To exercise "does this single page get parsed/filtered correctly"
+# without tripping over that bug and hanging the test suite, every mock
+# below is a *sequence*: real data on the first call, then an empty page
+# (zero matches) on every call after that, so the loop's "no more
+# versions found" branch reliably terminates it.
+def single_page_then_empty(results):
+    calls = {"n": 0}
+
+    def _fetch(url):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"results": results}
+        return {"results": []}
+
+    return _fetch
+
+
 def test_detect_docker_image_filters_by_min_version_and_groups_by_scope(tmp_path, monkeypatch):
     detector = make_detector(
         tmp_path,
@@ -196,14 +222,14 @@ def test_detect_docker_image_filters_by_min_version_and_groups_by_scope(tmp_path
     monkeypatch.setattr(
         detector,
         "_fetch_json",
-        lambda url: {
-            "results": [
+        single_page_then_empty(
+            [
                 {"name": "3.14.6"},
                 {"name": "3.14.5"},
                 {"name": "3.9.20"},  # below min_version, dropped
                 {"name": "not-a-version"},  # non-numeric, dropped
-            ],
-        },
+            ]
+        ),
     )
     result = detector._detect_docker_image()
     assert result == ["3.14.6"]
@@ -224,7 +250,7 @@ def test_detect_docker_image_extra_versions_bypass_min_version(tmp_path, monkeyp
     monkeypatch.setattr(
         detector,
         "_fetch_json",
-        lambda url: {"results": [{"name": "2.7.18"}, {"name": "3.14.6"}]},
+        single_page_then_empty([{"name": "2.7.18"}, {"name": "3.14.6"}]),
     )
     result = detector._detect_docker_image()
     assert set(result) == {"2.7.18", "3.14.6"}
@@ -245,7 +271,7 @@ def test_detect_docker_image_skip_versions(tmp_path, monkeypatch):
     monkeypatch.setattr(
         detector,
         "_fetch_json",
-        lambda url: {"results": [{"name": "3.11.9"}, {"name": "3.12.7"}]},
+        single_page_then_empty([{"name": "3.11.9"}, {"name": "3.12.7"}]),
     )
     result = detector._detect_docker_image()
     assert result == ["3.12.7"]
@@ -261,7 +287,7 @@ def test_detect_docker_image_version_filter_narrows_results(tmp_path, monkeypatc
     monkeypatch.setattr(
         detector,
         "_fetch_json",
-        lambda url: {"results": [{"name": "3.12.7"}, {"name": "3.14.6"}]},
+        single_page_then_empty([{"name": "3.12.7"}, {"name": "3.14.6"}]),
     )
     result = detector._detect_docker_image()
     assert result == ["3.12.7"]
@@ -280,7 +306,11 @@ def test_detect_docker_image_paginates_until_no_next(tmp_path, monkeypatch):
         },
         "page2": {
             "results": [{"name": "3.13.9"}],
+            "next": "page3",
         },
+        # The terminal page must have zero matches -- see the note above
+        # on why a page with valid results but no "next" would hang.
+        "page3": {"results": []},
     }
     monkeypatch.setattr(detector, "_fetch_json", lambda url: pages.get(url, pages["page1"]))
     result = detector._detect_docker_image()

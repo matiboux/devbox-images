@@ -22,7 +22,28 @@ TESTS_RUN=0
 TESTS_FAILED=0
 CURRENT_TEST=''
 STUB_BIN_DIR=''
-ORIGINAL_PATH="${PATH}"
+
+# Real Linux hosts (unlike a bare macOS dev machine) genuinely have
+# groupadd/useradd/adduser/addgroup etc. installed under /sbin, /usr/sbin,
+# /usr/local/sbin. Merely removing our *own* stub for one of those names
+# (to simulate "command not found") isn't enough on such a host: the real
+# binary further down PATH is still found and actually runs (e.g. against
+# users/groups that already exist in the container, with confusing
+# unrelated failures). So the base PATH used under the stub bin excludes
+# every *sbin directory -- only commands we explicitly stub (or plain
+# /bin, /usr/bin, etc. utilities) are reachable, so "not stubbed" reliably
+# means "not found" for this class of admin tools.
+FILTERED_PATH=''
+IFS=':'
+for _path_entry in ${PATH}; do
+	case "${_path_entry}" in
+		*/sbin) ;;
+		sbin) ;;
+		*) FILTERED_PATH="${FILTERED_PATH:+${FILTERED_PATH}:}${_path_entry}" ;;
+	esac
+done
+unset IFS _path_entry
+ORIGINAL_PATH="${FILTERED_PATH}"
 
 # --- stub command management ---
 
