@@ -3,11 +3,11 @@
 # docker/stat/getent/sudo are stubbed and DOCKER_SOCK points at a throwaway
 # path, so no real system group state is touched.
 #
-# NOTE: the actual /etc/group edit (conflict resolution + GID rewrite) runs
-# inside a `sudo sh -c '...'` invocation. Here that invocation is replaced by
-# a stub, so this suite only verifies the entrypoint's own control flow
-# (when it calls sudo, how it re-execs, what it warns about) -- not the
-# embedded sed logic itself, which requires real root to exercise safely.
+# NOTE: the actual /etc/group edit (the docker GID rewrite) runs inside a
+# `sudo sh -c '...'` invocation. Here that invocation is replaced by a stub,
+# so this suite only verifies the entrypoint's own control flow (when it
+# calls sudo, how it re-execs, what it warns about) -- not the embedded sed
+# logic itself, which requires real root to exercise safely.
 
 . "$(dirname "$0")/../support/shell/harness.sh"
 
@@ -82,7 +82,7 @@ stub_sudo 1
 output=$(DOCKER_SOCK="${FAKE_SOCK}" sh "${SCRIPT}" env 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
-assert_contains "${output}" "Warning: could not align 'docker' group GID"
+assert_contains "${output}" "Warning: Could not align Docker group GID with Docker socket GID"
 assert_contains "${output}" "DOCKER_HOST=unix://${FAKE_SOCK}"
 sudo_log="$(cat "${STUB_BIN_DIR}/sudo.log")"
 assert_not_contains "${sudo_log}" '-u'
@@ -100,7 +100,7 @@ else
 	output=$(DOCKER_SOCK="${FAKE_SOCK}" sh "${SCRIPT}" env 2>&1)
 	code=$?
 	assert_exit_code "${code}" 0 "${output}"
-	assert_contains "${output}" "Warning: could not align 'docker' group GID"
+	assert_contains "${output}" "Warning: Could not align Docker group GID with Docker socket GID"
 	assert_contains "${output}" "DOCKER_HOST=unix://${FAKE_SOCK}"
 fi
 rm -f "${FAKE_SOCK}"
