@@ -491,7 +491,7 @@ class DetectVersions:
                 f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',
                 file=sys.stderr,
             )
-            return past_detected_versions
+            data = []
 
         for tag in data:
             try:
