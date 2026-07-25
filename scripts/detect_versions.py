@@ -44,6 +44,7 @@ class DetectVersions:
             'nvm': self._detect_github_repo,
             'yarn': self._detect_github_repo,
             'pnpm': self._detect_github_repo,
+            'docker': self._return_static_package,
         }
 
         if self.package_name not in self._detectors:
@@ -66,6 +67,7 @@ class DetectVersions:
             'nvm': 'minor',
             'yarn': 'major',
             'pnpm': 'major',
+            'docker': 'major',
         }
         return defaults.get(self.package_name, 'minor')
 
@@ -540,6 +542,12 @@ class DetectVersions:
 
         return self._sort_versions(grouped_versions)
 
+    def _return_static_package(
+        self,
+        past_detected_versions: List[str] = [],
+    ) -> List[str]:
+        return [self.package_name]
+
     def save_versions_file(self):
         """Save detected versions to output file."""
         print(f"Saving '{self.package_name}' versions to {self.output_path}...")
@@ -579,7 +587,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         'package_name',
         help=(
-            'Package name (\'python\', \'node\', \'poetry\', \'uv\', \'nvm\', \'yarn\', or \'pnpm\'). '
+            'Package name (like \'python\' or \'node\'). '
             'Can also be specified via --package option.'
         ),
     )

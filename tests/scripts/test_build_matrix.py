@@ -95,6 +95,15 @@ def test_component_tag_level_minor_when_package_missing(tmp_path):
     assert bm._get_component_tag_level({}, {'python': '3.14.6'}, 'python') == 'minor'
 
 
+def test_component_tag_level_global_for_static_pseudo_version(tmp_path):
+    # A package whose "version" is literally its own name (e.g. 'docker',
+    # see DetectVersions._return_static_package) always "matches latest"
+    # and falls into the 'global' branch above, so the tag-generation
+    # pipeline also emits an alias with that component omitted entirely.
+    bm = make_matrix(tmp_path, ['docker'], {'docker': ['docker']})
+    assert bm._get_component_tag_level({'docker': 'docker'}, {'docker': 'docker'}, 'docker') == 'global'
+
+
 def test_component_unlabeled_flag_always(tmp_path):
     bm = make_matrix(tmp_path, ['python?'], {'python': ['3.14.6']})
     assert bm._get_component_unlabeled_flag('python') == 'always'

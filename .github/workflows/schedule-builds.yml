@@ -47,6 +47,15 @@ env:
       src_dirname: python
       package_versions: python?,uv
       base_variants: '["", "slim", "alpine"]'
+    # Devbox Python + Docker
+    - images_prefix: devbox-python-docker
+      src_dirname: python
+      package_versions: python?,docker?
+      base_variants: '["", "slim", "alpine"]'
+    - images_prefix: devbox-python-docker
+      src_dirname: python
+      package_versions: python?,docker?,uv
+      base_variants: '["", "slim", "alpine"]'
     # Devbox Python + Node
     - images_prefix: devbox-python-node
       src_dirname: python
@@ -83,6 +92,43 @@ env:
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,uv,nvm+,pnpm
+      base_variants: '["", "slim"]'
+    # Devbox Python + Node + Docker
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,nvm+
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,poetry,nvm+
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,uv,nvm+
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,nvm+,yarn
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,poetry,nvm+,yarn
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,uv,nvm+,yarn
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,nvm+,pnpm
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,poetry,nvm+,pnpm
+      base_variants: '["", "slim"]'
+    - images_prefix: devbox-python-node-docker
+      src_dirname: python
+      package_versions: python?,node?,docker?,uv,nvm+,pnpm
       base_variants: '["", "slim"]'
 
 jobs:

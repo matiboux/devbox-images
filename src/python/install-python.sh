@@ -9,6 +9,7 @@ set -e
 # - NODE_VERSION: Version of Node.js to install if set
 # - YARN_VERSION: Version of Yarn to install if set
 # - PNPM_VERSION: Version of pnpm to install if set
+# - DOCKER_VERSION: Install Docker CLI tools if set
 # - USERNAME: Non-root username to create if set
 # - USER_ID: Non-root user ID to create if set
 # - GROUP_ID: Non-root group ID to create if set
@@ -51,6 +52,11 @@ fi
 if [ -n "${PNPM_VERSION}" ]; then
     # Install pnpm
     sh "${COMMON_SCRIPTS_DIR}/install-pnpm.sh" "${PNPM_VERSION}"
+fi
+
+if [ -n "${DOCKER_VERSION}" ]; then
+    # Install Docker CLI tools
+    sh "${COMMON_SCRIPTS_DIR}/install-docker.sh"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then
