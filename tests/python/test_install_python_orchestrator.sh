@@ -21,7 +21,8 @@ CALL_LOG="${FAKE_ROOT}/calls.log"
 
 for name in install-system-tools.sh install-yq.sh install-python-tools.sh \
 	install-poetry.sh install-uv.sh install-nvm.sh install-node.sh \
-	install-yarn.sh install-pnpm.sh install-sudo.sh create-user.sh; do
+	install-yarn.sh install-pnpm.sh install-docker.sh install-sudo.sh \
+	create-user.sh; do
 	cat > "${FAKE_ROOT}/src/common/${name}" <<EOF
 #!/bin/sh
 echo "${name} \$*" >> '${CALL_LOG}'
@@ -47,6 +48,7 @@ assert_not_contains "${calls}" 'install-nvm.sh'
 assert_not_contains "${calls}" 'install-node.sh'
 assert_not_contains "${calls}" 'install-yarn.sh'
 assert_not_contains "${calls}" 'install-pnpm.sh'
+assert_not_contains "${calls}" 'install-docker.sh'
 assert_not_contains "${calls}" 'install-sudo.sh'
 assert_not_contains "${calls}" 'create-user.sh'
 
@@ -61,6 +63,11 @@ NVM_VERSION='0.40.3' NODE_VERSION='22' sh "${FAKE_ROOT}/src/python/install-pytho
 calls="$(cat "${CALL_LOG}")"
 assert_contains "${calls}" 'install-nvm.sh 0.40.3'
 assert_contains "${calls}" 'install-node.sh 22'
+
+test_case 'DOCKER_VERSION triggers install-docker.sh'
+: > "${CALL_LOG}"
+DOCKER_VERSION='docker' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-docker.sh'
 
 test_case 'SUDO_USER=true triggers install-sudo.sh'
 : > "${CALL_LOG}"

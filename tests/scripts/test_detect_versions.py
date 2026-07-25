@@ -52,11 +52,18 @@ def test_missing_constraints_file_warns_and_defaults_empty(tmp_path, capsys):
         ('nvm', 'minor'),
         ('yarn', 'major'),
         ('pnpm', 'major'),
+        ('docker', 'major'),
     ],
 )
 def test_default_scope_per_package(tmp_path, package, expected_scope):
     detector = make_detector(tmp_path, package)
     assert detector.scope == expected_scope
+
+
+def test_docker_detects_static_pseudo_version(tmp_path):
+    detector = make_detector(tmp_path, 'docker')
+    assert detector.detect_versions() == ['docker']
+    assert detector.latest_version == 'docker'
 
 
 def test_invalid_scope_raises(tmp_path):

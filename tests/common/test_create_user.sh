@@ -19,6 +19,7 @@ setup_stub_bin
 test_case 'defaults: no args uses username=user, uid=1000, gid=1000'
 stub_cmd_logging groupadd
 stub_cmd_logging useradd
+stub_cmd_logging getent 1
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
@@ -31,6 +32,7 @@ rm -f "${STUB_BIN_DIR}"/*.log
 test_case 'custom args are passed through to groupadd/useradd'
 stub_cmd_logging groupadd
 stub_cmd_logging useradd
+stub_cmd_logging getent 1
 output=$(sh "${SCRIPT}" 'dev' '2000' '2001' 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
@@ -44,6 +46,7 @@ test_case 'falls back to addgroup when groupadd is unavailable'
 rm -f "${STUB_BIN_DIR}/groupadd"
 stub_cmd_logging addgroup
 stub_cmd_logging useradd
+stub_cmd_logging getent 1
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
@@ -63,6 +66,7 @@ test_case 'falls back to adduser when useradd is unavailable'
 stub_cmd_logging groupadd
 rm -f "${STUB_BIN_DIR}/useradd"
 stub_cmd_logging adduser
+stub_cmd_logging getent 1
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
@@ -76,6 +80,44 @@ output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 1
 assert_contains "${output}" 'No suitable command found to create user'
+
+# --- docker group membership (socat execute access) ---
+
+test_case 'user is added to an existing docker group via usermod'
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+stub_cmd_logging getent 0
+stub_cmd_logging usermod
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "$(cat "${STUB_BIN_DIR}/usermod.log")" '-aG docker user'
+rm -f "${STUB_BIN_DIR}"/*.log
+
+test_case 'falls back to adduser for docker group membership when usermod is unavailable'
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+stub_cmd_logging getent 0
+rm -f "${STUB_BIN_DIR}/usermod"
+stub_cmd_logging adduser
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "$(cat "${STUB_BIN_DIR}/adduser.log")" 'user docker'
+rm -f "${STUB_BIN_DIR}"/*.log
+
+test_case 'no docker group present leaves group membership untouched'
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+stub_cmd_logging getent 1
+stub_cmd_logging usermod
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+if [ -f "${STUB_BIN_DIR}/usermod.log" ]; then
+	fail 'expected usermod to not run when docker group is absent'
+fi
+rm -f "${STUB_BIN_DIR}"/*.log
 
 # --- sudo user, unknown distro (this machine has no /etc/os-release) ---
 
