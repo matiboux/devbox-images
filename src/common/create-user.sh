@@ -110,3 +110,12 @@ if [ "${SUDO_USER}" = 'true' ]; then
 	fi
 
 fi
+
+# Add user to Docker group if it exists
+if getent group docker > /dev/null 2>&1; then
+	if command -v usermod > /dev/null 2>&1; then
+		usermod -aG docker "${USERNAME}"
+	elif command -v adduser > /dev/null 2>&1; then
+		adduser "${USERNAME}" docker
+	fi
+fi
