@@ -186,21 +186,8 @@ def test_detect_versions_empty_result_no_latest(tmp_path, monkeypatch):
 
 # --- _detect_docker_image (python) ---
 
-# The real pagination loop only stops once a page comes back with zero
-# matching versions; it doesn't stop just because a page has no "next" (see
-# TODO.md, this hangs against a real final page that still has matches). So
-# every mock below returns real results on the first call and an empty page
-# after that, to reliably terminate the loop without tripping over the bug.
-def single_page_then_empty(results):
-    calls = {'n': 0}
-
-    def _fetch(url):
-        calls['n'] += 1
-        if calls['n'] == 1:
-            return {'results': results}
-        return {'results': []}
-
-    return _fetch
+def single_page(results):
+    return lambda url: {'results': results}
 
 
 def test_detect_docker_image_filters_by_min_version_and_groups_by_scope(tmp_path, monkeypatch):
@@ -213,7 +200,7 @@ def test_detect_docker_image_filters_by_min_version_and_groups_by_scope(tmp_path
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        single_page_then_empty(
+        single_page(
             [
                 {'name': '3.14.6'},
                 {'name': '3.14.5'},
@@ -241,7 +228,7 @@ def test_detect_docker_image_extra_versions_bypass_min_version(tmp_path, monkeyp
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        single_page_then_empty([{'name': '2.7.18'}, {'name': '3.14.6'}]),
+        single_page([{'name': '2.7.18'}, {'name': '3.14.6'}]),
     )
     result = detector._detect_docker_image()
     assert set(result) == {'2.7.18', '3.14.6'}
@@ -262,7 +249,7 @@ def test_detect_docker_image_skip_versions(tmp_path, monkeypatch):
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        single_page_then_empty([{'name': '3.11.9'}, {'name': '3.12.7'}]),
+        single_page([{'name': '3.11.9'}, {'name': '3.12.7'}]),
     )
     result = detector._detect_docker_image()
     assert result == ['3.12.7']
@@ -278,7 +265,7 @@ def test_detect_docker_image_version_filter_narrows_results(tmp_path, monkeypatc
     monkeypatch.setattr(
         detector,
         '_fetch_json',
-        single_page_then_empty([{'name': '3.12.7'}, {'name': '3.14.6'}]),
+        single_page([{'name': '3.12.7'}, {'name': '3.14.6'}]),
     )
     result = detector._detect_docker_image()
     assert result == ['3.12.7']
@@ -297,10 +284,8 @@ def test_detect_docker_image_paginates_until_no_next(tmp_path, monkeypatch):
         },
         'page2': {
             'results': [{'name': '3.13.9'}],
-            'next': 'page3',
+            # no 'next' key: loop must stop here even though this page has matches
         },
-        # terminal page needs zero matches, see single_page_then_empty above
-        'page3': {'results': []},
     }
     monkeypatch.setattr(detector, '_fetch_json', lambda url: pages.get(url, pages['page1']))
     result = detector._detect_docker_image()
@@ -431,14 +416,13 @@ def test_detect_github_repo_custom_github_repo_from_constraints(tmp_path, monkey
 
 
 def test_detect_github_repo_invalid_response_falls_back_to_past(tmp_path, monkeypatch, capsys):
-    # Unlike _detect_docker_image, this fallback returns past_detected_versions
-    # verbatim -- no min_version/skip_versions/extra_versions filtering, no
-    # sorting. A transient network error here can resurface stale, unsorted
-    # versions that shouldn't otherwise qualify. Flagged in TODO.md.
+    # A transient fetch failure falls back to past_detected_versions, but still
+    # applies min_version/skip_versions/extra_versions filtering and sorting,
+    # same as the successful-but-empty-response fallback path.
     detector = make_detector(tmp_path, 'uv', constraints={'uv': {'min_version': '0.8'}})
     monkeypatch.setattr(detector, '_fetch_json', lambda url: {})
     result = detector._detect_github_repo(past_detected_versions=['0.8.13', '0.5.0'])
-    assert result == ['0.8.13', '0.5.0']
+    assert result == ['0.8.13']
     assert 'Could not fetch tags from GitHub' in capsys.readouterr().err
 
 

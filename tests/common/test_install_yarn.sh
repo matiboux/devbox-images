@@ -32,14 +32,8 @@ assert_exit_code "${code}" 0 "${output}"
 assert_contains "$(cat "${STUB_BIN_DIR}/corepack.log")" 'install -g yarn@4.5.0'
 rm -f "${STUB_BIN_DIR}/corepack.log"
 
-# NOTE: locks in actual current behavior. Yarn tags are really published as
-# "@yarnpkg/cli/X.Y.Z", but the matching-refs branch below queries and
-# strips a hardcoded "refs/tags/v" prefix (copied from the uv/pnpm/nvm
-# template), not the real yarn tag format. So a ref shaped like the real
-# yarn convention would NOT be stripped correctly (see the ref format used
-# here, which is what the sed pattern actually expects).
-test_case 'a partial version resolves via matching-refs (hardcoded "v" prefix stripping)'
-output=$(CURL_STUB_API_BODY='[{"ref":"refs/tags/v4.5.0"},{"ref":"refs/tags/v4.5.10"}]' sh "${SCRIPT}" '4.5' 2>&1)
+test_case 'a partial version resolves via matching-refs ("@yarnpkg/cli/" prefix stripping)'
+output=$(CURL_STUB_API_BODY='[{"ref":"refs/tags/@yarnpkg/cli/4.5.0"},{"ref":"refs/tags/@yarnpkg/cli/4.5.10"}]' sh "${SCRIPT}" '4.5' 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
 assert_contains "$(cat "${STUB_BIN_DIR}/corepack.log")" 'install -g yarn@4.5.10'

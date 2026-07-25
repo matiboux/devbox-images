@@ -1,14 +1,10 @@
 #!/bin/sh
 # Tests for src/common/install-nvm.sh
 #
-# IMPORTANT SAFETY NOTE: on a successful version resolution, this script
-# goes on to `touch /etc/bash_env` and append to /etc/bash.bashrc --
-# hardcoded, real, absolute system paths with no override. That is not
-# safe to exercise on a real host/container filesystem from a test suite.
-# So this suite deliberately only covers the branches that exit *before*
-# that point: unresolvable/invalid versions, GitHub API errors, and the
-# Alpine-unsupported check. The success path is intentionally left
-# untested here (verified only through the actual Docker image build).
+# The successful-install path touches NVM_BASH_ENV and appends a source line
+# to NVM_BASHRC, which default to the real /etc/bash_env and
+# /etc/bash.bashrc. Both are overridable via env vars specifically so this
+# suite can redirect them to throwaway files instead of real system paths.
 
 . "$(dirname "$0")/../support/shell/harness.sh"
 
@@ -67,5 +63,18 @@ output=$(CURL_STUB_API_BODY='{"unexpected":"shape"}' sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 1
 assert_contains "${output}" 'Failed to parse version from GitHub API response.'
+
+test_case 'a fully-qualified version installs successfully, writing only to overridden paths'
+NVM_BASH_ENV="$(mktemp -u)"
+NVM_BASHRC="$(mktemp -u)"
+export NVM_BASH_ENV NVM_BASHRC
+output=$(sh "${SCRIPT}" '0.40.3' 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "${output}" 'Installed nvm version 0.40.3'
+assert_equal "$([ -f "${NVM_BASH_ENV}" ] && echo yes || echo no)" 'yes'
+assert_contains "$(cat "${NVM_BASHRC}" 2>/dev/null)" ". ${NVM_BASH_ENV}"
+rm -f "${NVM_BASH_ENV}" "${NVM_BASHRC}"
+unset NVM_BASH_ENV NVM_BASHRC
 
 summary
