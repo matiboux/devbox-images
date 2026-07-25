@@ -42,3 +42,29 @@ Devbox Python + Node + Docker:
 - `devbox-python-node-docker:3.x-26-pnpm` - Python 3.x image with Node 26, Docker CLI tools, pnpm package manager, and common dev tools
 - `devbox-python-node-docker:3.x-26-poetry-pnpm` - Python 3.x image with Node 26, Docker CLI tools, Poetry and pnpm package managers, and common dev tools
 - `devbox-python-node-docker:3.x-26-uv-pnpm` - Python 3.x image with Node 26, Docker CLI tools, uv and pnpm package managers, and common dev tools
+
+
+## How to use images with Docker CLI tools
+
+To use the Docker CLI tools from a Devbox image, you can mount the host's Docker socket into the container and run commands as a non-root user. For example:
+
+```sh
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  ghcr.io/matiboux/devbox-python-docker:3.14-docker-uv \
+  docker ps
+```
+
+The container must run with the `CAP_DAC_OVERRIDE` capability (granted by default by Docker) to access the host-mounted Docker socket from a non-root user.
+
+In a `devcontainer.json`, the equivalent is:
+
+```json
+{
+  "image": "ghcr.io/matiboux/devbox-python-docker:3.14-docker-uv",
+  "remoteUser": "user",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ]
+}
+```
