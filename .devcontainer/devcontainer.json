@@ -1,0 +1,19 @@
+{
+	"name": "python-devbox",
+	"image": "ghcr.io/matiboux/devbox-python:3.14-uv",
+	"remoteUser": "user",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/user/workspace,type=bind",
+	"workspaceFolder": "/home/user/workspace",
+	"postCreateCommand": "uv sync --frozen",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"charliermarsh.ruff"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/home/user/workspace/.venv/bin/python"
+			}
+		}
+	}
+}
