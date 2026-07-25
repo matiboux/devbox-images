@@ -1,7 +1,10 @@
 {
 	"name": "python-devbox",
-	"image": "ghcr.io/matiboux/devbox-python:3.14-uv",
+	"image": "ghcr.io/matiboux/devbox-python-docker:3.14-uv",
 	"remoteUser": "user",
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+	],
 	"workspaceMount": "source=${localWorkspaceFolder},target=/home/user/workspace,type=bind",
 	"workspaceFolder": "/home/user/workspace",
 	"postCreateCommand": "uv sync --frozen",
