@@ -19,20 +19,10 @@ if [ -S "${DOCKER_SOCK}" ] && command -v docker > /dev/null 2>&1; then
 			&& sudo sh -c '
 				set -e
 				sock_gid="$1"
-				conflict="$(getent group "${sock_gid}" | cut -d: -f1)"
-				if [ -n "${conflict}" ] && [ "${conflict}" != "docker" ]; then
-					free_gid=59999
-					while getent group "${free_gid}" > /dev/null 2>&1; do
-						free_gid=$((free_gid - 1))
-					done
-					sed -i "s/^${conflict}:\([^:]*\):[0-9]*:/${conflict}:\1:${free_gid}:/" /etc/group
-				fi
 				sed -i "s/^docker:\([^:]*\):[0-9]*:/docker:\1:${sock_gid}:/" /etc/group
 			' sh "${SOCK_GID}" 2>/dev/null
 		then
-			# Re-exec as ourselves through sudo so supplementary groups are
-			# re-resolved against the just-updated /etc/group; a plain root
-			# edit doesn't retroactively update this process's own groups.
+			# Re-exec as ourselves to refresh supplementary groups
 			REEXEC="sudo -u $(id -un)"
 		else
 			echo "Warning: Could not align Docker group GID with Docker socket GID; Docker access may not work for non-root users." >&2
