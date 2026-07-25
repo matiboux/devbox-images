@@ -84,11 +84,12 @@ else
 fi
 
 # Create a Docker group for non-root users
+DOCKER_GID='999'
 if ! getent group docker > /dev/null 2>&1; then
     if command -v groupadd > /dev/null 2>&1; then
-        groupadd docker
+        groupadd -g "${DOCKER_GID}" docker
     elif command -v addgroup > /dev/null 2>&1; then
-        addgroup docker
+        addgroup -g "${DOCKER_GID}" docker
     fi
 fi
 
