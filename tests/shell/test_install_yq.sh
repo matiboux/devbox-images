@@ -2,8 +2,9 @@
 # Tests for src/common/install-yq.sh
 #
 # `tar` and `mv` are stubbed as safe no-ops: this script's final step is an
-# unconditional `mv <tmpfile> /usr/local/bin/yq`, a real hardcoded system
-# path with no override, so we must never let it actually run un-intercepted.
+# unconditional `mv .../yq_<arch> /usr/local/bin/yq`, a real hardcoded
+# system path with no override, so we must never let it actually run
+# un-intercepted.
 
 . "$(dirname "$0")/harness.sh"
 
@@ -32,15 +33,11 @@ code=$?
 assert_exit_code "${code}" 0 "${output}"
 rm -f "${STUB_BIN_DIR}/uname"
 
-# NOTE: locks in actual current behavior. ARCH_PLATFORM is computed (and
-# used to reject unsupported architectures) but is never actually used to
-# select which asset gets downloaded -- the download URL is architecture-
-# independent. Flagged separately as worth a closer look.
-test_case 'the resolved architecture is not actually used in the download URL'
+test_case 'the resolved architecture selects the matching release asset'
 stub_cmd uname 'echo aarch64'
 : > "${CURL_LOG}"
 output=$(CURL_STUB_LOG="${CURL_LOG}" sh "${SCRIPT}" '4.53.3' 2>&1)
-assert_not_contains "$(cat "${CURL_LOG}")" 'linux_arm64'
+assert_contains "$(cat "${CURL_LOG}")" 'yq_linux_arm64.tar.gz'
 rm -f "${STUB_BIN_DIR}/uname"
 
 test_case 'a fully-qualified X.Y.Z version skips the GitHub API lookup'
