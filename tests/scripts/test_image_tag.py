@@ -7,7 +7,7 @@ import pytest
 
 from scripts.image_tag import ImageTagGenerator
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 # --- _validate_tag_level ---
