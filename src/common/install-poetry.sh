@@ -6,6 +6,14 @@ POETRY_VERSION_INPUT=${1:-latest}
 
 POETRY_INSTALLER_FILE="$(mktemp)"
 
+cleanup() {
+    if [ -n "${POETRY_INSTALLER_FILE}" ]; then
+        rm -f "${POETRY_INSTALLER_FILE}"
+    fi
+}
+
+trap 'cleanup' EXIT
+
 install_poetry_and_exit() {
     PYTHON_COMMAND="$(command -v python3 || command -v python)"
     "${PYTHON_COMMAND}" "${POETRY_INSTALLER_FILE}"
@@ -13,7 +21,6 @@ install_poetry_and_exit() {
     if [ "${EXIT_CODE}" -ne 0 ]; then
         echo "Failed to install Poetry." >&2
     fi
-    rm -f "${POETRY_INSTALLER_FILE}"
     exit ${EXIT_CODE}
 }
 

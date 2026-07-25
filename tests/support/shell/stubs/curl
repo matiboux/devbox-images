@@ -1,0 +1,44 @@
+#!/bin/sh
+# Configurable curl stub used by the install-*.sh test suites, to avoid any
+# real network access. Controlled via environment variables:
+#
+#   CURL_STUB_LOG        - if set, append the full invocation ("curl ...") to this file
+#   CURL_STUB_API_BODY   - response body to print for plain/`-w` invocations (default: "[]")
+#   CURL_STUB_HTTP_CODE  - HTTP status code appended after the body when `-w` is used (default: "200")
+#   CURL_STUB_EXIT_CODE  - exit code for this invocation, to simulate curl/network failure (default: "0")
+#   CURL_STUB_INSTALLER  - content written to the file targeted by `-o`, i.e. the "downloaded" script
+#                          (default: a trivial no-op "#!/bin/sh\nexit 0" script)
+
+out_file=''
+has_w=0
+prev=''
+for arg in "$@"; do
+	if [ "${prev}" = '-o' ]; then
+		out_file="${arg}"
+	fi
+	if [ "${arg}" = '-w' ]; then
+		has_w=1
+	fi
+	prev="${arg}"
+done
+
+if [ -n "${CURL_STUB_LOG}" ]; then
+	echo "curl $*" >> "${CURL_STUB_LOG}"
+fi
+
+if [ -n "${out_file}" ]; then
+	if [ -n "${CURL_STUB_INSTALLER}" ]; then
+		printf '%s\n' "${CURL_STUB_INSTALLER}" > "${out_file}"
+	else
+		printf '#!/bin/sh\nexit 0\n' > "${out_file}"
+	fi
+elif [ "${has_w}" -eq 1 ]; then
+	# Use "-" (not ":-") so a deliberately empty CURL_STUB_API_BODY (to test
+	# "empty response from API" handling) is preserved instead of falling
+	# back to the default -- only a genuinely *unset* variable defaults.
+	printf '%s\n%s' "${CURL_STUB_API_BODY-[]}" "${CURL_STUB_HTTP_CODE:-200}"
+else
+	printf '%s' "${CURL_STUB_API_BODY-[]}"
+fi
+
+exit "${CURL_STUB_EXIT_CODE:-0}"

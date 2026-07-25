@@ -1,0 +1,15 @@
+#!/bin/sh
+# Configurable pip stub, only implements `pip index versions <pkg>`, used by
+# install-poetry.sh / install-uv.sh test suites to avoid real PyPI access.
+#
+#   PIP_STUB_VERSIONS - comma-separated "Available versions" line content
+
+if [ "$1" = 'index' ] && [ "$2" = 'versions' ]; then
+	echo "$3 (0.0.0):"
+	echo '  INSTALLED: ...'
+	echo "Available versions: ${PIP_STUB_VERSIONS:-}"
+	exit 0
+fi
+
+echo "pip stub: unsupported invocation: $*" >&2
+exit 1
