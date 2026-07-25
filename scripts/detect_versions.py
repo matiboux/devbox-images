@@ -88,16 +88,23 @@ class DetectVersions:
         except Exception:
             return {}
 
-    def _fetch_json(self, url: str, timeout: int = 10) -> dict:
+    def _fetch_json(
+        self,
+        url: str,
+        auth_token: str | None = None,
+        timeout: int = 10,
+    ) -> Any:
         """Fetch JSON from URL with error handling."""
         try:
             req = urllib.request.Request(url)
             req.add_header('User-Agent', 'python-devbox/1.0')
+            if auth_token:
+                req.add_header('Authorization', f"token {auth_token}")
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 return json.loads(response.read().decode())
         except (urllib.error.URLError, json.JSONDecodeError) as e:
             print(f"Warning: Failed to fetch {url}: {e}", file=sys.stderr)
-            return {}
+            return None
 
     def _get_version_tuple(self, version: str) -> Tuple[int, int, int]:
         parts = version.split('.', 2)
@@ -487,7 +494,7 @@ class DetectVersions:
             github_repo, version_prefix = known_repos[self.package_name]
 
         url = f'https://api.github.com/repos/{github_repo}/git/matching-refs/tags/{version_prefix}'
-        data = self._fetch_json(url)
+        data = self._fetch_json(url, auth_token=os.environ.get('GITHUB_TOKEN'))
         if not data or not isinstance(data, list):
             print(
                 f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',

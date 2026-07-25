@@ -34,7 +34,16 @@ get_yarn_version() {
 	local http_code
 	local response
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest")
+		if [ -n "${GITHUB_TOKEN}" ]; then
+			response=$(
+			    curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest" \
+					-H "Authorization: token ${GITHUB_TOKEN}"
+			)
+		else
+			response=$(
+				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest"
+			)
+		fi
 		if [ $? -ne 0 ]; then
 			echo 'Failed to connect to GitHub API.' >&2
 			return 1
@@ -59,10 +68,20 @@ get_yarn_version() {
 			| sed 's/^v//'
 		)
 	else
-		response=$(curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}") || {
+		if [ -n "${GITHUB_TOKEN}" ]; then
+			response=$(
+				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}" \
+					-H "Authorization: token ${GITHUB_TOKEN}"
+			)
+		else
+			response=$(
+				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}"
+			)
+		fi
+		if [ $? -ne 0 ]; then
 			echo 'Failed to connect to GitHub API.' >&2
 			return 1
-		}
+		fi
 		http_code=$(echo "${response}" | tail -n1)
 		response=$(echo "${response}" | sed '$d')
 		if [ "${http_code}" != '200' ]; then

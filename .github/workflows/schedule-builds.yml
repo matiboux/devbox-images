@@ -5,6 +5,7 @@ name: Schedule Devbox images builds
 
 # GitHub secrets:
 # - (inherit from matrix-build.yml)
+# - GH_READ_TOKEN
 
 on:
 
@@ -148,7 +149,7 @@ jobs:
 
     # Set environment variables for the job
     env:
-      GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
+      GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
 
     outputs:
       matrix: ${{ steps.outputs.outputs.matrix }}
@@ -264,7 +265,7 @@ jobs:
       - name: Fetch all published tags
         if: ${{ inputs.skip_published_tags == true }}
         env:
-          GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
+          GH_READ_TOKEN: ${{ env.GH_READ_TOKEN }}
           IMAGES_PREFIXES: ${{ env.IMAGES_PREFIXES }}
         run: |
           # Fetch published tags for each specified image prefix

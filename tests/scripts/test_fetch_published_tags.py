@@ -40,7 +40,7 @@ def test_init_uses_explicit_token(tmp_path):
 
 def test_init_falls_back_to_env_token(tmp_path, monkeypatch):
     monkeypatch.delenv('GITHUB_TOKEN', raising=False)
-    monkeypatch.setenv('GITHUB_READ_TOKEN', 'env-token')
+    monkeypatch.setenv('GH_READ_TOKEN', 'env-token')
     fetcher = FetchPublishedTags(
         image_name='python-devbox',
         output_path=str(tmp_path / 'published_tags.yml'),
@@ -49,7 +49,7 @@ def test_init_falls_back_to_env_token(tmp_path, monkeypatch):
 
 
 def test_init_falls_back_to_github_token_env(tmp_path, monkeypatch):
-    monkeypatch.delenv('GITHUB_READ_TOKEN', raising=False)
+    monkeypatch.delenv('GH_READ_TOKEN', raising=False)
     monkeypatch.setenv('GITHUB_TOKEN', 'fallback-token')
     fetcher = FetchPublishedTags(
         image_name='python-devbox',
@@ -59,7 +59,7 @@ def test_init_falls_back_to_github_token_env(tmp_path, monkeypatch):
 
 
 def test_init_default_ignore_tags_older_than_is_recent(tmp_path, monkeypatch):
-    monkeypatch.delenv('GITHUB_READ_TOKEN', raising=False)
+    monkeypatch.delenv('GH_READ_TOKEN', raising=False)
     monkeypatch.delenv('GITHUB_TOKEN', raising=False)
     fetcher = FetchPublishedTags(
         image_name='python-devbox',
@@ -71,7 +71,7 @@ def test_init_default_ignore_tags_older_than_is_recent(tmp_path, monkeypatch):
 # --- fetch_published_tags ---
 
 def test_fetch_without_token_returns_empty_and_warns(tmp_path, monkeypatch, capsys):
-    monkeypatch.delenv('GITHUB_READ_TOKEN', raising=False)
+    monkeypatch.delenv('GH_READ_TOKEN', raising=False)
     monkeypatch.delenv('GITHUB_TOKEN', raising=False)
     fetcher = FetchPublishedTags(
         image_name='python-devbox',
