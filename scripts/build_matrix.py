@@ -39,15 +39,21 @@ class BuildMatrix:
             package = package.strip().lower()
             if not package:
                 continue
+            is_unlabeled = False
+            is_ghost = False
             while True:
                 if package.endswith('?'):
                     package = package[:-1]
-                    self.unlabeled_packages.add(package)
+                    is_unlabeled = True
                 elif package.endswith('+'):
                     package = package[:-1]
-                    self.ghost_packages.add(package)
+                    is_ghost = True
                 else:
                     break
+            if is_unlabeled:
+                self.unlabeled_packages.add(package)
+            if is_ghost:
+                self.ghost_packages.add(package)
             self.packages.append(package)
 
         if not self.packages:
