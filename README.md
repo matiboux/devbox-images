@@ -5,43 +5,38 @@ Docker images for development and testing environments, automatically built and 
 
 ## Available images
 
-Devbox Python:
-- `devbox-python:3.x` - Python 3.x image with common dev tools
-- `devbox-python:3.x-slim` - Python 3.x slim image with common dev tools
-- `devbox-python:3.x-alpine` - Python 3.x Alpine image with common dev tools
-- `devbox-python:3.x-poetry` - Python 3.x image with Poetry package manager and common dev tools
-- `devbox-python:3.x-slim-poetry` - Python 3.x slim image with Poetry package manager and common dev tools
-- `devbox-python:3.x-alpine-poetry` - Python 3.x Alpine image with Poetry package manager and common dev tools
-- `devbox-python:3.x-uv` - Python 3.x image with uv package manager and common dev tools
-- `devbox-python:3.x-slim-uv` - Python 3.x slim image with uv package manager and common dev tools
-- `devbox-python:3.x-alpine-uv` - Python 3.x Alpine image with uv package manager and common dev tools
 
-Devbox Python + Docker:
-- `devbox-python-docker:3.x` - Python 3.x image with Docker CLI tools and common dev tools
-- `devbox-python-docker:3.x-poetry` - Python 3.x image with Docker CLI tools, Poetry package manager, and common dev tools
-- `devbox-python-docker:3.x-uv` - Python 3.x image with Docker CLI tools, uv package manager, and common dev tools
+All images ship with common dev tools.
 
-Devbox Python + Node:
-- `devbox-python-node:3.x-26` - Python 3.x image with Node 26 and common dev tools
-- `devbox-python-node:3.x-26-poetry` - Python 3.x image with Node 26, Poetry package manager, and common dev tools
-- `devbox-python-node:3.x-26-uv` - Python 3.x image with Node 26, uv package manager, and common dev tools
-- `devbox-python-node:3.x-26-yarn` - Python 3.x image with Node 26, Yarn package manager, and common dev tools
-- `devbox-python-node:3.x-26-poetry-yarn` - Python 3.x image with Node 26, Poetry and Yarn package managers, and common dev tools
-- `devbox-python-node:3.x-26-uv-yarn` - Python 3.x image with Node 26, uv and Yarn package managers, and common dev tools
-- `devbox-python-node:3.x-26-pnpm` - Python 3.x image with Node 26, pnpm package manager, and common dev tools
-- `devbox-python-node:3.x-26-poetry-pnpm` - Python 3.x image with Node 26, Poetry and pnpm package managers, and common dev tools
-- `devbox-python-node:3.x-26-uv-pnpm` - Python 3.x image with Node 26, uv and pnpm package managers, and common dev tools
+Examples of available images:
 
-Devbox Python + Node + Docker:
-- `devbox-python-node-docker:3.x-26` - Python 3.x image with Node 26, Docker CLI tools, and common dev tools
-- `devbox-python-node-docker:3.x-26-poetry` - Python 3.x image with Node 26, Docker CLI tools, Poetry package manager, and common dev tools
-- `devbox-python-node-docker:3.x-26-uv` - Python 3.x image with Node 26, Docker CLI tools, uv package manager, and common dev tools
-- `devbox-python-node-docker:3.x-26-yarn` - Python 3.x image with Node 26, Docker CLI tools, Yarn package manager, and common dev tools
-- `devbox-python-node-docker:3.x-26-poetry-yarn` - Python 3.x image with Node 26, Docker CLI tools, Poetry and Yarn package managers, and common dev tools
-- `devbox-python-node-docker:3.x-26-uv-yarn` - Python 3.x image with Node 26, Docker CLI tools, uv and Yarn package managers, and common dev tools
-- `devbox-python-node-docker:3.x-26-pnpm` - Python 3.x image with Node 26, Docker CLI tools, pnpm package manager, and common dev tools
-- `devbox-python-node-docker:3.x-26-poetry-pnpm` - Python 3.x image with Node 26, Docker CLI tools, Poetry and pnpm package managers, and common dev tools
-- `devbox-python-node-docker:3.x-26-uv-pnpm` - Python 3.x image with Node 26, Docker CLI tools, uv and pnpm package managers, and common dev tools
+- `devbox-python`: Python 3.x only
+  - `3.x` - Base image
+  - `3.x-slim` - Base slim image
+  - `3.x-alpine` - Base Alpine image
+  - `3.x-poetry` - Base image, with Poetry package manager
+  - `3.x-uv` - Base image, with uv package manager
+
+<span></span>
+
+- `devbox-python-docker`: Python 3.x with Docker CLI tools
+  - Same tags as `devbox-python` above
+
+<span></span>
+
+- `devbox-python-node`: Python 3.x with Node x
+  - `3.x-x` - Base image
+  - `3.x-x-poetry` - Base image, with Poetry package manager
+  - `3.x-x-uv` - Base image, with uv package manager
+  - `3.x-x-yarn` - Base image, with Yarn package manager
+  - `3.x-x-pnpm` - Base image, with pnpm package manager
+  - `3.x-x-poetry-yarn` - Base image, with Poetry and Yarn package managers
+  - `3.x-x-poetry-pnpm` - Base image, with Poetry and pnpm package managers
+  - `3.x-x-uv-yarn` - Base image, with uv and Yarn package managers
+  - `3.x-x-uv-pnpm` - Base image, with uv and pnpm package managers
+
+- `devbox-python-node-docker`: Python 3.x with Node x and Docker CLI tools
+  - Same tags as `devbox-python-node` above
 
 
 ## How to use images with Docker CLI tools
