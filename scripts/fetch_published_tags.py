@@ -63,6 +63,13 @@ class FetchPublishedTags:
             for package_version in data:
                 if not isinstance(package_version, dict):
                     continue
+                updated_at = package_version.get('updated_at') or package_version.get('created_at')
+                if updated_at:
+                    try:
+                        if datetime.fromisoformat(updated_at.replace('Z', '+00:00')) < self.ignore_tags_older_than:
+                            continue
+                    except ValueError:
+                        pass
                 package_version_tags = package_version.get('metadata', {}).get('container', {}).get('tags', [])
                 published_tags.update(package_version_tags)
 
