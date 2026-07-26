@@ -6,7 +6,7 @@ services:
 
   devcontainer:
     # Build
-    image: ghcr.io/matiboux/devbox-python-docker:3.14-uv
+    image: ghcr.io/matiboux/devbox-python-docker:3.13-uv0.10
     # Deploy
     extra_hosts:
       - host.docker.internal:host-gateway
