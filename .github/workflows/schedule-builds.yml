@@ -216,14 +216,14 @@ jobs:
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
 
-          # Extract unique package names from the matrix JSON, ignoring unlabeled flags ('?')
+          # Extract unique package names from the matrix JSON, ignoring unlabeled flags ('?', '+')
           PACKAGES="$(
             jq -rc '
               .
               | map(.package_versions // "")
               | map(split(","))
               | add
-              | map(sub("\\?$"; ""))
+              | map(sub("[?+]$"; ""))
               | unique
               | .[]
             ' <<< "$IMAGES_LIST"
