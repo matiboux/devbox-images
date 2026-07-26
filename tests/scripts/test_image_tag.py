@@ -191,6 +191,7 @@ def run_cli(args, cwd=ROOT_DIR):
         cwd=cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
 

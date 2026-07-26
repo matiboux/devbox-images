@@ -394,6 +394,7 @@ class DetectVersions:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
         except (OSError, subprocess.SubprocessError) as e:
             print(f"Warning: pip index versions failed: {e}", file=sys.stderr)

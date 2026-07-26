@@ -13,4 +13,5 @@ def run_shell_test(path: Path) -> subprocess.CompletedProcess:
         ['sh', str(path)],
         capture_output=True,
         text=True,
+        check=False,
     )
