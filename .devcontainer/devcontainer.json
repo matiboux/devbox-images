@@ -1,6 +1,6 @@
 {
 	"name": "python-devbox",
-	"image": "ghcr.io/matiboux/devbox-python-docker:3.14-uv",
+	"image": "ghcr.io/matiboux/devbox-python-docker:3.13-uv0.10",
 	"remoteUser": "user",
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
