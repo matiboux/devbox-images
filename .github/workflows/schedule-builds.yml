@@ -276,8 +276,8 @@ jobs:
         run: |
           # Fetch published tags for each specified image prefix
 
-          # Get datetime of last commit in the repository
-          LAST_COMMIT_DATETIME="$(git log -1 --format=%cI)"
+          # Get datetime of last commit modifying src/*
+          LAST_COMMIT_DATETIME="$(git log -1 --format=%cI -- src)"
 
           while IFS= read -r image_prefix; do
 
