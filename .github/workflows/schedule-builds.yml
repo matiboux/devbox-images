@@ -393,7 +393,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel_builds || 2 }}
+      max-parallel: ${{ fromJson(inputs.max_parallel_builds || '2') }}
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     # Job dependencies
