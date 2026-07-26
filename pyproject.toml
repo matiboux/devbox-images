@@ -11,7 +11,48 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
+    "ruff>=0.16.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+# TODO: Include more rules as the codebase matures (e.g. S (security), C90 (complexity), D (docstrings))
+select = [
+    "F",       # pyflakes
+    "E",       # pycodestyle errors
+    "W",       # pycodestyle warnings
+    "I",       # isort
+    "N",       # pep8-naming
+    "UP",      # pyupgrade (modern syntax for the pinned Python version)
+    "B",       # flake8-bugbear (common bug patterns, e.g. mutable defaults)
+    "BLE",     # flake8-blind-except (no bare `except Exception`)
+    "C4",      # flake8-comprehensions
+    "SIM",     # flake8-simplify
+    "EXE",     # flake8-executable (shebang/executable-bit consistency)
+    "PLW",     # pylint warnings
+    "PLE",     # pylint errors
+]
+# Ignore rules:
+# - W191 (tab-indentation) conflicts with our tab indentation style
+# - E101 (mixed-spaces-and-tabs) conflicts with our tab indentation style
+ignore = ["W191", "E101"]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "scripts",
+    "src",
+    "tests",
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "tab"
+line-ending = "lf"
