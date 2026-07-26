@@ -39,8 +39,8 @@ on:
       build_args:
         description: 'Comma-separated list or JSON list of build arguments'
         type: string
-      nb_concurrent_builds:
-        description: 'Number of platform builds to run concurrently, to avoid registry rate limiting. Default is 10.'
+      max_parallel_builds:
+        description: 'Maximum number of platform builds to run in parallel at once, to avoid registry rate limiting. Default is 10.'
         type: number
         required: false
     secrets:
@@ -69,10 +69,11 @@ on:
       build_args:
         description: 'Comma-separated list or JSON list of build arguments'
         type: string
-      nb_concurrent_builds:
-        description: 'Number of platform builds to run concurrently, to avoid registry rate limiting. Default is 10.'
+      max_parallel_builds:
+        description: 'Maximum number of parallel builds at a time. Default is 2.'
         type: number
         required: false
+        default: 2
 
 # Set GITHUB_TOKEN permissions for the workflow
 permissions:
@@ -291,7 +292,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.nb_concurrent_builds || 10 }}
+      max-parallel: ${{ inputs.max_parallel_builds || 2 }}
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
