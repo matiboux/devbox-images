@@ -1,6 +1,7 @@
 import json
 import urllib.error
 import urllib.request
+from datetime import datetime
 
 import pytest
 import yaml
@@ -106,6 +107,33 @@ def test_fetch_collects_tags_across_pages(tmp_path, monkeypatch):
     monkeypatch.setattr(urllib.request, 'urlopen', fake_urlopen)
     result = fetcher.fetch_published_tags()
     assert result == {'3.14-slim', '3.14', '3.13'}
+
+
+def test_fetch_skips_versions_older_than_cutoff(tmp_path, monkeypatch):
+    fetcher = FetchPublishedTags(
+        image_name='python-devbox',
+        github_read_token='token',
+        ignore_tags_older_than=datetime.fromisoformat('2024-06-01T00:00:00+00:00'),
+        output_path=str(tmp_path / 'published_tags.yml'),
+    )
+
+    pages = [
+        [
+            {'updated_at': '2024-01-01T00:00:00Z', 'metadata': {'container': {'tags': ['3.13']}}},
+            {'updated_at': '2024-07-01T00:00:00Z', 'metadata': {'container': {'tags': ['3.14']}}},
+        ],
+        [],
+    ]
+    call_count = {'n': 0}
+
+    def fake_urlopen(req, timeout=10):
+        idx = call_count['n']
+        call_count['n'] += 1
+        return FakeResponse(pages[idx] if idx < len(pages) else [])
+
+    monkeypatch.setattr(urllib.request, 'urlopen', fake_urlopen)
+    result = fetcher.fetch_published_tags()
+    assert result == {'3.14'}
 
 
 def test_fetch_ignores_non_dict_entries(tmp_path, monkeypatch):
