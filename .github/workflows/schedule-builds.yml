@@ -22,11 +22,6 @@ on:
         type: number
         required: false
         default: 10
-      max_parallel_builds:
-        description: 'Maximum number of parallel builds at a time. Default is 2.'
-        type: number
-        required: false
-        default: 2
       skip_published_tags:
         description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
         type: boolean
@@ -393,7 +388,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: ${{ fromJson(inputs.max_parallel_builds || '2') }}
+      max-parallel: 3
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     # Job dependencies
@@ -411,5 +406,4 @@ jobs:
       src_dirname: ${{ matrix.src_dirname }}
       image_tag_components: ${{ matrix.image_tag_components }}
       build_args: ${{ matrix.build_args }}
-      max_parallel_builds: ${{ inputs.max_parallel_builds || 2 }}
     secrets: inherit
