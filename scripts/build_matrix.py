@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Tuple, Set
 import argparse
 import itertools
-import os
 import json
+import os
 import sys
+from datetime import datetime, timezone
+from typing import Any
 
 import yaml
 
@@ -17,24 +17,24 @@ class BuildMatrix:
 
     def __init__(
         self,
-        packages: List[str],
-        base_variants: List[str] | Set[str] | None = None,
-        common_metadata: Dict[str, Any] | None = None,
+        packages: list[str],
+        base_variants: list[str] | set[str] | None = None,
+        common_metadata: dict[str, Any] | None = None,
         versions_path: str = 'dist/versions.yml',
         published_tags_path: str = 'dist/published_tags.yml',
         skip_published_tags: bool = True,
         output_path: str = 'dist/build_matrix.yml',
     ):
-        self.base_variants: Set[str] | None = set(base_variants) if base_variants else None
-        self.common_metadata: Dict[str, Any] = common_metadata or {}
+        self.base_variants: set[str] | None = set(base_variants) if base_variants else None
+        self.common_metadata: dict[str, Any] = common_metadata or {}
         self.versions_path: str = versions_path
         self.published_tags_path: str = published_tags_path
         self.skip_published_tags: bool = skip_published_tags
         self.output_path: str = output_path
 
-        self.packages: List[str] = []
-        self.unlabeled_packages: Set[str] = set()
-        self.ghost_packages: Set[str] = set()
+        self.packages: list[str] = []
+        self.unlabeled_packages: set[str] = set()
+        self.ghost_packages: set[str] = set()
         for package in packages:
             package = package.strip().lower()
             if not package:
@@ -59,9 +59,9 @@ class BuildMatrix:
         if not self.packages:
             raise ValueError('No packages specified for build matrix generation.')
 
-        self.versions: Dict[str, Any] = self._load_yaml(versions_path)
+        self.versions: dict[str, Any] = self._load_yaml(versions_path)
 
-        self.build_matrix: List[Dict[str, str]] = []
+        self.build_matrix: list[dict[str, str]] = []
 
     def _load_yaml(self, path: str) -> Any:
         """Load YAML configuration file."""
@@ -71,7 +71,7 @@ class BuildMatrix:
         except FileNotFoundError as err:
             raise FileNotFoundError(f"Error: {path} not found") from err
 
-    def _get_version_tuple(self, version: str) -> Tuple[int, int, int]:
+    def _get_version_tuple(self, version: str) -> tuple[int, int, int]:
         parts = version.split('.', 2)
         return (
             int(parts[0]),
@@ -79,7 +79,7 @@ class BuildMatrix:
             int(parts[2]) if len(parts) > 2 else 0
         )
 
-    def _get_component_tag_level(self, packages_version: Dict[str, str], latest_versions: Dict[str, str], package: str) -> str:
+    def _get_component_tag_level(self, packages_version: dict[str, str], latest_versions: dict[str, str], package: str) -> str:
         package_version = packages_version.get(package)
         if package_version and latest_versions.get(package) == package_version:
             return 'global'
@@ -95,14 +95,14 @@ class BuildMatrix:
     def generate_build_matrix(
         self,
         skip_published_tags: bool = True,
-    ) -> List[dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """Generate build matrix from detected versions for specified packages."""
         print(f'Generating build matrix for packages: {", ".join(self.packages)}...')
 
         all_detected_versions = self.versions.get('detected_versions', {})
         all_latest_versions = self.versions.get('latest_version', {})
         all_base_variants = {
-            'python': set(['', 'slim', 'alpine']),
+            'python': {'', 'slim', 'alpine'},
         }
 
         base_package = self.packages[0]
@@ -124,7 +124,7 @@ class BuildMatrix:
 
         if skip_published_tags:
             try:
-                published_tags: Set[str] = self._load_yaml(self.published_tags_path).get('published_tags', set())
+                published_tags: set[str] = self._load_yaml(self.published_tags_path).get('published_tags', set())
                 print(f"Detected {len(published_tags)} published tags.")
             except FileNotFoundError:
                 print(f"Warning: Published tags file '{self.published_tags_path}' not found.", file=sys.stderr)
@@ -140,7 +140,7 @@ class BuildMatrix:
 
             for base_variant in selected_base_variants:
 
-                image_tag_components: List[Tuple[str, str, str, str | None]] = [
+                image_tag_components: list[tuple[str, str, str, str | None]] = [
                     (
                         base_package,
                         packages_version[base_package],

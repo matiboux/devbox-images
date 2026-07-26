@@ -3,21 +3,21 @@
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from itertools import product
-from typing import List, Sequence, Tuple
 
 
 class ImageTagGenerator:
 
     def __init__(
         self,
-        components: Sequence[Tuple[str, str] | Tuple[str, str, str] | Tuple[str, str, str, str | None]],
+        components: Sequence[tuple[str, str] | tuple[str, str, str] | tuple[str, str, str, str | None]],
     ):
         """
         Initialize the ImageTagGenerator with component versions and tag levels.
         :param components: List of tuples containing (component_name, version, tag_level, unlabeled_flag)
         """
-        self.components: List[Tuple[str, str, str, str | None]] = [
+        self.components: list[tuple[str, str, str, str | None]] = [
             (
                 (comp[0], comp[1], self._validate_tag_level(comp[2]), comp[3] if len(comp) >= 4 else None)
                 if len(comp) >= 3 else
@@ -26,7 +26,7 @@ class ImageTagGenerator:
             for comp in components
         ]
 
-        self.image_tags: List[str] = []
+        self.image_tags: list[str] = []
 
     @staticmethod
     def _validate_tag_level(level: str) -> str:
@@ -34,7 +34,7 @@ class ImageTagGenerator:
             return level
         return 'patch'
 
-    def _get_component_options(self, package: str, version: str, level: str, unlabeled: str | None = None) -> List[str]:
+    def _get_component_options(self, package: str, version: str, level: str, unlabeled: str | None = None) -> list[str]:
 
         if not version:
             return ['']
@@ -45,7 +45,7 @@ class ImageTagGenerator:
 
         version_prefix = '' if unlabeled == 'always' else package
 
-        raw_options: List[str] = []
+        raw_options: list[str] = []
         if level == 'global':
             global_tag = '' if unlabeled in ('always', 'global') else package
             raw_options = [f"{version_prefix}{version}", f"{version_prefix}{minor}", f"{version_prefix}{major}", global_tag]
@@ -57,7 +57,7 @@ class ImageTagGenerator:
             raw_options = [f"{version_prefix}{version}"]
 
         # De-duplicate while preserving order
-        options: List[str] = []
+        options: list[str] = []
         for item in raw_options:
             if item not in options:
                 options.append(item)
@@ -67,7 +67,7 @@ class ImageTagGenerator:
     def generate_tags(
         self,
         only_fully_qualified: bool = False,
-    ) -> List[str]:
+    ) -> list[str]:
 
         component_options_list = []
         tag_level_override = 'patch' if only_fully_qualified else None
@@ -75,9 +75,9 @@ class ImageTagGenerator:
             options = self._get_component_options(comp_name, comp_version, tag_level_override or comp_tag_level, comp_unlabeled)
             component_options_list.append(options)
 
-        tags: List[str] = []
+        tags: list[str] = []
         for component_values in product(*component_options_list):
-            tag_pieces: List[str] = []
+            tag_pieces: list[str] = []
 
             for i, (comp_name, _, _, _) in enumerate(self.components):
                 if component_values[i]:
@@ -139,7 +139,7 @@ def main():
     if not components_input:
         components_input = args.components
 
-    components: List[Tuple[str, str, str, str | None]] = []
+    components: list[tuple[str, str, str, str | None]] = []
     for comp in components_input:
         if '=' not in comp:
             print(f"Invalid component format: {comp}. Expected format: component_name=version[:tag_level]", file=sys.stderr)

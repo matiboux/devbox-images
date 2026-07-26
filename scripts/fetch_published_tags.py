@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-from datetime import datetime, timezone, timedelta
-from typing import Set
 import argparse
 import json
 import os
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 import yaml
 
@@ -31,9 +30,9 @@ class FetchPublishedTags:
         if not self.image_name:
             raise ValueError('Empty image name provided. Please specify a valid image name.')
 
-        self.published_tags: Set[str] = set()
+        self.published_tags: set[str] = set()
 
-    def fetch_published_tags(self) -> Set[str]:
+    def fetch_published_tags(self) -> set[str]:
         """Fetch published tags from Docker Hub."""
 
         if not self.image_name:
@@ -44,7 +43,7 @@ class FetchPublishedTags:
             self.published_tags = set()
             return self.published_tags
 
-        published_tags: Set[str] = set()
+        published_tags: set[str] = set()
 
         url = f"https://api.github.com/users/matiboux/packages/container/{self.image_name}/versions"
         for page in range(1, 101):  # Limit to 100 pages to avoid too many requests

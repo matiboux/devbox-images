@@ -1,5 +1,5 @@
-import yaml
 import pytest
+import yaml
 
 from scripts.detect_versions import DetectVersions
 

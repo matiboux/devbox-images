@@ -1,9 +1,8 @@
 import subprocess
 from pathlib import Path
-from typing import List
 
 
-def discover_shell_tests(directory: Path) -> List[Path]:
+def discover_shell_tests(directory: Path) -> list[Path]:
     """Return the test_*.sh suites in a directory, sorted for stable output."""
     return sorted(directory.glob('test_*.sh'))
 
