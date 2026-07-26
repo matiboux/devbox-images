@@ -98,8 +98,8 @@ set_registry_credentials() {
 	fi
 
 	# Set GitHub Actions environment variables
-	set_github_env "${registry_url_env_name}" "${REGISTRY_URL}" non-optional secret verbose
-	set_github_env "${registry_images_prefix_env_name}" "${REGISTRY_IMAGES_PREFIX}" non-optional secret verbose
-	set_github_env "${registry_username_env_name}" "${REGISTRY_USERNAME}" non-optional secret verbose
+	set_github_env "${registry_url_env_name}" "${REGISTRY_URL}" non-optional non-secret verbose
+	set_github_env "${registry_images_prefix_env_name}" "${REGISTRY_IMAGES_PREFIX}" non-optional non-secret verbose
+	set_github_env "${registry_username_env_name}" "${REGISTRY_USERNAME}" non-optional non-secret verbose
 	set_github_env "${registry_token_env_name}" "${REGISTRY_TOKEN}" non-optional secret verbose
 }

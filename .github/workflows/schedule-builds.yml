@@ -11,17 +11,17 @@ on:
 
   # Run on schedule
   schedule:
-    # Daily at 2 AM, 8 AM, 2 PM, and 8 PM (UTC)
-    - cron: '0 2/6 * * *'
+    # Daily at 2 AM, 6 AM, 10 AM, 2 PM, 6 PM, 10 PM UTC
+    - cron: '0 2/4 * * *'
 
   # Run on manual triggers
   workflow_dispatch:
     inputs:
       nb_concurrent_builds:
-        description: 'Number of concurrent builds to run. Default is 10.'
+        description: 'Number of concurrent builds to run. Default is 5.'
         type: number
         required: false
-        default: 10
+        default: 5
       skip_published_tags:
         description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
         type: boolean
@@ -154,7 +154,7 @@ jobs:
 
     # Set environment variables for the job
     env:
-      NB_CONCURRENT_BUILDS: ${{ inputs.nb_concurrent_builds || 10 }}
+      NB_CONCURRENT_BUILDS: ${{ inputs.nb_concurrent_builds || 5 }}
       GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
 
     outputs:
@@ -388,6 +388,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     # Job dependencies
