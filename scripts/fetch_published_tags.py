@@ -23,6 +23,8 @@ class FetchPublishedTags:
     ):
         self.image_name: str = image_name
         self.github_read_token: str | None = github_read_token or os.environ.get('GH_READ_TOKEN') or os.environ.get('GITHUB_TOKEN')
+        if ignore_tags_older_than is not None and ignore_tags_older_than.tzinfo is None:
+            ignore_tags_older_than = ignore_tags_older_than.replace(tzinfo=timezone.utc)
         self.ignore_tags_older_than: datetime = ignore_tags_older_than or (datetime.now(timezone.utc) - timedelta(days=30))
         self.output_path: str = output_path
 
@@ -68,8 +70,8 @@ class FetchPublishedTags:
                     try:
                         if datetime.fromisoformat(updated_at.replace('Z', '+00:00')) < self.ignore_tags_older_than:
                             continue
-                    except ValueError:
-                        pass
+                    except (ValueError, TypeError) as e:
+                        print(f"Warning: Failed to parse package version date '{updated_at}': {e}", file=sys.stderr)
                 package_version_tags = package_version.get('metadata', {}).get('container', {}).get('tags', [])
                 published_tags.update(package_version_tags)
 
