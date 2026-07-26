@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       nb_concurrent_builds:
-        description: 'Number of concurrent builds to run. Default is 10.'
+        description: 'Number of builds to run, and how many to run concurrently, to avoid registry rate limiting. Default is 10.'
         type: number
         required: false
         default: 10
@@ -388,6 +388,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.nb_concurrent_builds || 10 }}
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     # Job dependencies
@@ -405,4 +406,5 @@ jobs:
       src_dirname: ${{ matrix.src_dirname }}
       image_tag_components: ${{ matrix.image_tag_components }}
       build_args: ${{ matrix.build_args }}
+      nb_concurrent_builds: ${{ inputs.nb_concurrent_builds || 10 }}
     secrets: inherit
