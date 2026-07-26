@@ -1,0 +1,51 @@
+name: Test
+
+on:
+
+  # Run on pushes
+  push:
+    branches:
+      - main
+
+  # Run on pull requests
+  pull_request:
+
+  # Run on manual triggers
+  workflow_dispatch:
+
+# Set default GITHUB_TOKEN permissions for the workflow
+permissions:
+  contents: read
+
+# Set workflow concurrency rules
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test:
+    name: Lint & Test
+
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run ruff check
+        run: uv run ruff check .
+
+      - name: Run ruff format check
+        run: uv run ruff format --check .
+
+      - name: Run pytest
+        run: uv run pytest
