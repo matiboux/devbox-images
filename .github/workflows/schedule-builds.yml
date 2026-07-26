@@ -18,10 +18,10 @@ on:
   workflow_dispatch:
     inputs:
       nb_concurrent_builds:
-        description: 'Number of concurrent builds to run. Default is 10.'
+        description: 'Number of concurrent builds to run. Default is 5.'
         type: number
         required: false
-        default: 10
+        default: 5
       skip_published_tags:
         description: 'Skip tags already published to the registry. Disable to force rebuild of published tags.'
         type: boolean
@@ -154,7 +154,7 @@ jobs:
 
     # Set environment variables for the job
     env:
-      NB_CONCURRENT_BUILDS: ${{ inputs.nb_concurrent_builds || 10 }}
+      NB_CONCURRENT_BUILDS: ${{ inputs.nb_concurrent_builds || 5 }}
       GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
 
     outputs:
