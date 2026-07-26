@@ -11,8 +11,8 @@ on:
 
   # Run on schedule
   schedule:
-    # Daily at 2 AM, 8 AM, 2 PM, and 8 PM (UTC)
-    - cron: '0 2/6 * * *'
+    # Daily at 2 AM, 6 AM, 10 AM, 2 PM, 6 PM, 10 PM UTC
+    - cron: '0 2/4 * * *'
 
   # Run on manual triggers
   workflow_dispatch:
