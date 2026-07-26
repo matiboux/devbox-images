@@ -20,9 +20,7 @@ SHELL_TESTS = discover_shell_tests(HERE)
 
 @pytest.mark.parametrize('script', SHELL_TESTS, ids=lambda p: p.name)
 def test_common_shell_script(script):
-    result = run_shell_test(script)
-    assert result.returncode == 0, (
-        f"{script.name} failed:\n"
-        f"--- stdout ---\n{result.stdout}\n"
-        f"--- stderr ---\n{result.stderr}"
-    )
+	result = run_shell_test(script)
+	assert result.returncode == 0, (
+		f'{script.name} failed:\n--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}'
+	)

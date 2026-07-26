@@ -16,645 +16,721 @@ import yaml
 
 class DetectVersions:
 
-    def __init__(
-        self,
-        package_name: str,
-        constraints_path: str = 'constraints.yml',
-        output_path: str = 'dist/versions.yml',
-        version_filter: str | None = None,
-        scope: str | None = None
-    ):
+	def __init__(
+		self,
+		package_name: str,
+		constraints_path: str = 'constraints.yml',
+		output_path: str = 'dist/versions.yml',
+		version_filter: str | None = None,
+		scope: str | None = None,
+	):
 
-        self.package_name: str = package_name.strip().lower()
-        self.constraints_path: str = constraints_path
-        self.output_path: str = output_path
-        self.version_filter: str | None = version_filter
+		self.package_name: str = package_name.strip().lower()
+		self.constraints_path: str = constraints_path
+		self.output_path: str = output_path
+		self.version_filter: str | None = version_filter
 
-        try:
-            self.constraints: dict[str, Any] = self._load_yaml(constraints_path)
-        except FileNotFoundError:
-            print(f"Warning: Constraints file '{constraints_path}' not found.", file=sys.stderr)
-            self.constraints = {}
+		try:
+			self.constraints: dict[str, Any] = self._load_yaml(constraints_path)
+		except FileNotFoundError:
+			print(f"Warning: Constraints file '{constraints_path}' not found.", file=sys.stderr)
+			self.constraints = {}
 
-        self._detectors = {
-            'python': self._detect_docker_image,
-            'node': self._detect_node_versions,
-            'poetry': self._detect_github_repo,
-            'uv': self._detect_github_repo,
-            'nvm': self._detect_github_repo,
-            'yarn': self._detect_github_repo,
-            'pnpm': self._detect_github_repo,
-            'docker': self._return_static_package,
-        }
+		self._detectors = {
+			'python': self._detect_docker_image,
+			'node': self._detect_node_versions,
+			'poetry': self._detect_github_repo,
+			'uv': self._detect_github_repo,
+			'nvm': self._detect_github_repo,
+			'yarn': self._detect_github_repo,
+			'pnpm': self._detect_github_repo,
+			'docker': self._return_static_package,
+		}
 
-        if self.package_name not in self._detectors:
-            raise ValueError(f"Invalid package name '{self.package_name}'.")
+		if self.package_name not in self._detectors:
+			raise ValueError(f"Invalid package name '{self.package_name}'.")
 
-        self.scope: str = scope or self._get_default_scope()
-        if self.scope not in ('major', 'minor', 'patch'):
-            raise ValueError(f"Invalid scope '{self.scope}'. Must be 'major', 'minor', or 'patch'.")
+		self.scope: str = scope or self._get_default_scope()
+		if self.scope not in ('major', 'minor', 'patch'):
+			raise ValueError(f"Invalid scope '{self.scope}'. Must be 'major', 'minor', or 'patch'.")
 
-        self.detected_versions: list[str] = []
-        self.latest_version: str | None = None
+		self.detected_versions: list[str] = []
+		self.latest_version: str | None = None
 
-    def _get_default_scope(self) -> str:
-        """Get default scope for the package type."""
-        defaults = {
-            'python': 'minor',
-            'poetry': 'minor',
-            'uv': 'minor',
-            'node': 'major',
-            'nvm': 'minor',
-            'yarn': 'major',
-            'pnpm': 'major',
-            'docker': 'major',
-        }
-        return defaults.get(self.package_name, 'minor')
+	def _get_default_scope(self) -> str:
+		"""Get default scope for the package type."""
+		defaults = {
+			'python': 'minor',
+			'poetry': 'minor',
+			'uv': 'minor',
+			'node': 'major',
+			'nvm': 'minor',
+			'yarn': 'major',
+			'pnpm': 'major',
+			'docker': 'major',
+		}
+		return defaults.get(self.package_name, 'minor')
 
-    def _load_yaml(self, path: str) -> dict:
-        """Load YAML configuration file."""
-        try:
-            with open(path, 'r') as f:
-                return yaml.safe_load(f)
-        except FileNotFoundError as err:
-            raise FileNotFoundError(f"Error: {path} not found") from err
+	def _load_yaml(self, path: str) -> dict:
+		"""Load YAML configuration file."""
+		try:
+			with open(path) as f:
+				return yaml.safe_load(f)
+		except FileNotFoundError as err:
+			raise FileNotFoundError(f'Error: {path} not found') from err
 
-    def load_past_detected_versions(self) -> dict:
-        """Load cached detected versions from output file."""
-        try:
-            with open(self.output_path, 'r') as f:
-                data = yaml.safe_load(f) or {}
-                return data.get('detected_versions', {})
-        except (FileNotFoundError, yaml.YAMLError):
-            return {}
+	def load_past_detected_versions(self) -> dict:
+		"""Load cached detected versions from output file."""
+		try:
+			with open(self.output_path) as f:
+				data = yaml.safe_load(f) or {}
+				return data.get('detected_versions', {})
+		except (FileNotFoundError, yaml.YAMLError):
+			return {}
 
-    def _fetch_json(
-        self,
-        url: str,
-        auth_token: str | None = None,
-        timeout: int = 10,
-    ) -> Any:
-        """Fetch JSON from URL with error handling."""
-        try:
-            req = urllib.request.Request(url)
-            req.add_header('User-Agent', 'python-devbox/1.0')
-            if auth_token:
-                req.add_header('Authorization', f"token {auth_token}")
-            with urllib.request.urlopen(req, timeout=timeout) as response:
-                return json.loads(response.read().decode())
-        except (urllib.error.URLError, json.JSONDecodeError) as e:
-            print(f"Warning: Failed to fetch {url}: {e}", file=sys.stderr)
-            return None
+	def _fetch_json(
+		self,
+		url: str,
+		auth_token: str | None = None,
+		timeout: int = 10,
+	) -> Any:
+		"""Fetch JSON from URL with error handling."""
+		try:
+			req = urllib.request.Request(url)
+			req.add_header('User-Agent', 'python-devbox/1.0')
+			if auth_token:
+				req.add_header('Authorization', f'token {auth_token}')
+			with urllib.request.urlopen(req, timeout=timeout) as response:
+				return json.loads(response.read().decode())
+		except (urllib.error.URLError, json.JSONDecodeError) as e:
+			print(f'Warning: Failed to fetch {url}: {e}', file=sys.stderr)
+			return None
 
-    def _get_version_tuple(self, version: str) -> tuple[int, int, int]:
-        parts = version.split('.', 2)
-        return (
-            int(parts[0]),
-            int(parts[1]) if len(parts) > 1 else 0,
-            int(parts[2]) if len(parts) > 2 else 0
-        )
+	def _get_version_tuple(self, version: str) -> tuple[int, int, int]:
+		parts = version.split('.', 2)
+		return (
+			int(parts[0]),
+			int(parts[1]) if len(parts) > 1 else 0,
+			int(parts[2]) if len(parts) > 2 else 0,
+		)
 
-    def _get_version_filter_tuple(self, version_filter: str | None) -> tuple[int, ...] | None:
-        if not version_filter:
-            return None
-        try:
-            return tuple(int(part) for part in version_filter.strip().split('.')[:3])
-        except ValueError:
-            print(f"Warning: Invalid version filter '{version_filter}', ignoring.", file=sys.stderr)
-            return None
+	def _get_version_filter_tuple(self, version_filter: str | None) -> tuple[int, ...] | None:
+		if not version_filter:
+			return None
+		try:
+			return tuple(int(part) for part in version_filter.strip().split('.')[:3])
+		except ValueError:
+			print(f"Warning: Invalid version filter '{version_filter}', ignoring.", file=sys.stderr)
+			return None
 
-    def _version_matches_filter(self, version_tuple: tuple[int, int, int], filter_tuple: tuple[int, ...] | None) -> bool:
-        if not filter_tuple:
-            return True
-        return version_tuple[:len(filter_tuple)] == filter_tuple
+	def _version_matches_filter(
+		self, version_tuple: tuple[int, int, int], filter_tuple: tuple[int, ...] | None
+	) -> bool:
+		if not filter_tuple:
+			return True
+		return version_tuple[: len(filter_tuple)] == filter_tuple
 
-    def _get_version_key(self, version_tuple: tuple[int, int, int]) -> str:
-        """Get grouping key for version based on current scope."""
-        if self.scope == 'patch':
-            return f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
-        elif self.scope == 'major':
-            return f"{version_tuple[0]}"
-        else:  # minor (default)
-            return f"{version_tuple[0]}.{version_tuple[1]}"
+	def _get_version_key(self, version_tuple: tuple[int, int, int]) -> str:
+		"""Get grouping key for version based on current scope."""
+		if self.scope == 'patch':
+			return f'{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}'
+		elif self.scope == 'major':
+			return f'{version_tuple[0]}'
+		else:  # minor (default)
+			return f'{version_tuple[0]}.{version_tuple[1]}'
 
-    def _sort_versions(self, grouped_versions: dict[str, str]) -> list[str]:
-        """Sort and return detected versions in descending order."""
-        detected_versions = list(grouped_versions.values())
-        detected_versions.sort(key=lambda v: self._get_version_tuple(v), reverse=True)
-        return detected_versions
+	def _sort_versions(self, grouped_versions: dict[str, str]) -> list[str]:
+		"""Sort and return detected versions in descending order."""
+		detected_versions = list(grouped_versions.values())
+		detected_versions.sort(key=self._get_version_tuple, reverse=True)
+		return detected_versions
 
-    def detect_versions(
-        self,
-        past_detected_versions: list[str] | None = None,
-    ) -> list[str]:
-        """Detect package versions using the appropriate detector."""
-        print(f"Detecting '{self.package_name}' versions...")
+	def detect_versions(
+		self,
+		past_detected_versions: list[str] | None = None,
+	) -> list[str]:
+		"""Detect package versions using the appropriate detector."""
+		print(f"Detecting '{self.package_name}' versions...")
 
-        past_detected_versions = past_detected_versions or []
+		past_detected_versions = past_detected_versions or []
 
-        if self.package_name not in self._detectors:
-            raise ValueError(f"No detector available for package '{self.package_name}'.")
+		if self.package_name not in self._detectors:
+			raise ValueError(f"No detector available for package '{self.package_name}'.")
 
-        detector = self._detectors[self.package_name]
-        self.detected_versions = detector(past_detected_versions)
-        print(f"Detected '{self.package_name}' versions: {self.detected_versions}")
+		detector = self._detectors[self.package_name]
+		self.detected_versions = detector(past_detected_versions)
+		print(f"Detected '{self.package_name}' versions: {self.detected_versions}")
 
-        if self.detected_versions and not self.version_filter:
-            self.latest_version = self.detected_versions[0]
-            print(f"Latest '{self.package_name}' version: {self.latest_version}")
+		if self.detected_versions and not self.version_filter:
+			self.latest_version = self.detected_versions[0]
+			print(f"Latest '{self.package_name}' version: {self.latest_version}")
 
-        return self.detected_versions
+		return self.detected_versions
 
-    def _detect_docker_image(
-        self,
-        past_detected_versions: list[str] | None = None,
-    ) -> list[str]:
-        """Detect package versions from Docker Hub image tags."""
+	def _detect_docker_image(
+		self,
+		past_detected_versions: list[str] | None = None,
+	) -> list[str]:
+		"""Detect package versions from Docker Hub image tags."""
 
-        past_detected_versions = past_detected_versions or []
-        constraints_incomplete = False
+		past_detected_versions = past_detected_versions or []
+		constraints_incomplete = False
 
-        package_constraints = self.constraints.get(self.package_name, {})
-        if not package_constraints:
-            print(
-                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
-        elif not package_constraints.get('min_version'):
-            print(
-                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
+		package_constraints = self.constraints.get(self.package_name, {})
+		if not package_constraints:
+			print(
+				f"Warning: Package '{self.package_name}' not found in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
+		elif not package_constraints.get('min_version'):
+			print(
+				f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
 
-        min_version = package_constraints.get('min_version', '0.0.0')
-        min_version_tuple = self._get_version_tuple(min_version)
-        extra_versions = set(package_constraints.get('extra_versions', []))
-        skip_versions = package_constraints.get('skip_versions', [])
-        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        grouped_versions = {}
+		min_version = package_constraints.get('min_version', '0.0.0')
+		min_version_tuple = self._get_version_tuple(min_version)
+		extra_versions = set(package_constraints.get('extra_versions', []))
+		skip_versions = package_constraints.get('skip_versions', [])
+		version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
+		grouped_versions = {}
 
-        docker_image = package_constraints.get('docker_image')
-        if not docker_image:
-            known_repos = {
-                'python': 'library/python',
-            }
-            docker_image = known_repos.get(self.package_name)
-            if not docker_image:
-                print(f"Warning: No 'docker_image' specified in constraints for {self.package_name}", file=sys.stderr)
-                return past_detected_versions
+		docker_image = package_constraints.get('docker_image')
+		if not docker_image:
+			known_repos = {
+				'python': 'library/python',
+			}
+			docker_image = known_repos.get(self.package_name)
+			if not docker_image:
+				print(
+					f"Warning: No 'docker_image' specified in constraints for {self.package_name}",
+					file=sys.stderr,
+				)
+				return past_detected_versions
 
-        docker_parts = docker_image.split('/')
-        url = f"https://hub.docker.com/v2/namespaces/{docker_parts[0]}/repositories/{docker_parts[1]}/tags?page_size=100"
+		docker_parts = docker_image.split('/')
+		url = f'https://hub.docker.com/v2/namespaces/{docker_parts[0]}/repositories/{docker_parts[1]}/tags?page_size=100'
 
-        while True:
-            data = self._fetch_json(url)
-            if not data:
-                print(
-                    'Warning: Could not fetch package versions from Docker Hub, using previously cached versions',
-                    file=sys.stderr,
-                )
-            if 'results' not in data:
-                break
-            found_version = False
-            for tag in data['results']:
-                try:
-                    tag_name = tag.get('name', '')
-                    if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
-                        continue
-                    version_tuple = self._get_version_tuple(tag_name)
-                    version_major = f"{version_tuple[0]}"
-                    version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
-                    version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
-                    if version_filter_tuple:
-                        if not self._version_matches_filter(version_tuple, version_filter_tuple):
-                            continue
-                        if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
-                            continue
-                    if ((
-                        version_tuple < min_version_tuple and
-                        version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
-                    ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
-                        continue
-                    found_version = True
-                    version_key = self._get_version_key(version_tuple)
-                    if version_key in grouped_versions:
-                        existing_full = grouped_versions[version_key]
-                        existing_tuple = self._get_version_tuple(existing_full)
-                        if version_tuple > existing_tuple:
-                            grouped_versions[version_key] = version_full
-                    else:
-                        grouped_versions[version_key] = version_full
-                    # Stop after first version found if constraints are incomplete
-                    if constraints_incomplete:
-                        break
-                except (ValueError, IndexError):
-                    pass
-            # Break if no versions were found on this page
-            # Stop after first page if constraints are incomplete
-            if not found_version or constraints_incomplete:
-                break
-            if 'next' not in data or not data['next']:
-                break
-            url = data['next']
+		while True:
+			data = self._fetch_json(url)
+			if not data:
+				print(
+					'Warning: Could not fetch package versions from Docker Hub, '
+					'using previously cached versions',
+					file=sys.stderr,
+				)
+			if 'results' not in data:
+				break
+			found_version = False
+			for tag in data['results']:
+				try:
+					tag_name = tag.get('name', '')
+					if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
+						continue
+					version_tuple = self._get_version_tuple(tag_name)
+					version_major = f'{version_tuple[0]}'
+					version_minor = f'{version_tuple[0]}.{version_tuple[1]}'
+					version_full = f'{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}'
+					if version_filter_tuple:
+						if not self._version_matches_filter(version_tuple, version_filter_tuple):
+							continue
+						if (
+							version_major in skip_versions
+							or version_minor in skip_versions
+							or version_full in skip_versions
+						):
+							continue
+					if (
+						(
+							version_tuple < min_version_tuple
+							and version_major not in extra_versions
+							and version_minor not in extra_versions
+							and version_full not in extra_versions
+						)
+						or version_major in skip_versions
+						or version_minor in skip_versions
+						or version_full in skip_versions
+					):
+						continue
+					found_version = True
+					version_key = self._get_version_key(version_tuple)
+					if version_key in grouped_versions:
+						existing_full = grouped_versions[version_key]
+						existing_tuple = self._get_version_tuple(existing_full)
+						if version_tuple > existing_tuple:
+							grouped_versions[version_key] = version_full
+					else:
+						grouped_versions[version_key] = version_full
+					# Stop after first version found if constraints are incomplete
+					if constraints_incomplete:
+						break
+				except (ValueError, IndexError):
+					pass
+			# Break if no versions were found on this page
+			# Stop after first page if constraints are incomplete
+			if not found_version or constraints_incomplete:
+				break
+			if 'next' not in data or not data['next']:
+				break
+			url = data['next']
 
-        # Fallback to past detected versions if no versions were found
-        if not grouped_versions and past_detected_versions:
-            for version_full in past_detected_versions:
-                version_tuple = self._get_version_tuple(version_full)
-                if version_filter_tuple and not self._version_matches_filter(version_tuple, version_filter_tuple):
-                    continue
-                if version_tuple < min_version_tuple:
-                    continue
-                version_key = self._get_version_key(version_tuple)
-                grouped_versions[version_key] = version_full
+		# Fallback to past detected versions if no versions were found
+		if not grouped_versions and past_detected_versions:
+			for version_full in past_detected_versions:
+				version_tuple = self._get_version_tuple(version_full)
+				if version_filter_tuple and not self._version_matches_filter(
+					version_tuple, version_filter_tuple
+				):
+					continue
+				if version_tuple < min_version_tuple:
+					continue
+				version_key = self._get_version_key(version_tuple)
+				grouped_versions[version_key] = version_full
 
-        return self._sort_versions(grouped_versions)
+		return self._sort_versions(grouped_versions)
 
-    def _detect_node_versions(
-        self,
-        past_detected_versions: list[str] | None = None,
-    ) -> list[str]:
-        """Detect Node.js versions from Node.js API."""
+	def _detect_node_versions(
+		self,
+		past_detected_versions: list[str] | None = None,
+	) -> list[str]:
+		"""Detect Node.js versions from Node.js API."""
 
-        past_detected_versions = past_detected_versions or []
-        constraints_incomplete = False
+		past_detected_versions = past_detected_versions or []
+		constraints_incomplete = False
 
-        package_constraints = self.constraints.get(self.package_name, {})
-        if not package_constraints:
-            print(
-                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
-        elif not package_constraints.get('min_version'):
-            print(
-                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
+		package_constraints = self.constraints.get(self.package_name, {})
+		if not package_constraints:
+			print(
+				f"Warning: Package '{self.package_name}' not found in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
+		elif not package_constraints.get('min_version'):
+			print(
+				f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
 
-        min_version = package_constraints.get('min_version', '0.0.0')
-        min_version_tuple = self._get_version_tuple(min_version)
-        extra_versions = set(package_constraints.get('extra_versions', []))
-        skip_versions = package_constraints.get('skip_versions', [])
-        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        grouped_versions = {}
+		min_version = package_constraints.get('min_version', '0.0.0')
+		min_version_tuple = self._get_version_tuple(min_version)
+		extra_versions = set(package_constraints.get('extra_versions', []))
+		skip_versions = package_constraints.get('skip_versions', [])
+		version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
+		grouped_versions = {}
 
-        url = 'https://nodejs.org/dist/index.json'
-        data = self._fetch_json(url)
+		url = 'https://nodejs.org/dist/index.json'
+		data = self._fetch_json(url)
 
-        if not data or not isinstance(data, list):
-            print(
-                'Warning: Could not fetch versions from Node.js API, using previously cached versions',
-                file=sys.stderr,
-            )
-            return []
+		if not data or not isinstance(data, list):
+			print(
+				'Warning: Could not fetch versions from Node.js API, '
+				'using previously cached versions',
+				file=sys.stderr,
+			)
+			return []
 
-        for tag in data:
-            try:
-                version = tag.get('version', '').removeprefix('v')
-                if not version or not re.match(r'^\d+(\.\d+)*$', version):
-                    continue
-                version_tuple = self._get_version_tuple(version)
-                version_major = f"{version_tuple[0]}"
-                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
-                version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
-                if version_filter_tuple:
-                    if not self._version_matches_filter(version_tuple, version_filter_tuple):
-                        continue
-                    if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
-                        continue
-                if ((
-                    version_tuple < min_version_tuple and
-                    version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
-                ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
-                    continue
-                version_key = self._get_version_key(version_tuple)
-                if version_key in grouped_versions:
-                    existing_full = grouped_versions[version_key]
-                    existing_tuple = self._get_version_tuple(existing_full)
-                    if version_tuple > existing_tuple:
-                        grouped_versions[version_key] = version_full
-                else:
-                    grouped_versions[version_key] = version_full
-                # Stop after first version found if constraints are incomplete
-                if constraints_incomplete:
-                    break
-            except (ValueError, IndexError):
-                pass
+		for tag in data:
+			try:
+				version = tag.get('version', '').removeprefix('v')
+				if not version or not re.match(r'^\d+(\.\d+)*$', version):
+					continue
+				version_tuple = self._get_version_tuple(version)
+				version_major = f'{version_tuple[0]}'
+				version_minor = f'{version_tuple[0]}.{version_tuple[1]}'
+				version_full = f'{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}'
+				if version_filter_tuple:
+					if not self._version_matches_filter(version_tuple, version_filter_tuple):
+						continue
+					if (
+						version_major in skip_versions
+						or version_minor in skip_versions
+						or version_full in skip_versions
+					):
+						continue
+				if (
+					(
+						version_tuple < min_version_tuple
+						and version_major not in extra_versions
+						and version_minor not in extra_versions
+						and version_full not in extra_versions
+					)
+					or version_major in skip_versions
+					or version_minor in skip_versions
+					or version_full in skip_versions
+				):
+					continue
+				version_key = self._get_version_key(version_tuple)
+				if version_key in grouped_versions:
+					existing_full = grouped_versions[version_key]
+					existing_tuple = self._get_version_tuple(existing_full)
+					if version_tuple > existing_tuple:
+						grouped_versions[version_key] = version_full
+				else:
+					grouped_versions[version_key] = version_full
+				# Stop after first version found if constraints are incomplete
+				if constraints_incomplete:
+					break
+			except (ValueError, IndexError):
+				pass
 
-        # Fallback to past detected versions if no versions were found
-        if not grouped_versions and past_detected_versions:
-            for version_full in past_detected_versions:
-                version_tuple = self._get_version_tuple(version_full)
-                if version_filter_tuple and not self._version_matches_filter(version_tuple, version_filter_tuple):
-                    continue
-                if version_tuple < min_version_tuple:
-                    continue
-                version_key = self._get_version_key(version_tuple)
-                grouped_versions[version_key] = version_full
+		# Fallback to past detected versions if no versions were found
+		if not grouped_versions and past_detected_versions:
+			for version_full in past_detected_versions:
+				version_tuple = self._get_version_tuple(version_full)
+				if version_filter_tuple and not self._version_matches_filter(
+					version_tuple, version_filter_tuple
+				):
+					continue
+				if version_tuple < min_version_tuple:
+					continue
+				version_key = self._get_version_key(version_tuple)
+				grouped_versions[version_key] = version_full
 
-        return self._sort_versions(grouped_versions)
+		return self._sort_versions(grouped_versions)
 
-    def _detect_pip_package(
-        self,
-        past_detected_versions: list[str] | None = None,
-    ) -> list[str]:
-        """Detect package versions from PyPI using pip."""
+	def _detect_pip_package(
+		self,
+		past_detected_versions: list[str] | None = None,
+	) -> list[str]:
+		"""Detect package versions from PyPI using pip."""
 
-        past_detected_versions = past_detected_versions or []
-        constraints_incomplete = False
+		past_detected_versions = past_detected_versions or []
+		constraints_incomplete = False
 
-        package_constraints = self.constraints.get(self.package_name, {})
-        if not package_constraints:
-            print(
-                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
-        elif not package_constraints.get('min_version'):
-            print(
-                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
+		package_constraints = self.constraints.get(self.package_name, {})
+		if not package_constraints:
+			print(
+				f"Warning: Package '{self.package_name}' not found in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
+		elif not package_constraints.get('min_version'):
+			print(
+				f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
 
-        min_version = package_constraints.get('min_version', '0.0.0')
-        min_version_tuple = self._get_version_tuple(min_version)
-        extra_versions = set(package_constraints.get('extra_versions', []))
-        skip_versions = package_constraints.get('skip_versions', [])
-        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        grouped_versions = {}
+		min_version = package_constraints.get('min_version', '0.0.0')
+		min_version_tuple = self._get_version_tuple(min_version)
+		extra_versions = set(package_constraints.get('extra_versions', []))
+		skip_versions = package_constraints.get('skip_versions', [])
+		version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
+		grouped_versions = {}
 
-        try:
-            pip_result = subprocess.run(
-                ['pip', 'index', 'versions', self.package_name],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
-            )
-        except (OSError, subprocess.SubprocessError) as e:
-            print(f"Warning: pip index versions failed: {e}", file=sys.stderr)
-            pip_result = None
+		try:
+			pip_result = subprocess.run(
+				['pip', 'index', 'versions', self.package_name],
+				capture_output=True,
+				text=True,
+				timeout=10,
+				check=False,
+			)
+		except (OSError, subprocess.SubprocessError) as e:
+			print(f'Warning: pip index versions failed: {e}', file=sys.stderr)
+			pip_result = None
 
-        if pip_result and pip_result.returncode == 0:
-            pip_output = pip_result.stdout
-            if 'Available versions:' in pip_output:
-                version_list = [
-                    v.strip()
-                    for v in pip_output.split('Available versions:')[1].strip().split(',')
-                ]
-                for version in version_list:
-                    try:
-                        if not version or not re.match(r'^\d+(\.\d+)*$', version):
-                            continue
-                        version_tuple = self._get_version_tuple(version)
-                        version_major = f"{version_tuple[0]}"
-                        version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
-                        version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
-                        if version_filter_tuple:
-                            if not self._version_matches_filter(version_tuple, version_filter_tuple):
-                                continue
-                            if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
-                                continue
-                        if ((
-                            version_tuple < min_version_tuple and
-                            version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
-                        ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
-                            continue
-                        version_key = self._get_version_key(version_tuple)
-                        if version_key in grouped_versions:
-                            existing_full = grouped_versions[version_key]
-                            existing_tuple = self._get_version_tuple(existing_full)
-                            if version_tuple > existing_tuple:
-                                grouped_versions[version_key] = version_full
-                        else:
-                            grouped_versions[version_key] = version_full
-                        # Stop after first version found if constraints are incomplete
-                        if constraints_incomplete:
-                            break
-                    except (ValueError, IndexError):
-                        pass
+		if pip_result and pip_result.returncode == 0:
+			pip_output = pip_result.stdout
+			if 'Available versions:' in pip_output:
+				version_list = [
+					v.strip() for v in pip_output.split('Available versions:')[1].strip().split(',')
+				]
+				for version in version_list:
+					try:
+						if not version or not re.match(r'^\d+(\.\d+)*$', version):
+							continue
+						version_tuple = self._get_version_tuple(version)
+						version_major = f'{version_tuple[0]}'
+						version_minor = f'{version_tuple[0]}.{version_tuple[1]}'
+						version_full = f'{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}'
+						if version_filter_tuple:
+							if not self._version_matches_filter(
+								version_tuple, version_filter_tuple
+							):
+								continue
+							if (
+								version_major in skip_versions
+								or version_minor in skip_versions
+								or version_full in skip_versions
+							):
+								continue
+						if (
+							(
+								version_tuple < min_version_tuple
+								and version_major not in extra_versions
+								and version_minor not in extra_versions
+								and version_full not in extra_versions
+							)
+							or version_major in skip_versions
+							or version_minor in skip_versions
+							or version_full in skip_versions
+						):
+							continue
+						version_key = self._get_version_key(version_tuple)
+						if version_key in grouped_versions:
+							existing_full = grouped_versions[version_key]
+							existing_tuple = self._get_version_tuple(existing_full)
+							if version_tuple > existing_tuple:
+								grouped_versions[version_key] = version_full
+						else:
+							grouped_versions[version_key] = version_full
+						# Stop after first version found if constraints are incomplete
+						if constraints_incomplete:
+							break
+					except (ValueError, IndexError):
+						pass
 
-        # Fallback to past detected versions if no versions were found
-        if not grouped_versions and past_detected_versions:
-            for version_full in past_detected_versions:
-                version_tuple = self._get_version_tuple(version_full)
-                if version_filter_tuple and not self._version_matches_filter(version_tuple, version_filter_tuple):
-                    continue
-                if version_tuple < min_version_tuple:
-                    continue
-                version_key = self._get_version_key(version_tuple)
-                grouped_versions[version_key] = version_full
+		# Fallback to past detected versions if no versions were found
+		if not grouped_versions and past_detected_versions:
+			for version_full in past_detected_versions:
+				version_tuple = self._get_version_tuple(version_full)
+				if version_filter_tuple and not self._version_matches_filter(
+					version_tuple, version_filter_tuple
+				):
+					continue
+				if version_tuple < min_version_tuple:
+					continue
+				version_key = self._get_version_key(version_tuple)
+				grouped_versions[version_key] = version_full
 
-        return self._sort_versions(grouped_versions)
+		return self._sort_versions(grouped_versions)
 
-    def _detect_github_repo(
-        self,
-        past_detected_versions: list[str] | None = None,
-    ) -> list[str]:
-        """Detect package versions from GitHub repository tags."""
+	def _detect_github_repo(
+		self,
+		past_detected_versions: list[str] | None = None,
+	) -> list[str]:
+		"""Detect package versions from GitHub repository tags."""
 
-        past_detected_versions = past_detected_versions or []
-        constraints_incomplete = False
+		past_detected_versions = past_detected_versions or []
+		constraints_incomplete = False
 
-        package_constraints = self.constraints.get(self.package_name, {})
-        if not package_constraints:
-            print(
-                f"Warning: Package '{self.package_name}' not found in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
-        elif not package_constraints.get('min_version'):
-            print(
-                f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; detecting latest version only",
-                file=sys.stderr,
-            )
-            constraints_incomplete = True
+		package_constraints = self.constraints.get(self.package_name, {})
+		if not package_constraints:
+			print(
+				f"Warning: Package '{self.package_name}' not found in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
+		elif not package_constraints.get('min_version'):
+			print(
+				f"Warning: 'min_version' not specified for '{self.package_name}' in constraints; "
+				'detecting latest version only',
+				file=sys.stderr,
+			)
+			constraints_incomplete = True
 
-        min_version = package_constraints.get('min_version', '0.0.0')
-        min_version_tuple = self._get_version_tuple(min_version)
-        extra_versions = set(package_constraints.get('extra_versions', []))
-        skip_versions = package_constraints.get('skip_versions', [])
-        version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
-        grouped_versions = {}
+		min_version = package_constraints.get('min_version', '0.0.0')
+		min_version_tuple = self._get_version_tuple(min_version)
+		extra_versions = set(package_constraints.get('extra_versions', []))
+		skip_versions = package_constraints.get('skip_versions', [])
+		version_filter_tuple = self._get_version_filter_tuple(self.version_filter)
+		grouped_versions = {}
 
-        github_repo = package_constraints.get('github_repo')
-        version_prefix = package_constraints.get('version_prefix', 'v')
-        if not github_repo:
-            known_repos = {
-                'poetry': ('python-poetry/poetry', ''),
-                'uv': ('astral-sh/uv', ''),
-                'nvm': ('nvm-sh/nvm', 'v'),
-                'yarn': ('yarnpkg/berry', '@yarnpkg/cli/'),
-                'pnpm': ('pnpm/pnpm', 'v'),
-            }
-            if self.package_name not in known_repos:
-                print(f"Warning: No 'github_repo' specified in constraints for {self.package_name}", file=sys.stderr)
-                return past_detected_versions
-            github_repo, version_prefix = known_repos[self.package_name]
+		github_repo = package_constraints.get('github_repo')
+		version_prefix = package_constraints.get('version_prefix', 'v')
+		if not github_repo:
+			known_repos = {
+				'poetry': ('python-poetry/poetry', ''),
+				'uv': ('astral-sh/uv', ''),
+				'nvm': ('nvm-sh/nvm', 'v'),
+				'yarn': ('yarnpkg/berry', '@yarnpkg/cli/'),
+				'pnpm': ('pnpm/pnpm', 'v'),
+			}
+			if self.package_name not in known_repos:
+				print(
+					f"Warning: No 'github_repo' specified in constraints for {self.package_name}",
+					file=sys.stderr,
+				)
+				return past_detected_versions
+			github_repo, version_prefix = known_repos[self.package_name]
 
-        url = f'https://api.github.com/repos/{github_repo}/git/matching-refs/tags/{version_prefix}'
-        data = self._fetch_json(url, auth_token=os.environ.get('GITHUB_TOKEN'))
-        if not data or not isinstance(data, list):
-            print(
-                f'Warning: Could not fetch tags from GitHub for {self.package_name}, using previously cached versions',
-                file=sys.stderr,
-            )
-            data = []
+		url = f'https://api.github.com/repos/{github_repo}/git/matching-refs/tags/{version_prefix}'
+		data = self._fetch_json(url, auth_token=os.environ.get('GITHUB_TOKEN'))
+		if not data or not isinstance(data, list):
+			print(
+				f'Warning: Could not fetch tags from GitHub for {self.package_name}, '
+				'using previously cached versions',
+				file=sys.stderr,
+			)
+			data = []
 
-        for tag in data:
-            try:
-                tag_name = tag.get('ref', '').removeprefix(f"refs/tags/{version_prefix}")
-                if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
-                    continue
-                version_tuple = self._get_version_tuple(tag_name)
-                version_major = f"{version_tuple[0]}"
-                version_minor = f"{version_tuple[0]}.{version_tuple[1]}"
-                version_full = f"{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}"
-                if version_filter_tuple:
-                    if not self._version_matches_filter(version_tuple, version_filter_tuple):
-                        continue
-                    if version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions:
-                        continue
-                if ((
-                    version_tuple < min_version_tuple and
-                    version_major not in extra_versions and version_minor not in extra_versions and version_full not in extra_versions
-                ) or version_major in skip_versions or version_minor in skip_versions or version_full in skip_versions):
-                    continue
-                version_key = self._get_version_key(version_tuple)
-                if version_key in grouped_versions:
-                    existing_full = grouped_versions[version_key]
-                    existing_tuple = self._get_version_tuple(existing_full)
-                    if version_tuple > existing_tuple:
-                        grouped_versions[version_key] = version_full
-                else:
-                    grouped_versions[version_key] = version_full
-                # Stop after first version found if constraints are incomplete
-                if constraints_incomplete:
-                    break
-            except (ValueError, IndexError):
-                pass
+		for tag in data:
+			try:
+				tag_name = tag.get('ref', '').removeprefix(f'refs/tags/{version_prefix}')
+				if not tag_name or not re.match(r'^\d+(\.\d+)*$', tag_name):
+					continue
+				version_tuple = self._get_version_tuple(tag_name)
+				version_major = f'{version_tuple[0]}'
+				version_minor = f'{version_tuple[0]}.{version_tuple[1]}'
+				version_full = f'{version_tuple[0]}.{version_tuple[1]}.{version_tuple[2]}'
+				if version_filter_tuple:
+					if not self._version_matches_filter(version_tuple, version_filter_tuple):
+						continue
+					if (
+						version_major in skip_versions
+						or version_minor in skip_versions
+						or version_full in skip_versions
+					):
+						continue
+				if (
+					(
+						version_tuple < min_version_tuple
+						and version_major not in extra_versions
+						and version_minor not in extra_versions
+						and version_full not in extra_versions
+					)
+					or version_major in skip_versions
+					or version_minor in skip_versions
+					or version_full in skip_versions
+				):
+					continue
+				version_key = self._get_version_key(version_tuple)
+				if version_key in grouped_versions:
+					existing_full = grouped_versions[version_key]
+					existing_tuple = self._get_version_tuple(existing_full)
+					if version_tuple > existing_tuple:
+						grouped_versions[version_key] = version_full
+				else:
+					grouped_versions[version_key] = version_full
+				# Stop after first version found if constraints are incomplete
+				if constraints_incomplete:
+					break
+			except (ValueError, IndexError):
+				pass
 
-        # Fallback to past detected versions if no versions were found
-        if not grouped_versions and past_detected_versions:
-            for version_full in past_detected_versions:
-                version_tuple = self._get_version_tuple(version_full)
-                if version_filter_tuple and not self._version_matches_filter(version_tuple, version_filter_tuple):
-                    continue
-                if version_tuple < min_version_tuple:
-                    continue
-                version_key = self._get_version_key(version_tuple)
-                grouped_versions[version_key] = version_full
+		# Fallback to past detected versions if no versions were found
+		if not grouped_versions and past_detected_versions:
+			for version_full in past_detected_versions:
+				version_tuple = self._get_version_tuple(version_full)
+				if version_filter_tuple and not self._version_matches_filter(
+					version_tuple, version_filter_tuple
+				):
+					continue
+				if version_tuple < min_version_tuple:
+					continue
+				version_key = self._get_version_key(version_tuple)
+				grouped_versions[version_key] = version_full
 
-        return self._sort_versions(grouped_versions)
+		return self._sort_versions(grouped_versions)
 
-    def _return_static_package(
-        self,
-        past_detected_versions: list[str] | None = None,
-    ) -> list[str]:
-        return [self.package_name]
+	def _return_static_package(
+		self,
+		past_detected_versions: list[str] | None = None,
+	) -> list[str]:
+		return [self.package_name]
 
-    def save_versions_file(self):
-        """Save detected versions to output file."""
-        print(f"Saving '{self.package_name}' versions to {self.output_path}...")
+	def save_versions_file(self):
+		"""Save detected versions to output file."""
+		print(f"Saving '{self.package_name}' versions to {self.output_path}...")
 
-        # Load existing data to preserve past detected versions
-        try:
-            with open(self.output_path, 'r') as f:
-                existing = yaml.safe_load(f) or {}
-        except FileNotFoundError:
-            existing = {}
+		# Load existing data to preserve past detected versions
+		try:
+			with open(self.output_path) as f:
+				existing = yaml.safe_load(f) or {}
+		except FileNotFoundError:
+			existing = {}
 
-        data = {
-            **existing,
-            'last_updated': datetime.now(timezone.utc).isoformat() + 'Z',
-            'detected_versions': {
-                **(existing.get('detected_versions') or {}),
-                self.package_name: self.detected_versions,
-            },
-            'latest_version': {
-                **(existing.get('latest_version') or {}),
-                **({ self.package_name: self.latest_version } if self.latest_version else {}),
-            }
-        }
+		data = {
+			**existing,
+			'last_updated': datetime.now(timezone.utc).isoformat() + 'Z',
+			'detected_versions': {
+				**(existing.get('detected_versions') or {}),
+				self.package_name: self.detected_versions,
+			},
+			'latest_version': {
+				**(existing.get('latest_version') or {}),
+				**({self.package_name: self.latest_version} if self.latest_version else {}),
+			},
+		}
 
-        # Save to output file
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-        with open(self.output_path, 'w') as f:
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+		# Save to output file
+		os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+		with open(self.output_path, 'w') as f:
+			yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
-        print(f"Versions saved to {self.output_path}.")
+		print(f'Versions saved to {self.output_path}.')
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description='Detect package versions.',
-    )
-    parser.add_argument(
-        'package_name',
-        help=(
-            'Package name (like \'python\' or \'node\'). '
-            'Can also be specified via --package option.'
-        ),
-    )
-    parser.add_argument(
-        '--package',
-        dest='package_option',
-        default='',
-        help='Alternative way to specify package name (positional argument takes precedence)',
-    )
-    parser.add_argument(
-        '--version',
-        default='',
-        help=(
-            'Limit detection to a specific version (e.g., \'3\', \'3.14\', or \'3.13.14\'). '
-            'Detects all versions if left empty.'
-        ),
-    )
-    parser.add_argument(
-        '--scope',
-        help=(
-            'Restrict detection to a specific scope (e.g., \'major\', \'minor\', or \'patch\'). '
-            'Defaults depending on the package type: for example, Python defaults to \'minor\', while Node.js defaults to \'major\'.'
-        ),
-    )
-    return parser.parse_args()
+	parser = argparse.ArgumentParser(
+		description='Detect package versions.',
+	)
+	parser.add_argument(
+		'package_name',
+		help=(
+			"Package name (like 'python' or 'node'). Can also be specified via --package option."
+		),
+	)
+	parser.add_argument(
+		'--package',
+		dest='package_option',
+		default='',
+		help='Alternative way to specify package name (positional argument takes precedence)',
+	)
+	parser.add_argument(
+		'--version',
+		default='',
+		help=(
+			"Limit detection to a specific version (e.g., '3', '3.14', or '3.13.14'). "
+			'Detects all versions if left empty.'
+		),
+	)
+	parser.add_argument(
+		'--scope',
+		help=(
+			"Restrict detection to a specific scope (e.g., 'major', 'minor', or 'patch'). "
+			'Defaults depending on the package type: for example, Python defaults to '
+			"'minor', while Node.js defaults to 'major'."
+		),
+	)
+	return parser.parse_args()
 
 
 def main():
 
-    args = parse_args()
+	args = parse_args()
 
-    package_name = args.package_name or args.package_option
-    if not package_name:
-        print('Error: Package name is required. Provide it as a positional argument or via --package option.', file=sys.stderr)
-        sys.exit(1)
+	package_name = args.package_name or args.package_option
+	if not package_name:
+		print(
+			'Error: Package name is required. '
+			'Provide it as a positional argument or via --package option.',
+			file=sys.stderr,
+		)
+		sys.exit(1)
 
-    try:
-        detector = DetectVersions(
-            package_name=package_name,
-            version_filter=(args.version.strip() or None),
-            scope=args.scope,
-        )
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+	try:
+		detector = DetectVersions(
+			package_name=package_name,
+			version_filter=(args.version.strip() or None),
+			scope=args.scope,
+		)
+	except ValueError as e:
+		print(f'Error: {e}', file=sys.stderr)
+		sys.exit(1)
 
-    # Load past detected versions to use as fallback
-    past_detected_versions = detector.load_past_detected_versions()
+	# Load past detected versions to use as fallback
+	past_detected_versions = detector.load_past_detected_versions()
 
-    # Detect versions
-    detector.detect_versions(
-        past_detected_versions=past_detected_versions.get(detector.package_name, []),
-    )
+	# Detect versions
+	detector.detect_versions(
+		past_detected_versions=past_detected_versions.get(detector.package_name, []),
+	)
 
-    # Save versions file
-    detector.save_versions_file()
+	# Save versions file
+	detector.save_versions_file()
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+	main()
