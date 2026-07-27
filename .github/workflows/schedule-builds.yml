@@ -436,6 +436,11 @@ jobs:
             | jq -rcs '{ include: . }'
           )"
 
+          # Print count of matching entries and selected build matrix
+          NB_MATCHING_ENTRIES="$(printf '%s\n' "${MATCHING_ENTRIES}" | grep -c '.' || true)"
+          NB_SELECTED_ENTRIES="$(printf '%s\n' "${BUILD_MATRIX}" | jq -r '.include | length')"
+          echo "Selected ${NB_SELECTED_ENTRIES} build matrix entries from ${NB_MATCHING_ENTRIES} matching entries."
+
           set_github_env 'BUILD_MATRIX' "${BUILD_MATRIX}" non-optional non-secret verbose
 
       - name: Set job outputs
