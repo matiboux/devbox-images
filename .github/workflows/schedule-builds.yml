@@ -18,12 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       priority:
-        description: >-
-          Optionally prioritize build matrix entries. Format: "<images_prefix>" to
-          prioritize an image prefix, or "<images_prefix>:<tag>" to also prioritize
-          entries whose image tag contains <tag>. Matching entries are shuffled and
-          picked first (up to nb_concurrent_builds); remaining slots are filled by
-          shuffling the rest.
+        description: 'Image prefix (and optional tag) to prioritize in the build matrix.'
         type: string
         required: false
         default: ''
