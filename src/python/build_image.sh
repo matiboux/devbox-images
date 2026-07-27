@@ -7,7 +7,6 @@ PYTHON_VERSION="${PYTHON_VERSION:-3.14.6}"
 PYTHON_VARIANT="${PYTHON_VARIANT:-}"
 POETRY_VERSION="${POETRY_VERSION:-}"
 UV_VERSION="${UV_VERSION:-}"
-NVM_VERSION="${NVM_VERSION:-}"
 NODE_VERSION="${NODE_VERSION:-}"
 YARN_VERSION="${YARN_VERSION:-}"
 PNPM_VERSION="${PNPM_VERSION:-}"
@@ -57,7 +56,6 @@ IMAGE_TAGS="$(
         python="${PYTHON_IMAGE_TAG}":"${PYTHON_TAG_LEVEL}" \
         poetry="${POETRY_VERSION}":"${POETRY_TAG_LEVEL}" \
         uv="${UV_VERSION}":"${UV_TAG_LEVEL}" \
-        nvm="${NVM_VERSION}":"${NVM_TAG_LEVEL}" \
         node="${NODE_VERSION}":"${NODE_TAG_LEVEL}" \
         yarn="${YARN_VERSION}":"${YARN_TAG_LEVEL}" \
         pnpm="${PNPM_VERSION}":"${PNPM_TAG_LEVEL}" \
@@ -72,9 +70,6 @@ if [ -n "${POETRY_VERSION}" ]; then
 fi
 if [ -n "${UV_VERSION}" ]; then
     echo "  uv: ${UV_VERSION}"
-fi
-if [ -n "${NVM_VERSION}" ]; then
-    echo "  nvm: ${NVM_VERSION}"
 fi
 if [ -n "${NODE_VERSION}" ]; then
     echo "  Node.js: ${NODE_VERSION}"
@@ -92,7 +87,6 @@ BUILD_ARGS=(
     --build-arg "PYTHON_VARIANT=${PYTHON_VARIANT}"
     --build-arg "POETRY_VERSION=${POETRY_VERSION}"
     --build-arg "UV_VERSION=${UV_VERSION}"
-    --build-arg "NVM_VERSION=${NVM_VERSION}"
     --build-arg "NODE_VERSION=${NODE_VERSION}"
     --build-arg "YARN_VERSION=${YARN_VERSION}"
     --build-arg "PNPM_VERSION=${PNPM_VERSION}"

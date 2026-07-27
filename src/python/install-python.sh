@@ -5,7 +5,6 @@ set -e
 # Orchestrates dynamic image building based on environment variables:
 # - POETRY_VERSION: Version of Poetry to install if set
 # - UV_VERSION: Version of uv to install if set
-# - NVM_VERSION: Version of nvm to install if set
 # - NODE_VERSION: Version of Node.js to install if set
 # - YARN_VERSION: Version of Yarn to install if set
 # - PNPM_VERSION: Version of pnpm to install if set
@@ -32,11 +31,6 @@ fi
 if [ -n "${UV_VERSION}" ]; then
     # Install uv
     sh "${COMMON_SCRIPTS_DIR}/install-uv.sh" "${UV_VERSION}"
-fi
-
-if [ -n "${NVM_VERSION}" ]; then
-    # Install nvm
-    sh "${COMMON_SCRIPTS_DIR}/install-nvm.sh" "${NVM_VERSION}"
 fi
 
 if [ -n "${NODE_VERSION}" ]; then
