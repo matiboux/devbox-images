@@ -20,13 +20,33 @@ EOF
 	echo "${dir}"
 }
 
-test_case 'errors out when nvm.sh cannot be found'
+# install-node.sh derives its own "install-nvm.sh" sibling path from "$0",
+# not overridable via env var. So to test the self-install trigger without
+# ever touching the real install-nvm.sh, we copy install-node.sh into a
+# throwaway "src/common/" directory next to a fake install-nvm.sh stub that
+# logs its invocation and materializes a fake nvm.sh, then run it from there.
+FAKE_ROOT="$(mktemp -d)"
+mkdir -p "${FAKE_ROOT}/src/common"
+cp "${SCRIPT}" "${FAKE_ROOT}/src/common/install-node.sh"
+
+test_case 'installs nvm automatically when nvm.sh cannot be found'
 empty_dir="$(mktemp -d)"
-output=$(NVM_DIR="${empty_dir}" sh "${SCRIPT}" 2>&1)
+CALL_LOG="$(mktemp)"
+cat > "${FAKE_ROOT}/src/common/install-nvm.sh" <<EOF
+#!/bin/sh
+echo "install-nvm.sh \$*" >> '${CALL_LOG}'
+mkdir -p "\${NVM_DIR}"
+cat > "\${NVM_DIR}/nvm.sh" <<'INNER'
+nvm() { :; }
+INNER
+EOF
+chmod +x "${FAKE_ROOT}/src/common/install-nvm.sh"
+NVM_DIR="${empty_dir}" NVM_VERSION_INPUT='0.40.3' sh "${FAKE_ROOT}/src/common/install-node.sh" > /dev/null 2>&1
 code=$?
-assert_exit_code "${code}" 1
-assert_contains "${output}" 'Cannot find nvm'
-rmdir "${empty_dir}"
+assert_exit_code "${code}" 0
+assert_contains "$(cat "${CALL_LOG}")" 'install-nvm.sh 0.40.3'
+rm -rf "${empty_dir}"
+rm -f "${CALL_LOG}"
 
 test_case 'no argument defaults to installing the latest LTS release'
 log_file="$(mktemp)"
@@ -60,10 +80,9 @@ test_case 'defaults NVM_DIR to /opt/nvm when unset'
 if [ -s /opt/nvm/nvm.sh ]; then
 	skip_case 'host has a real /opt/nvm/nvm.sh; running the script unstubbed here would trigger a real nvm install'
 else
-	output=$(env -u NVM_DIR sh "${SCRIPT}" 2>&1)
-	code=$?
-	assert_exit_code "${code}" 1
-	assert_contains "${output}" 'Cannot find nvm'
+	skip_case 'unstubbed default NVM_DIR (/opt/nvm) would trigger a real nvm install via install-nvm.sh; not safe to exercise here'
 fi
+
+rm -rf "${FAKE_ROOT}"
 
 summary
