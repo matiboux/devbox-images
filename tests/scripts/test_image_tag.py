@@ -331,6 +331,96 @@ def test_generate_tags_only_fully_qualified_skips_standard_tag():
 	assert tags == ['python1.2.3-node4.5.6']
 
 
+def test_generate_tags_standard_tag_appended_last():
+	gen = ImageTagGenerator(
+		components=[
+			('python', '1.2.3', 'global', None),
+			('node', '4.5.6', 'major', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags[-1] == 'python1.2-node4'
+
+
+def test_generate_tags_no_extra_tag_when_known_component_below_standard():
+	# python requested at "patch" (below its "minor" standard), so generate_tags
+	# should produce only the regular stepped tags, with nothing appended.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '1.2.3', 'patch', None),
+			('node', '4.5.6', 'major', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python1.2.3-node4.5.6',
+		'python1.2.3-node4.5',
+		'python1.2.3-node4',
+	]
+
+
+def test_generate_tags_standard_tag_mixed_with_unknown_component():
+	# poetry has no configured standard, so it keeps its own requested level
+	# ("patch") in the standard tag. Here it coincides with the "minor" step
+	# already produced for python, so nothing new is appended.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '1.2.3', 'global', None),
+			('poetry', '2.1.5', 'patch', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python1.2.3-poetry2.1.5',
+		'python1.2-poetry2.1.5',
+		'python1-poetry2.1.5',
+		'python-poetry2.1.5',
+	]
+	assert gen._get_standard_tag() == 'python1.2-poetry2.1.5'
+
+
+def test_generate_tags_standard_tag_with_custom_standard_levels():
+	# poetry is pinned to "minor" by the custom mapping while uv (unknown to
+	# the mapping) keeps its own "global" level, producing a combination that
+	# doesn't match any of the regular stepped tags.
+	gen = ImageTagGenerator(
+		components=[
+			('poetry', '2.1.5', 'major', None),
+			('uv', '0.11.3', 'global', None),
+		],
+		standard_levels={'poetry': 'minor'},
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'poetry2.1.5-uv0.11.3',
+		'poetry2.1-uv0.11',
+		'poetry2-uv0',
+		'poetry2-uv',
+		'poetry2.1-uv',
+	]
+	assert gen._get_standard_tag() == 'poetry2.1-uv'
+
+
+def test_generate_tags_empty_standard_levels_disables_standard_tag():
+	# With an empty standard_levels mapping, every component falls back to its
+	# own requested level, so the "standard" tag collapses to the same value as
+	# the widest stepped tag and adds nothing new.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '1.2.3', 'global', None),
+			('node', '4.5.6', 'major', None),
+		],
+		standard_levels={},
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python1.2.3-node4.5.6',
+		'python1.2-node4.5',
+		'python1-node4',
+		'python-node4',
+	]
+
+
 def test_cli_standard_tag_included_for_known_components():
 	result = run_cli(['python=1.2.3:global,node=4.5.6:major'])
 	assert result.returncode == 0
