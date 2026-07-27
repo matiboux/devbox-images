@@ -12,7 +12,7 @@ COMMON_DIR="$(dirname "$(realpath "$0")")"
 
 if [ ! -s "${NVM_DIR}/nvm.sh" ]; then
     # nvm is not installed, install it first
-    "${COMMON_DIR}/install-nvm.sh" "${NVM_VERSION_INPUT}"
+    sh "${COMMON_DIR}/install-nvm.sh" "${NVM_VERSION_INPUT}"
 fi
 
 \. "${NVM_DIR}/nvm.sh"
