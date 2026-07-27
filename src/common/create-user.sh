@@ -33,10 +33,11 @@ else
 fi
 
 # Create user
+USER_SHELL="$(command -v bash || command -v sh)"
 if command -v useradd > /dev/null 2>&1; then
-	useradd -lm -u "${USER_ID}" -g "${GROUP_ID}" "${USERNAME}"
+	useradd -lm -u "${USER_ID}" -g "${GROUP_ID}" -s "${USER_SHELL}" "${USERNAME}"
 elif command -v adduser > /dev/null 2>&1; then
-	adduser -D -u "${USER_ID}" -G "${USERNAME}" "${USERNAME}"
+	adduser -D -u "${USER_ID}" -G "${USERNAME}" -s "${USER_SHELL}" "${USERNAME}"
 else
 	echo "No suitable command found to create user" >&2
 	exit 1
