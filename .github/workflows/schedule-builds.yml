@@ -386,6 +386,10 @@ jobs:
 
           done <<< "$(jq -c '.[]' <<< "${IMAGES_LIST}")"
 
+          # Count number of build matrix entries
+          NB_MATRIX_ENTRIES="$(yq e '.build_matrix | length' ./dist/build_matrix.yml || true)"
+          echo "Computed ${NB_MATRIX_ENTRIES} build matrix entries."
+
       - name: Randomly sample build matrix subset
         env:
           FILTER_TAG: ${{ env.FILTER_TAG }}
