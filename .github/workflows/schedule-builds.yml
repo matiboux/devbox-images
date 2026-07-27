@@ -410,12 +410,10 @@ jobs:
           fi
 
           # Print matching priority 1 entries for debugging
-          if [ -n "${PRIORITY_1}" ]; then
-            NB_PRIORITY_1="$(printf '%s\n' "${PRIORITY_1}" | grep -c '.')"
-            echo "Found ${NB_PRIORITY_1} matching priority 1 entries:"
+          NB_PRIORITY_1="$(printf '%s\n' "${PRIORITY_1}" | grep -c '.')"
+          echo "Found ${NB_PRIORITY_1} matching priority 1 entries."
+          if [ "${NB_PRIORITY_1}" -gt 0 ] && [ "${NB_PRIORITY_1}" -le 9 ]; then
             printf '%s\n' "${PRIORITY_1}" | jq -r '.images_prefix + ":" + .image_tag' | sed 's/^/  - /'
-          else
-            echo 'Info: No matching priority 1 entries found.'
           fi
 
           # Shuffle priority 1 entries and pick up to NB_CONCURRENT_BUILDS
