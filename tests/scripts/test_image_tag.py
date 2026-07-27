@@ -154,8 +154,8 @@ def test_generate_tags_unlabeled_component_can_be_blank_in_tag():
 		]
 	)
 	tags = gen.generate_tags()
-	# the blank python option combines with poetry2.1.5 into "poetry2.1.5", no leading dash
-	assert 'poetry2.1.5' in tags
+	# the blank python option combines with poetry's bumped minor tag, no leading dash
+	assert 'poetry2.1' in tags
 	assert '3.14.6-poetry2.1.5' in tags
 
 
@@ -245,7 +245,7 @@ def test_cli_comma_separated_single_arg():
 	assert result.returncode == 0
 	assert result.stdout.splitlines() == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1.5',
+		'python3.14-poetry2.1',
 	]
 
 
@@ -255,7 +255,7 @@ def test_cli_json_list_single_arg():
 	assert result.returncode == 0
 	assert result.stdout.splitlines() == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1.5',
+		'python3.14-poetry2.1',
 	]
 
 
@@ -264,7 +264,7 @@ def test_cli_multiple_positional_components():
 	assert result.returncode == 0
 	assert result.stdout.splitlines() == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1.5',
+		'python3.14-poetry2.1',
 	]
 
 
