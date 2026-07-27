@@ -32,6 +32,12 @@ on:
         type: boolean
         required: false
         default: true
+      base_variants:
+        description: 'Override list of base variants to build for all images.'
+        # Format: Comma-separated list or JSON list
+        type: string
+        required: false
+        default: ''
 
 # Set default GITHUB_TOKEN permissions for the workflow
 permissions:
@@ -49,98 +55,75 @@ env:
     - images_prefix: devbox-python
       src_dirname: python
       package_versions: python?
-      base_variants: '["", "slim", "alpine"]'
     - images_prefix: devbox-python
       src_dirname: python
       package_versions: python?,poetry
-      base_variants: '["", "slim", "alpine"]'
     - images_prefix: devbox-python
       src_dirname: python
       package_versions: python?,uv
-      base_variants: '["", "slim", "alpine"]'
     # Devbox Python + Docker
     - images_prefix: devbox-python-docker
       src_dirname: python
       package_versions: python?,docker?
-      base_variants: '["", "slim", "alpine"]'
     - images_prefix: devbox-python-docker
       src_dirname: python
       package_versions: python?,docker?,uv
-      base_variants: '["", "slim", "alpine"]'
     # Devbox Python + Node
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,poetry
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,uv
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,yarn
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,poetry,yarn
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,uv,yarn
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,pnpm
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,poetry,pnpm
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node
       src_dirname: python
       package_versions: python?,node?,uv,pnpm
-      base_variants: '["", "slim"]'
     # Devbox Python + Node + Docker
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,poetry
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,uv
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,yarn
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,poetry,yarn
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,uv,yarn
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,pnpm
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,poetry,pnpm
-      base_variants: '["", "slim"]'
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,uv,pnpm
-      base_variants: '["", "slim"]'
 
 jobs:
 
@@ -340,8 +323,10 @@ jobs:
       - name: Compute build matrix
         env:
           IMAGES_LIST: ${{ env.IMAGES_LIST }}
+          BASE_VARIANTS: ${{ inputs.base_variants }}
         run: |
           # Compute build matrix based on the strategy matrix
+          # Optionally override base_variants for all entries in the matrix if input is set.
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
@@ -358,6 +343,12 @@ jobs:
             # Skip if package_versions is empty
             if [ -z "${package_versions}" ]; then
               continue
+            fi
+
+            # The base_variants workflow input, when set, overrides the
+            # per-entry default for all images in the matrix.
+            if [ -n "${BASE_VARIANTS}" ]; then
+              base_variants="${BASE_VARIANTS}"
             fi
 
             # List specified package names in a comma-separated format
