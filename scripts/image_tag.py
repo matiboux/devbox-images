@@ -4,10 +4,11 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from itertools import product
 
 
 class ImageTagGenerator:
+
+	_TAG_LEVELS = ('patch', 'minor', 'major', 'global')
 
 	def __init__(
 		self,
@@ -88,25 +89,46 @@ class ImageTagGenerator:
 		only_fully_qualified: bool = False,
 	) -> list[str]:
 
+		if only_fully_qualified:
+			max_ordinal = 0
+		else:
+			max_ordinal = max(
+				(
+					self._TAG_LEVELS.index(comp_tag_level)
+					for *_, comp_tag_level, _ in self.components
+				),
+				default=0,
+			)
+
 		component_options_list = []
-		tag_level_override = 'patch' if only_fully_qualified else None
 		for comp_name, comp_version, comp_tag_level, comp_unlabeled in self.components:
+			if only_fully_qualified:
+				effective_ordinal = 0
+			else:
+				own_ordinal = self._TAG_LEVELS.index(comp_tag_level)
+				# Components with a lower scope than the widest one in the set are
+				# bumped up to at least "minor" so they still contribute a distinct
+				# tag as the other components keep generalizing.
+				effective_ordinal = own_ordinal if max_ordinal == 0 else max(own_ordinal, 1)
+			effective_level = self._TAG_LEVELS[effective_ordinal]
 			options = self._get_component_options(
-				comp_name, comp_version, tag_level_override or comp_tag_level, comp_unlabeled
+				comp_name, comp_version, effective_level, comp_unlabeled
 			)
 			component_options_list.append(options)
 
 		tags: list[str] = []
-		for component_values in product(*component_options_list):
+		for step in range(max_ordinal + 1):
 			tag_pieces: list[str] = []
 
-			for i in range(len(self.components)):
-				if component_values[i]:
-					tag_pieces.append(component_values[i])
+			for options in component_options_list:
+				value = options[min(step, len(options) - 1)]
+				if value:
+					tag_pieces.append(value)
 
 			image_tag = '-'.join(tag_pieces) if tag_pieces else 'latest'
 
-			tags.append(image_tag)
+			if not tags or tags[-1] != image_tag:
+				tags.append(image_tag)
 
 		self.image_tags = tags
 		return tags
