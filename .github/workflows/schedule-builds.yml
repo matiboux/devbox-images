@@ -455,7 +455,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 2
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     # Job dependencies
