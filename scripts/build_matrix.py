@@ -129,7 +129,6 @@ class BuildMatrix:
 			detected_versions[package] = package_versions
 			latest_versions[package] = all_latest_versions.get(package, package_versions[0])
 
-		# base_variants = all_base_variants.get(base_package) or [None]
 		base_variants = all_base_variants.get(base_package)
 		selected_base_variants = (
 			self.base_variants.intersection(base_variants)
