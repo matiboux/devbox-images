@@ -260,7 +260,7 @@ jobs:
               .
               | map(.package_versions // "")
               | map(split(","))
-              | add
+              | add // []
               | map(sub("[?+]$"; ""))
               | unique
               | .[]
