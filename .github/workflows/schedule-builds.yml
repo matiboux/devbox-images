@@ -426,7 +426,7 @@ jobs:
             SELECTED_ENTRIES="$(
               jq -c \
                 --arg tag "${FILTER_TAG}" \
-                'select(.image_tag_list | any(contains($tag)))' \
+                'select(.image_tag_list | any(. == $tag))' \
                 <<< "${SELECTED_ENTRIES}"
             )"
           fi
