@@ -4,10 +4,11 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from itertools import product
 
 
 class ImageTagGenerator:
+
+	_TAG_LEVELS = ('patch', 'minor', 'major', 'global')
 
 	def __init__(
 		self,
@@ -88,25 +89,39 @@ class ImageTagGenerator:
 		only_fully_qualified: bool = False,
 	) -> list[str]:
 
+		if only_fully_qualified:
+			# Generate only the most specific tag, ignoring components tag levels.
+			widest_scope = 0  # 'patch' tag level index
+		else:
+			widest_scope = max(
+				(
+					self._TAG_LEVELS.index(comp_tag_level)
+					for *_, comp_tag_level, _ in self.components
+				),
+				default=0,
+			)
+
 		component_options_list = []
-		tag_level_override = 'patch' if only_fully_qualified else None
 		for comp_name, comp_version, comp_tag_level, comp_unlabeled in self.components:
+			effective_tag_level = 'patch' if only_fully_qualified else comp_tag_level
 			options = self._get_component_options(
-				comp_name, comp_version, tag_level_override or comp_tag_level, comp_unlabeled
+				comp_name, comp_version, effective_tag_level, comp_unlabeled
 			)
 			component_options_list.append(options)
 
 		tags: list[str] = []
-		for component_values in product(*component_options_list):
+		for step in range(widest_scope + 1):
 			tag_pieces: list[str] = []
 
-			for i in range(len(self.components)):
-				if component_values[i]:
-					tag_pieces.append(component_values[i])
+			for options in component_options_list:
+				value = options[min(step, len(options) - 1)]
+				if value:
+					tag_pieces.append(value)
 
 			image_tag = '-'.join(tag_pieces) if tag_pieces else 'latest'
 
-			tags.append(image_tag)
+			if not tags or tags[-1] != image_tag:
+				tags.append(image_tag)
 
 		self.image_tags = tags
 		return tags

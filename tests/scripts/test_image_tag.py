@@ -146,6 +146,79 @@ def test_generate_tags_only_fully_qualified_forces_patch():
 	assert tags == ['python3.14.6']
 
 
+def test_generate_tags_only_fully_qualified_ignores_multiple_components():
+	gen = ImageTagGenerator(
+		components=[
+			('python', '3.14.6', 'global', None),
+			('poetry', '2.1.5', 'major', None),
+		]
+	)
+	tags = gen.generate_tags(only_fully_qualified=True)
+	assert tags == ['python3.14.6-poetry2.1.5']
+
+
+def test_generate_tags_both_components_minor_skips_major_and_global():
+	# Neither component asks for more than "minor", so the max scope across
+	# components is "minor" and no major/global iterations are produced at all.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '3.14.6', 'minor', None),
+			('poetry', '2.1.5', 'minor', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python3.14.6-poetry2.1.5',
+		'python3.14-poetry2.1',
+	]
+
+
+def test_generate_tags_both_components_patch_stays_single_tag():
+	gen = ImageTagGenerator(
+		components=[
+			('python', '3.14.6', 'patch', None),
+			('poetry', '2.1.5', 'patch', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == ['python3.14.6-poetry2.1.5']
+
+
+def test_generate_tags_doc_example_patch_then_minor_major_global():
+	# python is capped at "minor" and freezes there once the wider "uv" component
+	# (capped at "global") keeps generalizing further.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '3.10.4', 'minor', None),
+			('uv', '0.11.3', 'global', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python3.10.4-uv0.11.3',
+		'python3.10-uv0.11',
+		'python3.10-uv0',
+		'python3.10-uv',
+	]
+
+
+def test_generate_tags_three_components_bump_and_freeze():
+	gen = ImageTagGenerator(
+		components=[
+			('python', '3.14.6', 'global', None),
+			('poetry', '2.1.5', 'patch', None),
+			('uv', '0.11.3', 'patch', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python3.14.6-poetry2.1.5-uv0.11.3',
+		'python3.14-poetry2.1.5-uv0.11.3',
+		'python3-poetry2.1.5-uv0.11.3',
+		'python-poetry2.1.5-uv0.11.3',
+	]
+
+
 def test_generate_tags_unlabeled_component_can_be_blank_in_tag():
 	gen = ImageTagGenerator(
 		components=[
@@ -154,7 +227,7 @@ def test_generate_tags_unlabeled_component_can_be_blank_in_tag():
 		]
 	)
 	tags = gen.generate_tags()
-	# the blank python option combines with poetry2.1.5 into "poetry2.1.5", no leading dash
+	# the blank python option combines with poetry at its patch level, no leading dash
 	assert 'poetry2.1.5' in tags
 	assert '3.14.6-poetry2.1.5' in tags
 
