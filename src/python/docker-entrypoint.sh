@@ -30,8 +30,12 @@ if [ -S "${DOCKER_SOCK}" ] && command -v docker > /dev/null 2>&1; then
 	fi
 fi
 
+if [ -z "${SHELL}" ]; then
+	SHELL="$(command -v bash || command -v sh)"
+fi
+
 if [ $# -gt 0 ] && [ "$1" = "${1#-}" ]; then
 	exec ${REEXEC} "$@"
 else
-	exec ${REEXEC} "${SHELL:-/bin/sh}" "$@"
+	exec ${REEXEC} "${SHELL}" "$@"
 fi
