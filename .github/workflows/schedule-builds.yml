@@ -196,11 +196,35 @@ jobs:
 
       # Preparation steps
 
+      - name: Parse filter input
+        env:
+          FILTER: ${{ inputs.filter }}
+        run: |
+          # Set FILTER_IMAGES_PREFIX and FILTER_TAG environment variables
+          # Parse the filter input: '<images_prefix>' or '<images_prefix>:<tag>'
+
+          # Load helper scripts
+          . ./.github/workflows/scripts/set_github_env.sh
+
+          FILTER_IMAGES_PREFIX=''
+          FILTER_TAG=''
+          if [ -n "${FILTER}" ]; then
+            FILTER_IMAGES_PREFIX="${FILTER%%:*}"
+            if [ "${FILTER}" != "${FILTER_IMAGES_PREFIX}" ]; then
+              FILTER_TAG="${FILTER#*:}"
+            fi
+          fi
+
+          set_github_env 'FILTER_IMAGES_PREFIX' "${FILTER_IMAGES_PREFIX}" optional non-secret verbose
+          set_github_env 'FILTER_TAG' "${FILTER_TAG}" optional non-secret verbose
+
       - name: Set images list
         env:
           IMAGES_LIST_YAML: ${{ env.IMAGES_LIST_YAML }}
+          FILTER_IMAGES_PREFIX: ${{ env.FILTER_IMAGES_PREFIX }}
         run: |
           # Set IMAGES_LIST environment variable
+          # Restrict to the filtered image prefix if specified.
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
@@ -209,6 +233,15 @@ jobs:
           IMAGES_LIST="$(
             yq -o=json e '.' <<< "${IMAGES_LIST_YAML}"
           )"
+
+          if [ -n "${FILTER_IMAGES_PREFIX}" ]; then
+            IMAGES_LIST="$(
+              jq -c \
+                --arg prefix "${FILTER_IMAGES_PREFIX}" \
+                'map(select(.images_prefix == $prefix))' \
+                <<< "${IMAGES_LIST}"
+            )"
+          fi
 
           set_github_env 'IMAGES_LIST' "${IMAGES_LIST}" non-optional non-secret verbose
 
@@ -355,7 +388,8 @@ jobs:
 
       - name: Randomly sample build matrix subset
         env:
-          FILTER: ${{ inputs.filter }}
+          FILTER_IMAGES_PREFIX: ${{ env.FILTER_IMAGES_PREFIX }}
+          FILTER_TAG: ${{ env.FILTER_TAG }}
           NB_CONCURRENT_BUILDS: ${{ env.NB_CONCURRENT_BUILDS }}
         run: |
           # Randomly sample a subset of builds to run from the build matrix,
@@ -364,16 +398,6 @@ jobs:
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
-
-          # Parse the filter input: '<images_prefix>' or '<images_prefix>:<tag>'
-          FILTER_IMAGES_PREFIX=''
-          FILTER_TAG=''
-          if [ -n "${FILTER}" ]; then
-            FILTER_IMAGES_PREFIX="${FILTER%%:*}"
-            if [ "${FILTER}" != "${FILTER_IMAGES_PREFIX}" ]; then
-              FILTER_TAG="${FILTER#*:}"
-            fi
-          fi
 
           # Set number of concurrent builds to run
           NB_CONCURRENT_BUILDS="${NB_CONCURRENT_BUILDS:-10}"
