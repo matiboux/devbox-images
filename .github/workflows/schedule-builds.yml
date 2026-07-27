@@ -17,8 +17,8 @@ on:
   # Run on manual triggers
   workflow_dispatch:
     inputs:
-      priority:
-        description: 'Image prefix (and optional tag) to prioritize in the build matrix.'
+      filter:
+        description: 'Image prefix (and optional tag) to filter the build matrix down to.'
         type: string
         required: false
         default: ''
@@ -355,23 +355,23 @@ jobs:
 
       - name: Randomly sample build matrix subset
         env:
+          FILTER: ${{ inputs.filter }}
           NB_CONCURRENT_BUILDS: ${{ env.NB_CONCURRENT_BUILDS }}
-          PRIORITY: ${{ inputs.priority }}
         run: |
           # Randomly sample a subset of builds to run from the build matrix,
-          # prioritizing entries matching the requested image prefix (and optional tag).
+          # restricted to entries matching the requested image prefix (and optional tag) when set.
           # Set BUILD_MATRIX environment variable
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
 
-          # Parse the priority input: '<images_prefix>' or '<images_prefix>:<tag>'
-          PRIORITY_IMAGES_PREFIX=''
-          PRIORITY_TAG=''
-          if [ -n "${PRIORITY}" ]; then
-            PRIORITY_IMAGES_PREFIX="${PRIORITY%%:*}"
-            if [ "${PRIORITY}" != "${PRIORITY_IMAGES_PREFIX}" ]; then
-              PRIORITY_TAG="${PRIORITY#*:}"
+          # Parse the filter input: '<images_prefix>' or '<images_prefix>:<tag>'
+          FILTER_IMAGES_PREFIX=''
+          FILTER_TAG=''
+          if [ -n "${FILTER}" ]; then
+            FILTER_IMAGES_PREFIX="${FILTER%%:*}"
+            if [ "${FILTER}" != "${FILTER_IMAGES_PREFIX}" ]; then
+              FILTER_TAG="${FILTER#*:}"
             fi
           fi
 
@@ -384,55 +384,24 @@ jobs:
             | jq -c '.[]'
           )"
 
-          if [ -n "${PRIORITY_IMAGES_PREFIX}" ]; then
-            # Split entries into priority 1 (matching) and priority 2 (the rest)
-            PRIORITY_1="$(
+          MATCHING_ENTRIES=''
+          if [ -n "${FILTER_IMAGES_PREFIX}" ]; then
+            MATCHING_ENTRIES="$(
               jq -c \
-                --arg prefix "${PRIORITY_IMAGES_PREFIX}" \
-                --arg tag "${PRIORITY_TAG}" \
+                --arg prefix "${FILTER_IMAGES_PREFIX}" \
+                --arg tag "${FILTER_TAG}" \
                 'select(
                   .images_prefix == $prefix
                   and ($tag == "" or (.image_tag_list | any(contains($tag))))
                 )' <<< "${ALL_ENTRIES}"
             )"
-            PRIORITY_2="$(
-              jq -c \
-                --arg prefix "${PRIORITY_IMAGES_PREFIX}" \
-                --arg tag "${PRIORITY_TAG}" \
-                'select(
-                  (.images_prefix != $prefix)
-                  or ($tag != "" and (.image_tag_list | any(contains($tag)) | not))
-                )' <<< "${ALL_ENTRIES}"
-            )"
           else
-            PRIORITY_1=''
-            PRIORITY_2="${ALL_ENTRIES}"
+            MATCHING_ENTRIES="${ALL_ENTRIES}"
           fi
 
-          # Print matching priority 1 entries for debugging
-          NB_PRIORITY_1="$(printf '%s\n' "${PRIORITY_1}" | grep -c '.')"
-          echo "Found ${NB_PRIORITY_1} matching priority 1 entries."
-          if [ "${NB_PRIORITY_1}" -gt 0 ] && [ "${NB_PRIORITY_1}" -le 9 ]; then
-            printf '%s\n' "${PRIORITY_1}" | jq -r '.images_prefix + ":" + .image_tag' | sed 's/^/  - /'
-          fi
-
-          # Shuffle priority 1 entries and pick up to NB_CONCURRENT_BUILDS
-          SELECTED_1=''
-          if [ -n "${PRIORITY_1}" ]; then
-            SELECTED_1="$(shuf -n "${NB_CONCURRENT_BUILDS}" <<< "${PRIORITY_1}")"
-          fi
-          NB_SELECTED_1="$(printf '%s\n' "${SELECTED_1}" | grep -c '.')"
-          NB_REMAINING="$(( NB_CONCURRENT_BUILDS - NB_SELECTED_1 ))"
-
-          # Shuffle priority 2 entries and pick the remaining slots
-          SELECTED_2=''
-          if [ "${NB_REMAINING}" -gt 0 ] && [ -n "${PRIORITY_2}" ]; then
-            SELECTED_2="$(shuf -n "${NB_REMAINING}" <<< "${PRIORITY_2}")"
-          fi
-
+          # Shuffle matching entries and pick up to NB_CONCURRENT_BUILDS
           BUILD_MATRIX="$(
-            { printf '%s\n' "${SELECTED_1}"; printf '%s\n' "${SELECTED_2}"; } \
-            | grep -v '^$' \
+            shuf -n "${NB_CONCURRENT_BUILDS}" <<< "${MATCHING_ENTRIES}" \
             | jq -rcs '{ include: . }'
           )"
 
