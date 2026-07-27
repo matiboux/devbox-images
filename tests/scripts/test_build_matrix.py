@@ -164,6 +164,18 @@ def test_generate_build_matrix_build_args_contains_uppercased_versions(tmp_path)
 	assert build_args == ['POETRY_VERSION=2.1.5']
 
 
+def test_generate_build_matrix_python_defaults_to_base_only(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['python'],
+		{'python': ['3.14.6']},
+		latest_version={'python': '3.14.6'},
+	)
+	matrix = bm.generate_build_matrix(skip_published_tags=False)
+	tags = {e['image_tag'] for e in matrix}
+	assert tags == {'python3.14.6'}
+
+
 def test_generate_build_matrix_python_base_variants(tmp_path):
 	bm = make_matrix(
 		tmp_path,
