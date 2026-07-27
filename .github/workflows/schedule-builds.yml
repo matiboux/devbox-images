@@ -302,8 +302,14 @@ jobs:
         run: |
           # Detect versions for each specified package
           while IFS= read -r package; do
+
+            if [ -z "${package}" ]; then
+              continue
+            fi
+
             echo "Detecting versions for package '${package}'..."
             uv run python -m scripts.detect_versions "${package}" || true
+
           done <<< "${PACKAGES}"
 
       - name: Fetch all published tags
@@ -318,6 +324,10 @@ jobs:
           LAST_COMMIT_DATETIME="$(git log -1 --format=%cI -- src)"
 
           while IFS= read -r image_prefix; do
+
+            if [ -z "${image_prefix}" ]; then
+              continue
+            fi
 
             echo "Fetching published tags for image prefix '${image_prefix}'..."
             uv run python -m scripts.fetch_published_tags \
