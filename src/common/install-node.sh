@@ -2,15 +2,19 @@
 set -e
 
 NODE_VERSION_INPUT="${1:-lts}"
+NVM_VERSION_INPUT="${NVM_VERSION_INPUT:-latest}"
 
 NVM_DIR="${NVM_DIR:-/opt/nvm}"
 
 # ---
 
+COMMON_DIR="$(dirname "$(realpath "$0")")"
+
 if [ ! -s "${NVM_DIR}/nvm.sh" ]; then
-    echo 'Cannot find nvm. Please install nvm before installing Node.js.' >&2
-    exit 1
+    # nvm is not installed, install it first
+    "${COMMON_DIR}/install-nvm.sh" "${NVM_VERSION_INPUT}"
 fi
+
 \. "${NVM_DIR}/nvm.sh"
 
 if [ -z "${NODE_VERSION_INPUT}" ] || [ "${NODE_VERSION_INPUT}" = 'lts' ]; then
