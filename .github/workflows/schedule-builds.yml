@@ -423,7 +423,7 @@ jobs:
 
           # Filter selected entries to those matching the requested tag if set
           if [ -n "${FILTER_TAG}" ]; then
-            MATCHING_ENTRIES="$(
+            SELECTED_ENTRIES="$(
               jq -c \
                 --arg tag "${FILTER_TAG}" \
                 'select(.image_tag_list | any(contains($tag)))' \
