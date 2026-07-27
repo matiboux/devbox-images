@@ -57,12 +57,12 @@ test_case 'POETRY_VERSION triggers install-poetry.sh with that version'
 POETRY_VERSION='2.1.5' sh "${FAKE_ROOT}/src/python/install-python.sh"
 assert_contains "$(cat "${CALL_LOG}")" 'install-poetry.sh 2.1.5'
 
-test_case 'NODE_VERSION and NVM_VERSION together trigger both install scripts'
+test_case 'NODE_VERSION triggers install-node.sh with that version'
 : > "${CALL_LOG}"
-NVM_VERSION='0.40.3' NODE_VERSION='22' sh "${FAKE_ROOT}/src/python/install-python.sh"
+NODE_VERSION='22' sh "${FAKE_ROOT}/src/python/install-python.sh"
 calls="$(cat "${CALL_LOG}")"
-assert_contains "${calls}" 'install-nvm.sh 0.40.3'
 assert_contains "${calls}" 'install-node.sh 22'
+assert_not_contains "${calls}" 'install-nvm.sh'
 
 test_case 'DOCKER_VERSION triggers install-docker.sh'
 : > "${CALL_LOG}"
