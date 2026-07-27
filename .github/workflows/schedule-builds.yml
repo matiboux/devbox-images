@@ -388,12 +388,11 @@ jobs:
 
       - name: Randomly sample build matrix subset
         env:
-          FILTER_IMAGES_PREFIX: ${{ env.FILTER_IMAGES_PREFIX }}
           FILTER_TAG: ${{ env.FILTER_TAG }}
           NB_CONCURRENT_BUILDS: ${{ env.NB_CONCURRENT_BUILDS }}
         run: |
           # Randomly sample a subset of builds to run from the build matrix,
-          # restricted to entries matching the requested image prefix (and optional tag) when set.
+          # restricted to entries matching the requested image prefix and tag when set.
           # Set BUILD_MATRIX environment variable
 
           # Load helper scripts
@@ -403,43 +402,38 @@ jobs:
           NB_CONCURRENT_BUILDS="${NB_CONCURRENT_BUILDS:-10}"
 
           # Transform list of build matrix entries to JSON, one entry per line
-          ALL_ENTRIES="$(
+          SELECTED_ENTRIES="$(
             yq -o=json e '.build_matrix' ./dist/build_matrix.yml \
             | jq -c '.[]'
           )"
 
-          MATCHING_ENTRIES=''
-          if [ -n "${FILTER_IMAGES_PREFIX}" ]; then
+          # Filter selected entries to those matching the requested tag if set
+          if [ -n "${FILTER_TAG}" ]; then
             MATCHING_ENTRIES="$(
               jq -c \
-                --arg prefix "${FILTER_IMAGES_PREFIX}" \
                 --arg tag "${FILTER_TAG}" \
-                'select(
-                  .images_prefix == $prefix
-                  and ($tag == "" or (.image_tag_list | any(contains($tag))))
-                )' <<< "${ALL_ENTRIES}"
+                'select(.image_tag_list | any(contains($tag)))' \
+                <<< "${SELECTED_ENTRIES}"
             )"
-          else
-            MATCHING_ENTRIES="${ALL_ENTRIES}"
           fi
 
-          # Remove image_tag_list field from matching entries
-          MATCHING_ENTRIES="$(
+          # Remove image_tag_list field from selected entries
+          SELECTED_ENTRIES="$(
             jq -c \
               'del(.image_tag_list)' \
-              <<< "${MATCHING_ENTRIES}"
+              <<< "${SELECTED_ENTRIES}"
           )"
 
           # Shuffle matching entries and pick up to NB_CONCURRENT_BUILDS
           BUILD_MATRIX="$(
-            shuf -n "${NB_CONCURRENT_BUILDS}" <<< "${MATCHING_ENTRIES}" \
+            shuf -n "${NB_CONCURRENT_BUILDS}" <<< "${SELECTED_ENTRIES}" \
             | jq -rcs '{ include: . }'
           )"
 
           # Print count of matching entries and selected build matrix
-          NB_MATCHING_ENTRIES="$(printf '%s\n' "${MATCHING_ENTRIES}" | grep -c '.' || true)"
-          NB_SELECTED_ENTRIES="$(printf '%s\n' "${BUILD_MATRIX}" | jq -r '.include | length')"
-          echo "Selected ${NB_SELECTED_ENTRIES} build matrix entries from ${NB_MATCHING_ENTRIES} matching entries."
+          NB_SELECTED_ENTRIES="$(printf '%s\n' "${SELECTED_ENTRIES}" | grep -c '.' || true)"
+          NB_MATRIX_ENTRIES="$(printf '%s\n' "${BUILD_MATRIX}" | jq -r '.include | length')"
+          echo "Selected ${NB_MATRIX_ENTRIES} build matrix entries from ${NB_SELECTED_ENTRIES} entries."
 
           set_github_env 'BUILD_MATRIX' "${BUILD_MATRIX}" non-optional non-secret verbose
 
