@@ -185,16 +185,10 @@ class BuildMatrix:
 						for other_package in other_packages
 					],
 				]
-				image_tag_generator = ImageTagGenerator(
-					components=[
-						(comp_name, comp_version, 'patch', comp_unlabeled)
-						for (comp_name, comp_version, _, comp_unlabeled) in image_tag_components
-					]
-				)
-				image_tag_generator.generate_tags(only_fully_qualified=True)
-				image_tag = (
-					image_tag_generator.image_tags[0] if image_tag_generator.image_tags else None
-				)
+				image_tag_generator = ImageTagGenerator(components=image_tag_components)
+				image_tag_generator.generate_tags()
+				image_tags_list = image_tag_generator.image_tags
+				image_tag = image_tags_list[0] if image_tags_list else None
 
 				if not image_tag:
 					print(
@@ -209,6 +203,7 @@ class BuildMatrix:
 					{
 						**self.common_metadata,
 						'image_tag': image_tag,
+						'image_tag_list': image_tags_list,
 						'image_tag_components': ','.join(
 							self._format_component(*comp) for comp in image_tag_components
 						),

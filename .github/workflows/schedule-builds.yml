@@ -392,7 +392,7 @@ jobs:
                 --arg tag "${PRIORITY_TAG}" \
                 'select(
                   .images_prefix == $prefix
-                  and ($tag == "" or (.image_tag | contains($tag)))
+                  and ($tag == "" or (.image_tag_list | any(contains($tag))))
                 )' <<< "${ALL_ENTRIES}"
             )"
             PRIORITY_2="$(
@@ -401,7 +401,7 @@ jobs:
                 --arg tag "${PRIORITY_TAG}" \
                 'select(
                   (.images_prefix != $prefix)
-                  or ($tag != "" and (.image_tag | contains($tag) | not))
+                  or ($tag != "" and (.image_tag_list | any(contains($tag)) | not))
                 )' <<< "${ALL_ENTRIES}"
             )"
           else
