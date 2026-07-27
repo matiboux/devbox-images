@@ -90,9 +90,10 @@ class ImageTagGenerator:
 	) -> list[str]:
 
 		if only_fully_qualified:
-			max_ordinal = 0
+			# Generate only the most specific tag, ignoring components tag levels.
+			widest_scope = 0  # 'patch' tag level index
 		else:
-			max_ordinal = max(
+			widest_scope = max(
 				(
 					self._TAG_LEVELS.index(comp_tag_level)
 					for *_, comp_tag_level, _ in self.components
@@ -102,22 +103,14 @@ class ImageTagGenerator:
 
 		component_options_list = []
 		for comp_name, comp_version, comp_tag_level, comp_unlabeled in self.components:
-			if only_fully_qualified:
-				effective_ordinal = 0
-			else:
-				own_ordinal = self._TAG_LEVELS.index(comp_tag_level)
-				# Components with a lower scope than the widest one in the set are
-				# bumped up to at least "minor" so they still contribute a distinct
-				# tag as the other components keep generalizing.
-				effective_ordinal = own_ordinal if max_ordinal == 0 else max(own_ordinal, 1)
-			effective_level = self._TAG_LEVELS[effective_ordinal]
+			effective_tag_level = 'patch' if only_fully_qualified else comp_tag_level
 			options = self._get_component_options(
-				comp_name, comp_version, effective_level, comp_unlabeled
+				comp_name, comp_version, effective_tag_level, comp_unlabeled
 			)
 			component_options_list.append(options)
 
 		tags: list[str] = []
-		for step in range(max_ordinal + 1):
+		for step in range(widest_scope + 1):
 			tag_pieces: list[str] = []
 
 			for options in component_options_list:
