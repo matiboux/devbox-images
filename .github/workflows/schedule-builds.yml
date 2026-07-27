@@ -17,6 +17,11 @@ on:
   # Run on manual triggers
   workflow_dispatch:
     inputs:
+      filter:
+        description: 'Image prefix (and optional tag) to filter the build matrix down to.'
+        type: string
+        required: false
+        default: ''
       nb_concurrent_builds:
         description: 'Number of concurrent builds to run. Default is 5.'
         type: number
@@ -191,11 +196,35 @@ jobs:
 
       # Preparation steps
 
+      - name: Parse filter input
+        env:
+          FILTER: ${{ inputs.filter }}
+        run: |
+          # Set FILTER_IMAGES_PREFIX and FILTER_TAG environment variables
+          # Parse the filter input: '<images_prefix>' or '<images_prefix>:<tag>'
+
+          # Load helper scripts
+          . ./.github/workflows/scripts/set_github_env.sh
+
+          FILTER_IMAGES_PREFIX=''
+          FILTER_TAG=''
+          if [ -n "${FILTER}" ]; then
+            FILTER_IMAGES_PREFIX="${FILTER%%:*}"
+            if [ "${FILTER}" != "${FILTER_IMAGES_PREFIX}" ]; then
+              FILTER_TAG="${FILTER#*:}"
+            fi
+          fi
+
+          set_github_env 'FILTER_IMAGES_PREFIX' "${FILTER_IMAGES_PREFIX}" optional non-secret verbose
+          set_github_env 'FILTER_TAG' "${FILTER_TAG}" optional non-secret verbose
+
       - name: Set images list
         env:
           IMAGES_LIST_YAML: ${{ env.IMAGES_LIST_YAML }}
+          FILTER_IMAGES_PREFIX: ${{ env.FILTER_IMAGES_PREFIX }}
         run: |
           # Set IMAGES_LIST environment variable
+          # Restrict to the filtered image prefix if specified.
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
@@ -204,6 +233,15 @@ jobs:
           IMAGES_LIST="$(
             yq -o=json e '.' <<< "${IMAGES_LIST_YAML}"
           )"
+
+          if [ -n "${FILTER_IMAGES_PREFIX}" ]; then
+            IMAGES_LIST="$(
+              jq -c \
+                --arg prefix "${FILTER_IMAGES_PREFIX}" \
+                'map(select(.images_prefix == $prefix))' \
+                <<< "${IMAGES_LIST}"
+            )"
+          fi
 
           set_github_env 'IMAGES_LIST' "${IMAGES_LIST}" non-optional non-secret verbose
 
@@ -222,14 +260,14 @@ jobs:
               .
               | map(.package_versions // "")
               | map(split(","))
-              | add
+              | add // []
               | map(sub("[?+]$"; ""))
               | unique
               | .[]
             ' <<< "$IMAGES_LIST"
           )"
 
-          set_github_env 'PACKAGES' "${PACKAGES}" non-optional non-secret verbose
+          set_github_env 'PACKAGES' "${PACKAGES}" optional non-secret verbose
 
       - name: Set images list
         env:
@@ -250,7 +288,7 @@ jobs:
             ' <<< "$IMAGES_LIST"
           )"
 
-          set_github_env 'IMAGES_PREFIXES' "${IMAGES_PREFIXES}" non-optional non-secret verbose
+          set_github_env 'IMAGES_PREFIXES' "${IMAGES_PREFIXES}" optional non-secret verbose
 
       # Execution steps
 
@@ -264,8 +302,14 @@ jobs:
         run: |
           # Detect versions for each specified package
           while IFS= read -r package; do
+
+            if [ -z "${package}" ]; then
+              continue
+            fi
+
             echo "Detecting versions for package '${package}'..."
             uv run python -m scripts.detect_versions "${package}" || true
+
           done <<< "${PACKAGES}"
 
       - name: Fetch all published tags
@@ -280,6 +324,10 @@ jobs:
           LAST_COMMIT_DATETIME="$(git log -1 --format=%cI -- src)"
 
           while IFS= read -r image_prefix; do
+
+            if [ -z "${image_prefix}" ]; then
+              continue
+            fi
 
             echo "Fetching published tags for image prefix '${image_prefix}'..."
             uv run python -m scripts.fetch_published_tags \
@@ -348,25 +396,58 @@ jobs:
 
           done <<< "$(jq -c '.[]' <<< "${IMAGES_LIST}")"
 
+          # Count number of build matrix entries
+          NB_MATRIX_ENTRIES="$(yq e '.build_matrix | length' ./dist/build_matrix.yml || true)"
+          echo "Computed ${NB_MATRIX_ENTRIES} build matrix entries."
+
       - name: Randomly sample build matrix subset
         env:
+          FILTER_TAG: ${{ env.FILTER_TAG }}
           NB_CONCURRENT_BUILDS: ${{ env.NB_CONCURRENT_BUILDS }}
         run: |
-          # Randomly sample a subset of builds to run from the build matrix
+          # Randomly sample a subset of builds to run from the build matrix,
+          # restricted to entries matching the requested image prefix and tag when set.
           # Set BUILD_MATRIX environment variable
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
 
-          # Transform list of build matrix entries
-          # to job matrix configuration in JSON format.
-          # Randomly sample a subset of builds to run from the build matrix.
-          BUILD_MATRIX="$(
+          # Set number of concurrent builds to run
+          NB_CONCURRENT_BUILDS="${NB_CONCURRENT_BUILDS:-10}"
+
+          # Transform list of build matrix entries to JSON, one entry per line
+          SELECTED_ENTRIES="$(
             yq -o=json e '.build_matrix' ./dist/build_matrix.yml \
-            | jq -c '.[]' \
-            | shuf -n "${NB_CONCURRENT_BUILDS:-10}" \
+            | jq -c '.[]'
+          )"
+
+          # Filter selected entries to those matching the requested tag if set
+          if [ -n "${FILTER_TAG}" ]; then
+            SELECTED_ENTRIES="$(
+              jq -c \
+                --arg tag "${FILTER_TAG}" \
+                'select(.image_tag_list | any(. == $tag))' \
+                <<< "${SELECTED_ENTRIES}"
+            )"
+          fi
+
+          # Remove image_tag_list field from selected entries
+          SELECTED_ENTRIES="$(
+            jq -c \
+              'del(.image_tag_list)' \
+              <<< "${SELECTED_ENTRIES}"
+          )"
+
+          # Shuffle matching entries and pick up to NB_CONCURRENT_BUILDS
+          BUILD_MATRIX="$(
+            shuf -n "${NB_CONCURRENT_BUILDS}" <<< "${SELECTED_ENTRIES}" \
             | jq -rcs '{ include: . }'
           )"
+
+          # Print count of matching entries and selected build matrix
+          NB_SELECTED_ENTRIES="$(printf '%s\n' "${SELECTED_ENTRIES}" | grep -c '.' || true)"
+          NB_MATRIX_ENTRIES="$(printf '%s\n' "${BUILD_MATRIX}" | jq -r '.include | length')"
+          echo "Selected ${NB_MATRIX_ENTRIES} build matrix entries from ${NB_SELECTED_ENTRIES} entries."
 
           set_github_env 'BUILD_MATRIX' "${BUILD_MATRIX}" non-optional non-secret verbose
 
