@@ -10,17 +10,28 @@ class ImageTagGenerator:
 
 	_TAG_LEVELS = ('patch', 'minor', 'major', 'global')
 
+	_STANDARD_LEVELS = {
+		'python': 'minor',
+		'node': 'major',
+	}
+
 	def __init__(
 		self,
 		components: Sequence[
 			tuple[str, str] | tuple[str, str, str] | tuple[str, str, str, str | None]
 		],
+		standard_levels: dict[str, str] | None = None,
 	):
 		"""
 		Initialize the ImageTagGenerator with component versions and tag levels.
 		:param components: List of tuples containing
 			(component_name, version, tag_level, unlabeled_flag)
+		:param standard_levels: Mapping of component name to the tag level it
+			should be pinned to in the "standard" tag. Defaults to `_STANDARD_LEVELS`.
 		"""
+		self.standard_levels: dict[str, str] = (
+			dict(self._STANDARD_LEVELS) if standard_levels is None else standard_levels
+		)
 		self.components: list[tuple[str, str, str, str | None]] = [
 			(
 				(
@@ -84,6 +95,35 @@ class ImageTagGenerator:
 
 		return options
 
+	def _get_standard_tag(self) -> str | None:
+		"""
+		Build the "standard" tag: each known component is pinned to its
+		standard tag level (e.g. python -> minor, node -> major), provided the
+		component was requested at least as wide as that standard level. If any
+		known component was requested narrower than its standard level, no
+		standard tag can be built and None is returned. Components without a
+		configured standard level use their own requested tag level.
+		"""
+		tag_pieces: list[str] = []
+
+		for comp_name, comp_version, comp_tag_level, comp_unlabeled in self.components:
+			target_level = self.standard_levels.get(comp_name)
+			if target_level is not None:
+				if self._TAG_LEVELS.index(comp_tag_level) < self._TAG_LEVELS.index(target_level):
+					return None
+				effective_level = target_level
+			else:
+				effective_level = comp_tag_level
+
+			options = self._get_component_options(
+				comp_name, comp_version, effective_level, comp_unlabeled
+			)
+			value = options[-1]
+			if value:
+				tag_pieces.append(value)
+
+		return '-'.join(tag_pieces) if tag_pieces else None
+
 	def generate_tags(
 		self,
 		only_fully_qualified: bool = False,
@@ -122,6 +162,11 @@ class ImageTagGenerator:
 
 			if not tags or tags[-1] != image_tag:
 				tags.append(image_tag)
+
+		if not only_fully_qualified:
+			standard_tag = self._get_standard_tag()
+			if standard_tag and standard_tag not in tags:
+				tags.append(standard_tag)
 
 		self.image_tags = tags
 		return tags
