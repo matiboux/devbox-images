@@ -135,8 +135,8 @@ def test_generate_tags_cartesian_product_multiple_components():
 	tags = gen.generate_tags()
 	assert tags == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1.5',
-		'python3-poetry2.1.5',
+		'python3.14-poetry2.1',
+		'python3-poetry2.1',
 	]
 
 
