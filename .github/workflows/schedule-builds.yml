@@ -423,6 +423,13 @@ jobs:
             MATCHING_ENTRIES="${ALL_ENTRIES}"
           fi
 
+          # Remove image_tag_list field from matching entries
+          MATCHING_ENTRIES="$(
+            jq -c \
+              'del(.image_tag_list)' \
+              <<< "${MATCHING_ENTRIES}"
+          )"
+
           # Shuffle matching entries and pick up to NB_CONCURRENT_BUILDS
           BUILD_MATRIX="$(
             shuf -n "${NB_CONCURRENT_BUILDS}" <<< "${MATCHING_ENTRIES}" \
