@@ -135,8 +135,8 @@ def test_generate_tags_cartesian_product_multiple_components():
 	tags = gen.generate_tags()
 	assert tags == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1',
-		'python3-poetry2.1',
+		'python3.14-poetry2.1.5',
+		'python3-poetry2.1.5',
 	]
 
 
@@ -213,9 +213,9 @@ def test_generate_tags_three_components_bump_and_freeze():
 	tags = gen.generate_tags()
 	assert tags == [
 		'python3.14.6-poetry2.1.5-uv0.11.3',
-		'python3.14-poetry2.1-uv0.11',
-		'python3-poetry2.1-uv0.11',
-		'python-poetry2.1-uv0.11',
+		'python3.14-poetry2.1.5-uv0.11.3',
+		'python3-poetry2.1.5-uv0.11.3',
+		'python-poetry2.1.5-uv0.11.3',
 	]
 
 
@@ -227,8 +227,8 @@ def test_generate_tags_unlabeled_component_can_be_blank_in_tag():
 		]
 	)
 	tags = gen.generate_tags()
-	# the blank python option combines with poetry's bumped minor tag, no leading dash
-	assert 'poetry2.1' in tags
+	# the blank python option combines with poetry at its patch level, no leading dash
+	assert 'poetry2.1.5' in tags
 	assert '3.14.6-poetry2.1.5' in tags
 
 
@@ -318,7 +318,7 @@ def test_cli_comma_separated_single_arg():
 	assert result.returncode == 0
 	assert result.stdout.splitlines() == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1',
+		'python3.14-poetry2.1.5',
 	]
 
 
@@ -328,7 +328,7 @@ def test_cli_json_list_single_arg():
 	assert result.returncode == 0
 	assert result.stdout.splitlines() == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1',
+		'python3.14-poetry2.1.5',
 	]
 
 
@@ -337,7 +337,7 @@ def test_cli_multiple_positional_components():
 	assert result.returncode == 0
 	assert result.stdout.splitlines() == [
 		'python3.14.6-poetry2.1.5',
-		'python3.14-poetry2.1',
+		'python3.14-poetry2.1.5',
 	]
 
 
