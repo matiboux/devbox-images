@@ -267,7 +267,7 @@ jobs:
             ' <<< "$IMAGES_LIST"
           )"
 
-          set_github_env 'PACKAGES' "${PACKAGES}" non-optional non-secret verbose
+          set_github_env 'PACKAGES' "${PACKAGES}" optional non-secret verbose
 
       - name: Set images list
         env:
@@ -288,7 +288,7 @@ jobs:
             ' <<< "$IMAGES_LIST"
           )"
 
-          set_github_env 'IMAGES_PREFIXES' "${IMAGES_PREFIXES}" non-optional non-secret verbose
+          set_github_env 'IMAGES_PREFIXES' "${IMAGES_PREFIXES}" optional non-secret verbose
 
       # Execution steps
 
