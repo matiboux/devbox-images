@@ -32,6 +32,12 @@ on:
         type: boolean
         required: false
         default: true
+      base_variants:
+        description: 'Override list of base variants to build for all images.'
+        # Format: Comma-separated list or JSON list
+        type: string
+        required: false
+        default: ''
 
 # Set default GITHUB_TOKEN permissions for the workflow
 permissions:
@@ -317,8 +323,10 @@ jobs:
       - name: Compute build matrix
         env:
           IMAGES_LIST: ${{ env.IMAGES_LIST }}
+          BASE_VARIANTS: ${{ inputs.base_variants }}
         run: |
           # Compute build matrix based on the strategy matrix
+          # Optionally override base_variants for all entries in the matrix if input is set.
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
@@ -335,6 +343,12 @@ jobs:
             # Skip if package_versions is empty
             if [ -z "${package_versions}" ]; then
               continue
+            fi
+
+            # The base_variants workflow input, when set, overrides the
+            # per-entry default for all images in the matrix.
+            if [ -n "${BASE_VARIANTS}" ]; then
+              base_variants="${BASE_VARIANTS}"
             fi
 
             # List specified package names in a comma-separated format
