@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       filter:
-        description: 'Image prefix (and optional tag) to filter the build matrix down to.'
+        description: 'Image prefix (and optional comma-separated tags) to filter the build matrix down to.'
         type: string
         required: false
         default: ''
@@ -183,23 +183,23 @@ jobs:
         env:
           FILTER: ${{ inputs.filter }}
         run: |
-          # Set FILTER_IMAGES_PREFIX and FILTER_TAG environment variables
-          # Parse the filter input: '<images_prefix>' or '<images_prefix>:<tag>'
+          # Set FILTER_IMAGES_PREFIX and FILTER_TAGS environment variables
+          # Parse the filter input: '<images_prefix>' or '<images_prefix>:<tag1,tag2,...>'
 
           # Load helper scripts
           . ./.github/workflows/scripts/set_github_env.sh
 
           FILTER_IMAGES_PREFIX=''
-          FILTER_TAG=''
+          FILTER_TAGS=''
           if [ -n "${FILTER}" ]; then
             FILTER_IMAGES_PREFIX="${FILTER%%:*}"
             if [ "${FILTER}" != "${FILTER_IMAGES_PREFIX}" ]; then
-              FILTER_TAG="${FILTER#*:}"
+              FILTER_TAGS="${FILTER#*:}"
             fi
           fi
 
           set_github_env 'FILTER_IMAGES_PREFIX' "${FILTER_IMAGES_PREFIX}" optional non-secret verbose
-          set_github_env 'FILTER_TAG' "${FILTER_TAG}" optional non-secret verbose
+          set_github_env 'FILTER_TAGS' "${FILTER_TAGS}" optional non-secret verbose
 
       - name: Set images list
         env:
@@ -393,11 +393,11 @@ jobs:
 
       - name: Randomly sample build matrix subset
         env:
-          FILTER_TAG: ${{ env.FILTER_TAG }}
+          FILTER_TAGS: ${{ env.FILTER_TAGS }}
           NB_CONCURRENT_BUILDS: ${{ env.NB_CONCURRENT_BUILDS }}
         run: |
           # Randomly sample a subset of builds to run from the build matrix,
-          # restricted to entries matching the requested image prefix and tag when set.
+          # restricted to entries matching the requested image prefix and tags when set.
           # Set BUILD_MATRIX environment variable
 
           # Load helper scripts
@@ -412,12 +412,12 @@ jobs:
             | jq -c '.[]'
           )"
 
-          # Filter selected entries to those matching the requested tag if set
-          if [ -n "${FILTER_TAG}" ]; then
+          # Filter selected entries to those matching any of the requested tags if set
+          if [ -n "${FILTER_TAGS}" ]; then
             SELECTED_ENTRIES="$(
               jq -c \
-                --arg tag "${FILTER_TAG}" \
-                'select(.image_tag_list | any(. == $tag))' \
+                --argjson tags "$(jq -Rc 'split(",")' <<< "${FILTER_TAGS}")" \
+                'select(.image_tag_list | any(IN($tags[])))' \
                 <<< "${SELECTED_ENTRIES}"
             )"
           fi
