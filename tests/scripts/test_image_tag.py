@@ -331,6 +331,39 @@ def test_generate_tags_only_fully_qualified_skips_standard_tag():
 	assert tags == ['python1.2.3-node4.5.6']
 
 
+def test_generate_tags_no_standard_tag_when_all_known_components_at_patch():
+	# Both python and node are requested at "patch", below both of their
+	# standards ("minor" and "major" respectively), so no standard tag is added.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '1.2.3', 'patch', None),
+			('node', '4.5.6', 'patch', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == ['python1.2.3-node4.5.6']
+	assert gen._get_standard_tag() is None
+
+
+def test_generate_tags_no_standard_tag_when_one_known_component_at_patch():
+	# python at "global" satisfies its "minor" standard, but node at "patch"
+	# falls short of its "major" standard, so the standard tag is still skipped.
+	gen = ImageTagGenerator(
+		components=[
+			('python', '1.2.3', 'global', None),
+			('node', '4.5.6', 'patch', None),
+		]
+	)
+	tags = gen.generate_tags()
+	assert tags == [
+		'python1.2.3-node4.5.6',
+		'python1.2-node4.5.6',
+		'python1-node4.5.6',
+		'python-node4.5.6',
+	]
+	assert gen._get_standard_tag() is None
+
+
 def test_generate_tags_standard_tag_appended_last():
 	gen = ImageTagGenerator(
 		components=[
