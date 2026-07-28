@@ -24,7 +24,7 @@ output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
 assert_contains "$(cat "${STUB_BIN_DIR}/groupadd.log")" '-g 1000 user'
-assert_contains "$(cat "${STUB_BIN_DIR}/useradd.log")" '-u 1000 -g 1000 user'
+assert_contains "$(cat "${STUB_BIN_DIR}/useradd.log")" '-u 1000 -g 1000 -s /usr/bin/bash user'
 rm -f "${STUB_BIN_DIR}"/*.log
 
 # --- custom args ---
@@ -37,7 +37,7 @@ output=$(sh "${SCRIPT}" 'dev' '2000' '2001' 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
 assert_contains "$(cat "${STUB_BIN_DIR}/groupadd.log")" '-g 2001 dev'
-assert_contains "$(cat "${STUB_BIN_DIR}/useradd.log")" '-u 2000 -g 2001 dev'
+assert_contains "$(cat "${STUB_BIN_DIR}/useradd.log")" '-u 2000 -g 2001 -s /usr/bin/bash dev'
 rm -f "${STUB_BIN_DIR}"/*.log
 
 # --- group creation fallback ---
@@ -70,7 +70,7 @@ stub_cmd_logging getent 1
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
-assert_contains "$(cat "${STUB_BIN_DIR}/adduser.log")" '-D -u 1000 -G user user'
+assert_contains "$(cat "${STUB_BIN_DIR}/adduser.log")" '-D -u 1000 -G user -s /usr/bin/bash user'
 rm -f "${STUB_BIN_DIR}"/*.log
 
 test_case 'errors out when neither useradd nor adduser are available'
