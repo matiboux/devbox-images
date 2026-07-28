@@ -102,6 +102,16 @@ def test_component_tag_level_minor_when_package_missing(tmp_path):
 	assert bm._get_component_tag_level({}, {'python': '3.14.6'}, 'python') == 'minor'
 
 
+def test_component_tag_level_major_for_non_latest_node(tmp_path):
+	# node's own standard level is 'major': even a non-latest but still
+	# supported (e.g. EOL) major version qualifies for the 'major' level,
+	# since it's already the best patch within its own major bucket.
+	bm = make_matrix(tmp_path, ['node'], {'node': ['26.0.0', '20.11.0']})
+	assert (
+		bm._get_component_tag_level({'node': '20.11.0'}, {'node': '26.0.0'}, 'node') == 'major'
+	)
+
+
 def test_component_tag_level_global_for_static_pseudo_version(tmp_path):
 	# A package whose "version" is literally its own name (e.g. 'docker',
 	# see DetectVersions._return_static_package) always "matches latest"

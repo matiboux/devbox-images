@@ -85,7 +85,7 @@ class BuildMatrix:
 		package_version = packages_version.get(package)
 		if package_version and latest_versions.get(package) == package_version:
 			return 'global'
-		return 'minor'
+		return ImageTagGenerator._STANDARD_LEVELS.get(package, 'minor')
 
 	def _get_component_unlabeled_flag(self, package: str) -> str | None:
 		if package in self.unlabeled_packages:
