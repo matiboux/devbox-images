@@ -22,10 +22,15 @@ def make_versions_file(tmp_path, detected_versions, latest_version=None):
 	return str(path)
 
 
-def make_matrix(tmp_path, packages, detected_versions, latest_version=None, **kwargs):
+def make_matrix(
+	tmp_path, packages, detected_versions, latest_version=None, constraints=None, **kwargs
+):
 	versions_path = make_versions_file(tmp_path, detected_versions, latest_version)
 	kwargs.setdefault('published_tags_path', str(tmp_path / 'published_tags.yml'))
 	kwargs.setdefault('output_path', str(tmp_path / 'build_matrix.yml'))
+	constraints_path = tmp_path / 'constraints.yml'
+	write_yaml(constraints_path, constraints or {})
+	kwargs.setdefault('constraints_path', str(constraints_path))
 	return BuildMatrix(
 		packages=packages,
 		versions_path=versions_path,
@@ -356,3 +361,130 @@ def test_save_build_matrix_file_overwrite_drops_existing_entries(tmp_path):
 	saved = yaml.safe_load(output_path.read_text())
 	tags = [e['image_tag'] for e in saved['build_matrix']]
 	assert tags == ['poetry2.1.5']
+
+
+# --- _check_version_constraint ---
+
+
+@pytest.mark.parametrize(
+	'version,constraint,expected',
+	[
+		# Less-than
+		('3.9.25', '<3.10', True),
+		('3.10.0', '<3.10', False),
+		('3.11.0', '<3.10', False),
+		# Greater-than-or-equal
+		('2.0.0', '>=2.0', True),
+		('2.3.4', '>=2.0', True),
+		('1.8.5', '>=2.0', False),
+		# Equal
+		('3.9.25', '==3.9', True),
+		('3.10.0', '==3.9', False),
+		# Not-equal
+		('3.9.25', '!=3.10', True),
+		('3.10.0', '!=3.10', False),
+		# Greater-than
+		('3.11.0', '>3.10', True),
+		('3.10.0', '>3.10', False),
+		# Less-than-or-equal
+		('3.10.0', '<=3.10', True),
+		('3.11.0', '<=3.10', False),
+	],
+)
+def test_check_version_constraint(version, constraint, expected):
+	assert BuildMatrix._check_version_constraint(version, constraint) == expected
+
+
+# --- _is_compatible ---
+
+SKIP_COMBINATIONS_POETRY_PYTHON = [
+	{
+		'when': {'python': '<3.10'},
+		'skip': {'poetry': '>=2.0'},
+	}
+]
+
+
+def test_is_compatible_python39_poetry1_is_compatible(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['python', 'poetry'],
+		{'python': ['3.9.25'], 'poetry': ['1.8.5']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_POETRY_PYTHON},
+	)
+	assert bm._is_compatible({'python': '3.9.25', 'poetry': '1.8.5'}) is True
+
+
+def test_is_compatible_python39_poetry2_is_incompatible(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['python', 'poetry'],
+		{'python': ['3.9.25'], 'poetry': ['2.3.4']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_POETRY_PYTHON},
+	)
+	assert bm._is_compatible({'python': '3.9.25', 'poetry': '2.3.4'}) is False
+
+
+def test_is_compatible_python310_poetry2_is_compatible(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['python', 'poetry'],
+		{'python': ['3.10.0'], 'poetry': ['2.3.4']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_POETRY_PYTHON},
+	)
+	assert bm._is_compatible({'python': '3.10.0', 'poetry': '2.3.4'}) is True
+
+
+def test_is_compatible_no_constraints(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['python', 'poetry'],
+		{'python': ['3.9.25'], 'poetry': ['2.3.4']},
+	)
+	assert bm._is_compatible({'python': '3.9.25', 'poetry': '2.3.4'}) is True
+
+
+def test_is_compatible_missing_when_package_skips_rule(tmp_path):
+	"""Rule doesn't apply when 'when' package is absent from the combination."""
+	bm = make_matrix(
+		tmp_path,
+		['poetry'],
+		{'poetry': ['2.3.4']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_POETRY_PYTHON},
+	)
+	assert bm._is_compatible({'poetry': '2.3.4'}) is True
+
+
+def test_is_compatible_missing_skip_package_doesnt_skip(tmp_path):
+	"""Rule doesn't skip when 'skip' package is absent from the combination."""
+	bm = make_matrix(
+		tmp_path,
+		['python'],
+		{'python': ['3.9.25']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_POETRY_PYTHON},
+	)
+	assert bm._is_compatible({'python': '3.9.25'}) is True
+
+
+# --- generate_build_matrix with compatibility filtering ---
+
+
+def test_generate_build_matrix_skips_incompatible_combinations(tmp_path):
+	"""Python 3.9 + Poetry 2.x combinations are excluded when the rule is active."""
+	bm = make_matrix(
+		tmp_path,
+		['python', 'poetry'],
+		{
+			'python': ['3.14.6', '3.9.25'],
+			'poetry': ['2.3.4', '1.8.5'],
+		},
+		latest_version={'python': '3.14.6', 'poetry': '2.3.4'},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_POETRY_PYTHON},
+	)
+	matrix = bm.generate_build_matrix(skip_published_tags=False)
+	tags = {e['image_tag'] for e in matrix}
+	# python3.9.25-poetry2.3.4 must be absent; all other combinations are fine
+	assert 'python3.9.25-poetry2.3.4' not in tags
+	assert 'python3.9.25-poetry1.8.5' in tags
+	assert 'python3.14.6-poetry2.3.4' in tags
+	assert 'python3.14.6-poetry1.8.5' in tags

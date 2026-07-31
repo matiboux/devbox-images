@@ -55,3 +55,14 @@ pnpm:
   extra_versions: []
   # Specific pnpm versions to skip
   skip_versions: []
+
+# Cross-package version compatibility constraints.
+# Each rule specifies conditions ('when') that trigger a skip ('skip').
+# A combination is skipped when ALL 'when' package constraints are met
+# AND ANY 'skip' package constraint is met.
+skip_combinations:
+  # Poetry 2.x requires Python >= 3.10
+  - when:
+      python: "<3.10"
+    skip:
+      poetry: ">=2.0"
