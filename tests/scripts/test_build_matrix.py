@@ -466,6 +466,44 @@ def test_is_compatible_missing_skip_package_doesnt_skip(tmp_path):
 	assert bm._is_compatible({'python': '3.9.25'}) is True
 
 
+SKIP_COMBINATIONS_PNPM_NODE = [
+	{
+		'when': {'node': '<22'},
+		'skip': {'pnpm': '>=11'},
+	}
+]
+
+
+def test_is_compatible_node20_pnpm10_is_compatible(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['node', 'pnpm'],
+		{'node': ['20.19.0'], 'pnpm': ['10.12.1']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_PNPM_NODE},
+	)
+	assert bm._is_compatible({'node': '20.19.0', 'pnpm': '10.12.1'}) is True
+
+
+def test_is_compatible_node20_pnpm11_is_incompatible(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['node', 'pnpm'],
+		{'node': ['20.19.0'], 'pnpm': ['11.0.0']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_PNPM_NODE},
+	)
+	assert bm._is_compatible({'node': '20.19.0', 'pnpm': '11.0.0'}) is False
+
+
+def test_is_compatible_node22_pnpm11_is_compatible(tmp_path):
+	bm = make_matrix(
+		tmp_path,
+		['node', 'pnpm'],
+		{'node': ['22.0.0'], 'pnpm': ['11.0.0']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_PNPM_NODE},
+	)
+	assert bm._is_compatible({'node': '22.0.0', 'pnpm': '11.0.0'}) is True
+
+
 # --- generate_build_matrix with compatibility filtering ---
 
 
@@ -488,3 +526,24 @@ def test_generate_build_matrix_skips_incompatible_combinations(tmp_path):
 	assert 'python3.9.25-poetry1.8.5' in tags
 	assert 'python3.14.6-poetry2.3.4' in tags
 	assert 'python3.14.6-poetry1.8.5' in tags
+
+
+def test_generate_build_matrix_skips_pnpm11_for_node20(tmp_path):
+	"""Node 20 + pnpm 11 combinations are excluded when the rule is active."""
+	bm = make_matrix(
+		tmp_path,
+		['node', 'pnpm'],
+		{
+			'node': ['22.0.0', '20.19.0'],
+			'pnpm': ['11.0.0', '10.12.1'],
+		},
+		latest_version={'node': '22.0.0', 'pnpm': '11.0.0'},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_PNPM_NODE},
+	)
+	matrix = bm.generate_build_matrix(skip_published_tags=False)
+	tags = {e['image_tag'] for e in matrix}
+	# node20.19.0-pnpm11.0.0 must be absent; all other combinations are fine
+	assert 'node20.19.0-pnpm11.0.0' not in tags
+	assert 'node20.19.0-pnpm10.12.1' in tags
+	assert 'node22.0.0-pnpm11.0.0' in tags
+	assert 'node22.0.0-pnpm10.12.1' in tags

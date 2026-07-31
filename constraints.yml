@@ -66,3 +66,8 @@ skip_combinations:
       python: "<3.10"
     skip:
       poetry: ">=2.0"
+  # pnpm 11 requires Node >= 22
+  - when:
+      node: "<22"
+    skip:
+      pnpm: ">=11"
