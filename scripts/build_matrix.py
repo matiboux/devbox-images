@@ -22,6 +22,7 @@ class BuildMatrix:
 		common_metadata: dict[str, Any] | None = None,
 		versions_path: str = 'dist/versions.yml',
 		published_tags_path: str = 'dist/published_tags.yml',
+		constraints_path: str = 'constraints.yml',
 		skip_published_tags: bool = True,
 		output_path: str = 'dist/build_matrix.yml',
 	):
@@ -31,6 +32,19 @@ class BuildMatrix:
 		self.published_tags_path: str = published_tags_path
 		self.skip_published_tags: bool = skip_published_tags
 		self.output_path: str = output_path
+
+		try:
+			constraints_data: dict[str, Any] = self._load_yaml(constraints_path)
+			self.skip_combinations: list[dict[str, Any]] = constraints_data.get(
+				'skip_combinations', []
+			)
+		except FileNotFoundError:
+			print(
+				f"Warning: Constraints file '{constraints_path}' not found; "
+				'no compatibility filtering will be applied.',
+				file=sys.stderr,
+			)
+			self.skip_combinations = []
 
 		self.packages: list[str] = []
 		self.unlabeled_packages: set[str] = set()
@@ -78,6 +92,58 @@ class BuildMatrix:
 			int(parts[1]) if len(parts) > 1 else 0,
 			int(parts[2]) if len(parts) > 2 else 0,
 		)
+
+	@staticmethod
+	def _parse_version_constraint(constraint: str) -> tuple[str, tuple[int, ...]]:
+		"""Parse a version constraint string (e.g. '<3.10', '>=2.0') into (op, version_tuple)."""
+		for op in ('>=', '<=', '!=', '>', '<', '=='):
+			if constraint.startswith(op):
+				parts = constraint[len(op):].strip().split('.')
+				return op, tuple(int(p) for p in parts)
+		parts = constraint.strip().split('.')
+		return '==', tuple(int(p) for p in parts)
+
+	@staticmethod
+	def _check_version_constraint(version: str, constraint: str) -> bool:
+		"""Return True if *version* satisfies *constraint* (e.g. '3.9.25' satisfies '<3.10')."""
+		op, constraint_tuple = BuildMatrix._parse_version_constraint(constraint)
+		n = len(constraint_tuple)
+		version_parts = version.split('.')
+		version_tuple = tuple(
+			int(version_parts[i]) if i < len(version_parts) else 0 for i in range(n)
+		)
+		operators = {
+			'<': lambda a, b: a < b,
+			'<=': lambda a, b: a <= b,
+			'>': lambda a, b: a > b,
+			'>=': lambda a, b: a >= b,
+			'!=': lambda a, b: a != b,
+			'==': lambda a, b: a == b,
+		}
+		return operators[op](version_tuple, constraint_tuple)
+
+	def _is_compatible(self, packages_version: dict[str, str]) -> bool:
+		"""Return False if *packages_version* matches any skip_combinations rule."""
+		for rule in self.skip_combinations:
+			when: dict[str, str] = rule.get('when', {})
+			skip: dict[str, str] = rule.get('skip', {})
+
+			# All 'when' packages must be present AND match their constraints.
+			if not all(
+				pkg in packages_version
+				and self._check_version_constraint(packages_version[pkg], cstr)
+				for pkg, cstr in when.items()
+			):
+				continue
+
+			# If 'when' conditions are all met, skip if any 'skip' constraint is met.
+			for pkg, cstr in skip.items():
+				if pkg in packages_version and self._check_version_constraint(
+					packages_version[pkg], cstr
+				):
+					return False
+
+		return True
 
 	def _get_component_tag_level(
 		self, packages_version: dict[str, str], latest_versions: dict[str, str], package: str
@@ -156,6 +222,9 @@ class BuildMatrix:
 
 		for versions_combo in itertools.product(*detected_versions.values()):
 			packages_version = dict(zip(self.packages, versions_combo, strict=True))
+
+			if not self._is_compatible(packages_version):
+				continue  # Skip incompatible version combinations
 
 			for base_variant in selected_base_variants:
 				image_tag_components: list[tuple[str, str, str, str | None]] = [
@@ -308,6 +377,15 @@ def parse_args() -> argparse.Namespace:
 			'This will merge new entries with existing ones.'
 		),
 	)
+	parser.add_argument(
+		'--constraints-path',
+		type=str,
+		default='constraints.yml',
+		help=(
+			'Path to the constraints YAML file used for cross-package compatibility filtering. '
+			'Defaults to constraints.yml.'
+		),
+	)
 	return parser.parse_args()
 
 
@@ -348,6 +426,7 @@ def main():
 			packages=packages_input,
 			common_metadata=common_metadata_input,
 			base_variants=base_variants_input,
+			constraints_path=args.constraints_path,
 			skip_published_tags=args.skip_published_tags,
 		)
 	except ValueError as e:
