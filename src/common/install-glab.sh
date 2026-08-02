@@ -122,7 +122,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-mv "${GLAB_EXTRACT_DIR}/glab" /usr/local/bin/glab
+mv "${GLAB_EXTRACT_DIR}/bin/glab" /usr/local/bin/glab
 if [ $? -ne 0 ]; then
     echo "Failed to install glab binary in /usr/local/bin." >&2
     exit 1
