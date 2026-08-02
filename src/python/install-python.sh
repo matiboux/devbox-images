@@ -8,7 +8,10 @@ set -e
 # - NODE_VERSION: Version of Node.js to install if set
 # - YARN_VERSION: Version of Yarn to install if set
 # - PNPM_VERSION: Version of pnpm to install if set
-# - DOCKER_VERSION: Install Docker CLI tools if set
+# - DOCKER_VERSION: Install Docker CLI tools if set, along with lazydocker,
+#     hadolint, ctop, dive, dockerc and dockerx (pin their versions via
+#     LAZYDOCKER_VERSION, HADOLINT_VERSION, CTOP_VERSION, DIVE_VERSION,
+#     DOCKERC_VERSION, DOCKERX_VERSION -- each defaults to latest)
 # - GH_VERSION: Version of GitHub CLI to install if set
 # - GLAB_VERSION: Version of GitLab CLI to install if set
 # - USERNAME: Non-root username to create if set
@@ -57,6 +60,14 @@ fi
 if [ -n "${DOCKER_VERSION}" ]; then
     # Install Docker CLI tools
     sh "${COMMON_SCRIPTS_DIR}/install-docker.sh"
+
+    # Install Docker development tools
+    sh "${COMMON_SCRIPTS_DIR}/install-lazydocker.sh" "${LAZYDOCKER_VERSION}"
+    sh "${COMMON_SCRIPTS_DIR}/install-hadolint.sh" "${HADOLINT_VERSION}"
+    sh "${COMMON_SCRIPTS_DIR}/install-ctop.sh" "${CTOP_VERSION}"
+    sh "${COMMON_SCRIPTS_DIR}/install-dive.sh" "${DIVE_VERSION}"
+    sh "${COMMON_SCRIPTS_DIR}/install-dockerc.sh" "${DOCKERC_VERSION}"
+    sh "${COMMON_SCRIPTS_DIR}/install-dockerx.sh" "${DOCKERX_VERSION}"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then
