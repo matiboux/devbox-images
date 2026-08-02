@@ -32,6 +32,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 
     # Install for Alpine Linux
     apk add --no-cache \
+        bat \
         build-base \
         ca-certificates \
         curl \
@@ -56,6 +57,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
     # Install for Debian/Ubuntu
     apt-get update
     apt-get install -y --no-install-recommends \
+        bat \
         build-essential \
         ca-certificates \
         curl \
