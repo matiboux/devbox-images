@@ -22,6 +22,27 @@ if [ -z "${SUDO_USER}" ]; then
 	SUDO_USER='false'
 fi
 
+# Some base images (e.g. the official node image, which ships a "node"
+# user/group at UID/GID 1000) pre-occupy the UID/GID we're about to use.
+# Remove whatever pre-existing user/group is sitting on them first.
+EXISTING_USER="$(getent passwd "${USER_ID}" | cut -d: -f1)"
+if [ -n "${EXISTING_USER}" ] && [ "${EXISTING_USER}" != "${USERNAME}" ]; then
+	if command -v userdel > /dev/null 2>&1; then
+		userdel "${EXISTING_USER}"
+	elif command -v deluser > /dev/null 2>&1; then
+		deluser "${EXISTING_USER}"
+	fi
+fi
+
+EXISTING_GROUP="$(getent group "${GROUP_ID}" | cut -d: -f1)"
+if [ -n "${EXISTING_GROUP}" ] && [ "${EXISTING_GROUP}" != "${USERNAME}" ]; then
+	if command -v groupdel > /dev/null 2>&1; then
+		groupdel "${EXISTING_GROUP}"
+	elif command -v delgroup > /dev/null 2>&1; then
+		delgroup "${EXISTING_GROUP}"
+	fi
+fi
+
 # Create group
 if command -v groupadd > /dev/null 2>&1; then
 	groupadd -g "${GROUP_ID}" "${USERNAME}"

@@ -119,6 +119,62 @@ if [ -f "${STUB_BIN_DIR}/usermod.log" ]; then
 fi
 rm -f "${STUB_BIN_DIR}"/*.log
 
+# --- pre-existing UID/GID collision (e.g. the official node image's "node" user) ---
+
+test_case 'a pre-existing user occupying the target UID is removed via userdel first'
+stub_cmd getent 'case "$1" in
+	passwd) echo "node:x:1000:1000::/home/node:/bin/sh" ;;
+	group) ;;
+esac
+exit 0'
+stub_cmd_logging userdel
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+stub_cmd_logging usermod
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "$(cat "${STUB_BIN_DIR}/userdel.log")" 'userdel node'
+rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
+
+test_case 'a pre-existing group occupying the target GID is removed via groupdel first'
+stub_cmd getent 'case "$1" in
+	passwd) ;;
+	group) echo "node:x:1000:" ;;
+esac
+exit 0'
+stub_cmd_logging groupdel
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+stub_cmd_logging usermod
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "$(cat "${STUB_BIN_DIR}/groupdel.log")" 'groupdel node'
+rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
+
+test_case 'no removal happens when the existing entry already matches the target username'
+stub_cmd getent 'case "$1" in
+	passwd) echo "user:x:1000:1000::/home/user:/bin/sh" ;;
+	group) echo "user:x:1000:" ;;
+esac
+exit 0'
+stub_cmd_logging userdel
+stub_cmd_logging groupdel
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+stub_cmd_logging usermod
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+if [ -f "${STUB_BIN_DIR}/userdel.log" ]; then
+	fail 'expected userdel to not run when the existing user already matches'
+fi
+if [ -f "${STUB_BIN_DIR}/groupdel.log" ]; then
+	fail 'expected groupdel to not run when the existing group already matches'
+fi
+rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
+
 # --- sudo user, unknown distro (this machine has no /etc/os-release) ---
 
 test_case 'sudo user requested on an unrecognized distribution errors out'
