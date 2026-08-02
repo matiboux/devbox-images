@@ -1,0 +1,16 @@
+# Services definition for building & deploying
+
+name: devbox-node
+
+services:
+
+  devbox:
+    # Build
+    image: ${IMAGES_PREFIX:-devbox-node}:${IMAGES_TAG:-latest}
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: devbox
+    # Deploy
+    tmpfs:
+      - /tmp:mode=1777,exec,uid=${DOCKER_UID:-${UID:-1000}},gid=0
