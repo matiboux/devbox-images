@@ -9,4 +9,5 @@ ${PYTHON_COMMAND} -m pip install \
 	--root-user-action ignore \
 	mypy \
 	pytest \
-	ruff
+	ruff \
+	ty
