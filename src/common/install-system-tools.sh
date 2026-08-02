@@ -43,6 +43,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         less \
         make \
         musl-dev \
+        openssh \
         ripgrep \
         tar \
         tmux \
@@ -64,6 +65,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         jq \
         less \
         make \
+        openssh-client \
         ripgrep \
         tar \
         tmux \
