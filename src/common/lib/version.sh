@@ -1,8 +1,9 @@
 #!/bin/sh
-# Shared helpers for the install-*.sh scripts in this directory.
+# Version-resolution helpers for the install-*.sh scripts in the parent
+# directory (src/common/).
 #
-# Usage (from a script in this same directory):
-#   . "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/lib.sh"
+# Usage (from a script in the parent directory):
+#   . "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/lib/version.sh"
 
 # github_resolve_version <version_input> <tool_name> <github_repo> [version_prefix] [strip_tag_v]
 #

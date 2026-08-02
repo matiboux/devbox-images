@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/lib.sh"
+. "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/lib/version.sh"
 
 LAZYGIT_VERSION_INPUT="${1:-latest}"
 
