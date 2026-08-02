@@ -45,16 +45,16 @@ fi
 if [ -n "${NODE_VERSION}" ]; then
     # Install Node.js
     sh "${COMMON_SCRIPTS_DIR}/install-node.sh" "${NODE_VERSION}"
-fi
 
-if [ -n "${YARN_VERSION}" ]; then
-    # Install Yarn
-    sh "${COMMON_SCRIPTS_DIR}/install-yarn.sh" "${YARN_VERSION}"
-fi
+    if [ -n "${YARN_VERSION}" ]; then
+        # Install Yarn
+        sh "${COMMON_SCRIPTS_DIR}/install-yarn.sh" "${YARN_VERSION}"
+    fi
 
-if [ -n "${PNPM_VERSION}" ]; then
-    # Install pnpm
-    sh "${COMMON_SCRIPTS_DIR}/install-pnpm.sh" "${PNPM_VERSION}"
+    if [ -n "${PNPM_VERSION}" ]; then
+        # Install pnpm
+        sh "${COMMON_SCRIPTS_DIR}/install-pnpm.sh" "${PNPM_VERSION}"
+    fi
 fi
 
 if [ -n "${DOCKER_VERSION}" ]; then
