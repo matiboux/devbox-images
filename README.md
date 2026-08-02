@@ -35,8 +35,24 @@ Examples of available images:
   - `3.x-x-uv-yarn` - Base image, with uv and Yarn package managers
   - `3.x-x-uv-pnpm` - Base image, with uv and pnpm package managers
 
+<span></span>
+
 - `devbox-python-node-docker`: Python 3.x with Node x and Docker CLI tools
   - Same tags as `devbox-python-node` above
+
+<span></span>
+
+- `devbox-node`: Node x only
+  - `x` - Base image
+  - `x-slim` - Base slim image
+  - `x-alpine` - Base Alpine image
+  - `x-yarn` - Base image, with Yarn package manager
+  - `x-pnpm` - Base image, with pnpm package manager
+
+<span></span>
+
+- `devbox-node-docker`: Node x with Docker CLI tools
+  - Same tags as `devbox-node` above
 
 
 ## How to use images with Docker CLI tools

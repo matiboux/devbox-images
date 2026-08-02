@@ -124,6 +124,26 @@ env:
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,uv,pnpm
+    # Devbox Node
+    - images_prefix: devbox-node
+      src_dirname: node
+      package_versions: node?
+    - images_prefix: devbox-node
+      src_dirname: node
+      package_versions: node?,yarn
+    - images_prefix: devbox-node
+      src_dirname: node
+      package_versions: node?,pnpm
+    # Devbox Node + Docker
+    - images_prefix: devbox-node-docker
+      src_dirname: node
+      package_versions: node?,docker?
+    - images_prefix: devbox-node-docker
+      src_dirname: node
+      package_versions: node?,docker?,yarn
+    - images_prefix: devbox-node-docker
+      src_dirname: node
+      package_versions: node?,docker?,pnpm
 
 jobs:
 

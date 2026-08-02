@@ -178,6 +178,7 @@ class BuildMatrix:
 		all_latest_versions = self.versions.get('latest_version', {})
 		all_base_variants = {
 			'python': {'', 'slim', 'alpine'},
+			'node': {'', 'slim', 'alpine'},
 		}
 
 		base_package = self.packages[0]
