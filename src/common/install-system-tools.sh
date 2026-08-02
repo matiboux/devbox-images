@@ -40,6 +40,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         git \
         htop \
         jq \
+        less \
         make \
         musl-dev \
         ripgrep \
@@ -59,6 +60,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         git \
         htop \
         jq \
+        less \
         make \
         ripgrep \
         tmux \
