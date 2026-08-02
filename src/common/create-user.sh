@@ -22,31 +22,21 @@ if [ -z "${SUDO_USER}" ]; then
 	SUDO_USER='false'
 fi
 
-USER_SHELL="$(command -v bash || command -v sh)"
-
-# Some base images (e.g. the official node image, which ships a "node"
-# user/group at UID/GID 1000) pre-occupy the UID/GID we're about to use.
-# Rename whatever pre-existing user/group is sitting on them to our target
-# name instead of deleting and recreating it, so we keep whatever the base
-# image already set up under that account (home directory contents,
-# ownership, ...). Fall back to delete when renaming isn't supported.
-
-# Group
-GROUP_READY=false
+# Create or reuse group
+GROUP_READY='false'
 EXISTING_GROUP="$(getent group "${GROUP_ID}" | cut -d: -f1)"
 if [ -n "${EXISTING_GROUP}" ]; then
 	if [ "${EXISTING_GROUP}" = "${USERNAME}" ]; then
-		GROUP_READY=true
+		GROUP_READY='true'
 	elif command -v groupmod > /dev/null 2>&1; then
 		groupmod -n "${USERNAME}" "${EXISTING_GROUP}"
-		GROUP_READY=true
+		GROUP_READY='true'
 	elif command -v groupdel > /dev/null 2>&1; then
 		groupdel "${EXISTING_GROUP}"
 	elif command -v delgroup > /dev/null 2>&1; then
 		delgroup "${EXISTING_GROUP}"
 	fi
 fi
-
 if [ "${GROUP_READY}" = 'false' ]; then
 	if command -v groupadd > /dev/null 2>&1; then
 		groupadd -g "${GROUP_ID}" "${USERNAME}"
@@ -58,15 +48,17 @@ if [ "${GROUP_READY}" = 'false' ]; then
 	fi
 fi
 
-# User
-USER_READY=false
+USER_SHELL="$(command -v bash || command -v sh)"
+
+# Create or reuse user
+USER_READY='false'
 EXISTING_USER="$(getent passwd "${USER_ID}" | cut -d: -f1)"
 if [ -n "${EXISTING_USER}" ]; then
 	if [ "${EXISTING_USER}" = "${USERNAME}" ]; then
-		USER_READY=true
+		USER_READY='true'
 	elif command -v usermod > /dev/null 2>&1; then
 		usermod -l "${USERNAME}" -g "${GROUP_ID}" -d "/home/${USERNAME}" -m -s "${USER_SHELL}" "${EXISTING_USER}"
-		USER_READY=true
+		USER_READY='true'
 	elif command -v userdel > /dev/null 2>&1; then
 		userdel "${EXISTING_USER}"
 	elif command -v deluser > /dev/null 2>&1; then
