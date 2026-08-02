@@ -1,6 +1,8 @@
 #!/bin/sh
 
-. "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/lib/version.sh"
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 
 YQ_VERSION_INPUT="${1:-latest}"
 
