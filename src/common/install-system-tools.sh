@@ -43,6 +43,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         gnupg \
         htop \
         jq \
+        lazygit \
         less \
         make \
         musl-dev \
@@ -74,6 +75,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         gnupg \
         htop \
         jq \
+        lazygit \
         less \
         make \
         nano \
