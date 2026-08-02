@@ -2,6 +2,9 @@
 
 UV_VERSION_INPUT=${1:-latest}
 
+UV_HOME="${UV_HOME:-/opt/uv}"
+UV_BIN_DIR="${UV_BIN_DIR:-/usr/local/bin}"
+
 # ---
 
 UV_INSTALLER_FILE="$(mktemp)"
@@ -14,18 +17,32 @@ cleanup() {
 
 trap 'cleanup' EXIT
 
+link_uv_binaries() {
+    for name in uv uvx; do
+        if [ -x "${UV_HOME}/${name}" ]; then
+            ln -sf "${UV_HOME}/${name}" "${UV_BIN_DIR}/${name}"
+        fi
+    done
+}
+
 install_uv_and_exit() {
     sh "${UV_INSTALLER_FILE}"
     EXIT_CODE=$?
     if [ "${EXIT_CODE}" -ne 0 ]; then
         echo "Failed to install uv." >&2
+        exit ${EXIT_CODE}
     fi
-    exit ${EXIT_CODE}
+    # Allow all users to access uv's install directory and cache store
+    chmod -R 777 "${UV_HOME}"
+    link_uv_binaries
+    exit 0
 }
+
+mkdir -p "${UV_HOME}"
 
 # Set uv install parameters
 export UV_NO_MODIFY_PATH='1'
-export UV_UNMANAGED_INSTALL='/usr/local/bin'
+export UV_UNMANAGED_INSTALL="${UV_HOME}"
 
 # Try to install uv with the specified version
 UV_VERSION_FULL="$(echo "${UV_VERSION_INPUT}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"

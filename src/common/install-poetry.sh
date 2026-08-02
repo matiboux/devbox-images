@@ -2,6 +2,9 @@
 
 POETRY_VERSION_INPUT=${1:-latest}
 
+POETRY_HOME="${POETRY_HOME:-/opt/poetry}"
+POETRY_BIN_DIR="${POETRY_BIN_DIR:-/usr/local/bin}"
+
 # ---
 
 POETRY_INSTALLER_FILE="$(mktemp)"
@@ -14,18 +17,32 @@ cleanup() {
 
 trap 'cleanup' EXIT
 
+link_poetry_binaries() {
+    for name in poetry; do
+        if [ -x "${POETRY_HOME}/bin/${name}" ]; then
+            ln -sf "${POETRY_HOME}/bin/${name}" "${POETRY_BIN_DIR}/${name}"
+        fi
+    done
+}
+
 install_poetry_and_exit() {
     PYTHON_COMMAND="$(command -v python3 || command -v python)"
     "${PYTHON_COMMAND}" "${POETRY_INSTALLER_FILE}"
     EXIT_CODE=$?
     if [ "${EXIT_CODE}" -ne 0 ]; then
         echo "Failed to install Poetry." >&2
+        exit ${EXIT_CODE}
     fi
-    exit ${EXIT_CODE}
+    # Allow all users to access Poetry's install directory and venv
+    chmod -R 777 "${POETRY_HOME}"
+    link_poetry_binaries
+    exit 0
 }
 
+mkdir -p "${POETRY_HOME}"
+
 # Set Poetry install parameters
-export POETRY_HOME='/usr/local'
+export POETRY_HOME
 
 # Try to install Poetry with the specified version
 POETRY_VERSION_FULL="$(echo "${POETRY_VERSION_INPUT}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
