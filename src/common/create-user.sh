@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
+
 USERNAME="$1"
 USER_ID="$2"
 GROUP_ID="$3"
@@ -90,11 +94,7 @@ fi
 if [ "${SUDO_USER}" = 'true' ]; then
 
 	# Detect Linux distribution
-	if [ -f /etc/os-release ]; then
-		DISTRO=$(awk -F= '/^ID=/{print $2}' /etc/os-release | tr -d '"')
-	else
-		DISTRO='unknown'
-	fi
+	DISTRO="$(detect_distro)"
 
 	# Detect sudo command based on distribution
 	SUDO_COMMAND=''

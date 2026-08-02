@@ -3,23 +3,12 @@ set -e
 
 # Script to install system development tools and dependencies.
 
-# Detect Linux distribution
-if [ -f /etc/os-release ]; then
-    DISTRO=$(awk -F= '/^ID=/{print $2}' /etc/os-release | tr -d '"')
-else
-    DISTRO='unknown'
-fi
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
 
-# Detect package manager based on distribution
-PACKAGE_MANAGER=''
-case "${DISTRO}" in
-    alpine)
-        PACKAGE_MANAGER="$(command -v apk)"
-        ;;
-    debian|ubuntu)
-        PACKAGE_MANAGER="$(command -v apt-get)"
-        ;;
-esac
+DISTRO="$(detect_distro)"
+PACKAGE_MANAGER="$(detect_package_manager "${DISTRO}")"
 
 if [ -z "${PACKAGE_MANAGER}" ]; then
     echo "Unsupported distribution: ${DISTRO}" >&2
@@ -95,12 +84,11 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
     # Try to install community packages via apt-get first
     # Fall back to install scripts if not available via apt-get
-    COMMON_SCRIPTS_DIR="$(dirname "$0")"
     if ! apt-get install -y --no-install-recommends git-delta; then
-        sh "${COMMON_SCRIPTS_DIR}/install-delta.sh"
+        sh "${COMMON_SCRIPT_DIR}/install-delta.sh"
     fi
     if ! apt-get install -y --no-install-recommends lazygit; then
-        sh "${COMMON_SCRIPTS_DIR}/install-lazygit.sh"
+        sh "${COMMON_SCRIPT_DIR}/install-lazygit.sh"
     fi
 
 else

@@ -3,23 +3,12 @@ set -e
 
 # Script to install sudo.
 
-# Detect Linux distribution
-if [ -f /etc/os-release ]; then
-    DISTRO=$(awk -F= '/^ID=/{print $2}' /etc/os-release | tr -d '"')
-else
-    DISTRO='unknown'
-fi
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
 
-# Detect package manager based on distribution
-PACKAGE_MANAGER=''
-case "${DISTRO}" in
-    alpine)
-        PACKAGE_MANAGER="$(command -v apk)"
-        ;;
-    debian|ubuntu)
-        PACKAGE_MANAGER="$(command -v apt-get)"
-        ;;
-esac
+DISTRO="$(detect_distro)"
+PACKAGE_MANAGER="$(detect_package_manager "${DISTRO}")"
 
 if [ -z "${PACKAGE_MANAGER}" ]; then
     echo "Unsupported distribution: ${DISTRO}" >&2
