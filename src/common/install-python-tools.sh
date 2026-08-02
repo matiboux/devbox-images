@@ -11,6 +11,7 @@ ${PYTHON_COMMAND} -m pip install \
 	ipython \
 	mypy \
 	pip-tools \
+	pipx \
 	pytest \
 	ruff \
 	ty
