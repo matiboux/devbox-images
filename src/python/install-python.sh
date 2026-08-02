@@ -9,6 +9,8 @@ set -e
 # - YARN_VERSION: Version of Yarn to install if set
 # - PNPM_VERSION: Version of pnpm to install if set
 # - DOCKER_VERSION: Install Docker CLI tools if set
+# - GH_VERSION: Version of GitHub CLI to install if set
+# - GLAB_VERSION: Version of GitLab CLI to install if set
 # - USERNAME: Non-root username to create if set
 # - USER_ID: Non-root user ID to create if set
 # - GROUP_ID: Non-root group ID to create if set
@@ -19,6 +21,10 @@ COMMON_SCRIPTS_DIR="$(dirname "$(dirname "$0")")/common"
 # Install system development tools
 sh "${COMMON_SCRIPTS_DIR}/install-system-tools.sh"
 sh "${COMMON_SCRIPTS_DIR}/install-yq.sh"
+
+# Install Git forge CLI tools
+sh "${COMMON_SCRIPTS_DIR}/install-gh.sh" "${GH_VERSION}"
+sh "${COMMON_SCRIPTS_DIR}/install-glab.sh" "${GLAB_VERSION}"
 
 # Install Python development tools
 sh "${COMMON_SCRIPTS_DIR}/install-python-tools.sh"

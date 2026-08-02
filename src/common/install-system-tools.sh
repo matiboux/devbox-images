@@ -32,29 +32,66 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 
     # Install for Alpine Linux
     apk add --no-cache \
+        bat \
         build-base \
         ca-certificates \
         curl \
+        delta \
+        fd \
+        fzf \
         git \
+        gnupg \
+        htop \
         jq \
+        lazygit \
+        less \
         make \
         musl-dev \
+        nano \
+        openssh \
+        ripgrep \
+        tar \
         tmux \
-        wget
+        tree \
+        unzip \
+        vim \
+        wget \
+        xz \
+        zstd
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
     # Install for Debian/Ubuntu
     apt-get update
     apt-get install -y --no-install-recommends \
+        bat \
         build-essential \
         ca-certificates \
         curl \
+        fd-find \
+        fzf \
         git \
+        git-delta \
+        gnupg \
+        htop \
         jq \
+        lazygit \
+        less \
         make \
+        nano \
+        openssh-client \
+        ripgrep \
+        tar \
         tmux \
-        wget
+        tree \
+        unzip \
+        vim \
+        wget \
+        xz-utils \
+        zstd
+
+    # Debian/Ubuntu package ships the binary as `fdfind` to avoid a name clash
+    ln -sf "$(command -v fdfind)" /usr/local/bin/fd
 
 else
 
