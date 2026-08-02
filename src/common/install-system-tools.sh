@@ -35,6 +35,8 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         build-base \
         ca-certificates \
         curl \
+        fd \
+        fzf \
         git \
         jq \
         make \
@@ -51,12 +53,17 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         build-essential \
         ca-certificates \
         curl \
+        fd-find \
+        fzf \
         git \
         jq \
         make \
         ripgrep \
         tmux \
         wget
+
+    # Debian/Ubuntu package ships the binary as `fdfind` to avoid a name clash
+    ln -sf "$(command -v fdfind)" /usr/local/bin/fd
 
 else
 
