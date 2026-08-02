@@ -9,6 +9,12 @@ set -e
 # - YARN_VERSION: Version of Yarn to install if set
 # - PNPM_VERSION: Version of pnpm to install if set
 # - DOCKER_VERSION: Install Docker CLI tools if set
+# - LAZYDOCKER_VERSION: Version of lazydocker to install if set
+# - HADOLINT_VERSION: Version of hadolint to install if set
+# - CTOP_VERSION: Version of ctop to install if set
+# - DIVE_VERSION: Version of dive to install if set
+# - DOCKERC_VERSION: Version of dockerc to install if set
+# - DOCKERX_VERSION: Version of dockerx to install if set
 # - GH_VERSION: Version of GitHub CLI to install if set
 # - GLAB_VERSION: Version of GitLab CLI to install if set
 # - USERNAME: Non-root username to create if set
@@ -57,6 +63,36 @@ fi
 if [ -n "${DOCKER_VERSION}" ]; then
     # Install Docker CLI tools
     sh "${COMMON_SCRIPTS_DIR}/install-docker.sh"
+fi
+
+if [ -n "${LAZYDOCKER_VERSION}" ]; then
+    # Install lazydocker
+    sh "${COMMON_SCRIPTS_DIR}/install-lazydocker.sh" "${LAZYDOCKER_VERSION}"
+fi
+
+if [ -n "${HADOLINT_VERSION}" ]; then
+    # Install hadolint
+    sh "${COMMON_SCRIPTS_DIR}/install-hadolint.sh" "${HADOLINT_VERSION}"
+fi
+
+if [ -n "${CTOP_VERSION}" ]; then
+    # Install ctop
+    sh "${COMMON_SCRIPTS_DIR}/install-ctop.sh" "${CTOP_VERSION}"
+fi
+
+if [ -n "${DIVE_VERSION}" ]; then
+    # Install dive
+    sh "${COMMON_SCRIPTS_DIR}/install-dive.sh" "${DIVE_VERSION}"
+fi
+
+if [ -n "${DOCKERC_VERSION}" ]; then
+    # Install dockerc
+    sh "${COMMON_SCRIPTS_DIR}/install-dockerc.sh" "${DOCKERC_VERSION}"
+fi
+
+if [ -n "${DOCKERX_VERSION}" ]; then
+    # Install dockerx
+    sh "${COMMON_SCRIPTS_DIR}/install-dockerx.sh" "${DOCKERX_VERSION}"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then

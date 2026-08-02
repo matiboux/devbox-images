@@ -19,10 +19,11 @@ cp "${REAL_SCRIPT}" "${FAKE_ROOT}/src/python/install-python.sh"
 
 CALL_LOG="${FAKE_ROOT}/calls.log"
 
-for name in install-system-tools.sh install-yq.sh install-python-tools.sh \
-	install-poetry.sh install-uv.sh install-nvm.sh install-node.sh \
-	install-yarn.sh install-pnpm.sh install-docker.sh install-sudo.sh \
-	create-user.sh; do
+for name in install-system-tools.sh install-yq.sh install-gh.sh install-glab.sh \
+	install-python-tools.sh install-poetry.sh install-uv.sh install-nvm.sh \
+	install-node.sh install-yarn.sh install-pnpm.sh install-docker.sh \
+	install-lazydocker.sh install-hadolint.sh install-ctop.sh install-dive.sh \
+	install-dockerc.sh install-dockerx.sh install-sudo.sh create-user.sh; do
 	cat > "${FAKE_ROOT}/src/common/${name}" <<EOF
 #!/bin/sh
 echo "${name} \$*" >> '${CALL_LOG}'
@@ -49,6 +50,12 @@ assert_not_contains "${calls}" 'install-node.sh'
 assert_not_contains "${calls}" 'install-yarn.sh'
 assert_not_contains "${calls}" 'install-pnpm.sh'
 assert_not_contains "${calls}" 'install-docker.sh'
+assert_not_contains "${calls}" 'install-lazydocker.sh'
+assert_not_contains "${calls}" 'install-hadolint.sh'
+assert_not_contains "${calls}" 'install-ctop.sh'
+assert_not_contains "${calls}" 'install-dive.sh'
+assert_not_contains "${calls}" 'install-dockerc.sh'
+assert_not_contains "${calls}" 'install-dockerx.sh'
 assert_not_contains "${calls}" 'install-sudo.sh'
 assert_not_contains "${calls}" 'create-user.sh'
 
@@ -68,6 +75,36 @@ test_case 'DOCKER_VERSION triggers install-docker.sh'
 : > "${CALL_LOG}"
 DOCKER_VERSION='docker' sh "${FAKE_ROOT}/src/python/install-python.sh"
 assert_contains "$(cat "${CALL_LOG}")" 'install-docker.sh'
+
+test_case 'LAZYDOCKER_VERSION triggers install-lazydocker.sh with that version'
+: > "${CALL_LOG}"
+LAZYDOCKER_VERSION='0.23.3' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-lazydocker.sh 0.23.3'
+
+test_case 'HADOLINT_VERSION triggers install-hadolint.sh with that version'
+: > "${CALL_LOG}"
+HADOLINT_VERSION='2.12.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-hadolint.sh 2.12.0'
+
+test_case 'CTOP_VERSION triggers install-ctop.sh with that version'
+: > "${CALL_LOG}"
+CTOP_VERSION='0.7.7' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-ctop.sh 0.7.7'
+
+test_case 'DIVE_VERSION triggers install-dive.sh with that version'
+: > "${CALL_LOG}"
+DIVE_VERSION='0.13.1' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-dive.sh 0.13.1'
+
+test_case 'DOCKERC_VERSION triggers install-dockerc.sh with that version'
+: > "${CALL_LOG}"
+DOCKERC_VERSION='2.2.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-dockerc.sh 2.2.0'
+
+test_case 'DOCKERX_VERSION triggers install-dockerx.sh with that version'
+: > "${CALL_LOG}"
+DOCKERX_VERSION='0.1.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-dockerx.sh 0.1.0'
 
 test_case 'SUDO_USER=true triggers install-sudo.sh'
 : > "${CALL_LOG}"
