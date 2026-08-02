@@ -121,57 +121,91 @@ rm -f "${STUB_BIN_DIR}"/*.log
 
 # --- pre-existing UID/GID collision (e.g. the official node image's "node" user) ---
 
-test_case 'a pre-existing user occupying the target UID is removed via userdel first'
+test_case 'a pre-existing user occupying the target UID is renamed via usermod, not recreated'
 stub_cmd getent 'case "$1" in
 	passwd) echo "node:x:1000:1000::/home/node:/bin/sh" ;;
 	group) ;;
 esac
 exit 0'
-stub_cmd_logging userdel
 stub_cmd_logging groupadd
 stub_cmd_logging useradd
 stub_cmd_logging usermod
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
-assert_contains "$(cat "${STUB_BIN_DIR}/userdel.log")" 'userdel node'
+assert_contains "$(cat "${STUB_BIN_DIR}/usermod.log")" 'usermod -l user -g 1000 -d /home/user -m -s'
+assert_contains "$(cat "${STUB_BIN_DIR}/usermod.log")" 'node'
+if [ -f "${STUB_BIN_DIR}/useradd.log" ]; then
+	fail 'expected useradd to not run when the existing user is renamed instead'
+fi
 rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
 
-test_case 'a pre-existing group occupying the target GID is removed via groupdel first'
+test_case 'a pre-existing group occupying the target GID is renamed via groupmod, not recreated'
 stub_cmd getent 'case "$1" in
 	passwd) ;;
 	group) echo "node:x:1000:" ;;
 esac
 exit 0'
-stub_cmd_logging groupdel
+stub_cmd_logging groupmod
 stub_cmd_logging groupadd
 stub_cmd_logging useradd
 stub_cmd_logging usermod
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
-assert_contains "$(cat "${STUB_BIN_DIR}/groupdel.log")" 'groupdel node'
+assert_contains "$(cat "${STUB_BIN_DIR}/groupmod.log")" 'groupmod -n user node'
+if [ -f "${STUB_BIN_DIR}/groupadd.log" ]; then
+	fail 'expected groupadd to not run when the existing group is renamed instead'
+fi
 rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
 
-test_case 'no removal happens when the existing entry already matches the target username'
+test_case 'falls back to delete+recreate when rename commands are unavailable'
+# groupmod/usermod stubs from the previous two tests must be removed here,
+# otherwise this test would still see them as "available".
+rm -f "${STUB_BIN_DIR}/groupmod" "${STUB_BIN_DIR}/usermod"
+stub_cmd getent 'case "$1" in
+	passwd) echo "node:x:1000:1000::/home/node:/bin/sh" ;;
+	group) echo "node:x:1000:" ;;
+esac
+exit 0'
+stub_cmd_logging groupdel
+stub_cmd_logging userdel
+stub_cmd_logging groupadd
+stub_cmd_logging useradd
+output=$(sh "${SCRIPT}" 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "$(cat "${STUB_BIN_DIR}/groupdel.log")" 'groupdel node'
+assert_contains "$(cat "${STUB_BIN_DIR}/userdel.log")" 'userdel node'
+assert_contains "$(cat "${STUB_BIN_DIR}/groupadd.log")" '-g 1000 user'
+assert_contains "$(cat "${STUB_BIN_DIR}/useradd.log")" '-u 1000 -g 1000'
+rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
+
+test_case 'no rename or recreation happens when the existing entry already matches the target username'
 stub_cmd getent 'case "$1" in
 	passwd) echo "user:x:1000:1000::/home/user:/bin/sh" ;;
 	group) echo "user:x:1000:" ;;
 esac
 exit 0'
-stub_cmd_logging userdel
-stub_cmd_logging groupdel
+stub_cmd_logging groupmod
+stub_cmd_logging usermod
 stub_cmd_logging groupadd
 stub_cmd_logging useradd
-stub_cmd_logging usermod
 output=$(sh "${SCRIPT}" 2>&1)
 code=$?
 assert_exit_code "${code}" 0 "${output}"
-if [ -f "${STUB_BIN_DIR}/userdel.log" ]; then
-	fail 'expected userdel to not run when the existing user already matches'
+if [ -f "${STUB_BIN_DIR}/groupmod.log" ]; then
+	fail 'expected groupmod to not run when the existing group already matches'
 fi
-if [ -f "${STUB_BIN_DIR}/groupdel.log" ]; then
-	fail 'expected groupdel to not run when the existing group already matches'
+# usermod may still run separately for docker-group membership (this stub's
+# getent also reports a "docker" group) -- just assert it's never used to
+# rename the login, i.e. with the -l flag.
+assert_not_contains "$(cat "${STUB_BIN_DIR}/usermod.log" 2>/dev/null)" '-l '
+if [ -f "${STUB_BIN_DIR}/groupadd.log" ]; then
+	fail 'expected groupadd to not run when the existing group already matches'
+fi
+if [ -f "${STUB_BIN_DIR}/useradd.log" ]; then
+	fail 'expected useradd to not run when the existing user already matches'
 fi
 rm -f "${STUB_BIN_DIR}"/*.log "${STUB_BIN_DIR}/getent"
 

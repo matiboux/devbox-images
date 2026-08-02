@@ -22,46 +22,67 @@ if [ -z "${SUDO_USER}" ]; then
 	SUDO_USER='false'
 fi
 
+USER_SHELL="$(command -v bash || command -v sh)"
+
 # Some base images (e.g. the official node image, which ships a "node"
 # user/group at UID/GID 1000) pre-occupy the UID/GID we're about to use.
-# Remove whatever pre-existing user/group is sitting on them first.
-EXISTING_USER="$(getent passwd "${USER_ID}" | cut -d: -f1)"
-if [ -n "${EXISTING_USER}" ] && [ "${EXISTING_USER}" != "${USERNAME}" ]; then
-	if command -v userdel > /dev/null 2>&1; then
-		userdel "${EXISTING_USER}"
-	elif command -v deluser > /dev/null 2>&1; then
-		deluser "${EXISTING_USER}"
-	fi
-fi
+# Rename whatever pre-existing user/group is sitting on them to our target
+# name instead of deleting and recreating it, so we keep whatever the base
+# image already set up under that account (home directory contents,
+# ownership, ...). Fall back to delete when renaming isn't supported.
 
+# Group
+GROUP_READY=false
 EXISTING_GROUP="$(getent group "${GROUP_ID}" | cut -d: -f1)"
-if [ -n "${EXISTING_GROUP}" ] && [ "${EXISTING_GROUP}" != "${USERNAME}" ]; then
-	if command -v groupdel > /dev/null 2>&1; then
+if [ -n "${EXISTING_GROUP}" ]; then
+	if [ "${EXISTING_GROUP}" = "${USERNAME}" ]; then
+		GROUP_READY=true
+	elif command -v groupmod > /dev/null 2>&1; then
+		groupmod -n "${USERNAME}" "${EXISTING_GROUP}"
+		GROUP_READY=true
+	elif command -v groupdel > /dev/null 2>&1; then
 		groupdel "${EXISTING_GROUP}"
 	elif command -v delgroup > /dev/null 2>&1; then
 		delgroup "${EXISTING_GROUP}"
 	fi
 fi
 
-# Create group
-if command -v groupadd > /dev/null 2>&1; then
-	groupadd -g "${GROUP_ID}" "${USERNAME}"
-elif command -v addgroup > /dev/null 2>&1; then
-	addgroup -g "${GROUP_ID}" "${USERNAME}"
-else
-	echo "No suitable command found to create group" >&2
-	exit 1
+if [ "${GROUP_READY}" = 'false' ]; then
+	if command -v groupadd > /dev/null 2>&1; then
+		groupadd -g "${GROUP_ID}" "${USERNAME}"
+	elif command -v addgroup > /dev/null 2>&1; then
+		addgroup -g "${GROUP_ID}" "${USERNAME}"
+	else
+		echo "No suitable command found to create group" >&2
+		exit 1
+	fi
 fi
 
-# Create user
-USER_SHELL="$(command -v bash || command -v sh)"
-if command -v useradd > /dev/null 2>&1; then
-	useradd -lm -u "${USER_ID}" -g "${GROUP_ID}" -s "${USER_SHELL}" "${USERNAME}"
-elif command -v adduser > /dev/null 2>&1; then
-	adduser -D -u "${USER_ID}" -G "${USERNAME}" -s "${USER_SHELL}" "${USERNAME}"
-else
-	echo "No suitable command found to create user" >&2
-	exit 1
+# User
+USER_READY=false
+EXISTING_USER="$(getent passwd "${USER_ID}" | cut -d: -f1)"
+if [ -n "${EXISTING_USER}" ]; then
+	if [ "${EXISTING_USER}" = "${USERNAME}" ]; then
+		USER_READY=true
+	elif command -v usermod > /dev/null 2>&1; then
+		usermod -l "${USERNAME}" -g "${GROUP_ID}" -d "/home/${USERNAME}" -m -s "${USER_SHELL}" "${EXISTING_USER}"
+		USER_READY=true
+	elif command -v userdel > /dev/null 2>&1; then
+		userdel "${EXISTING_USER}"
+	elif command -v deluser > /dev/null 2>&1; then
+		deluser "${EXISTING_USER}"
+	fi
+fi
+
+if [ "${USER_READY}" = 'false' ]; then
+	if command -v useradd > /dev/null 2>&1; then
+		useradd -lm -u "${USER_ID}" -g "${GROUP_ID}" -s "${USER_SHELL}" "${USERNAME}"
+	elif command -v adduser > /dev/null 2>&1; then
+		adduser -D -u "${USER_ID}" -G "${USERNAME}" -s "${USER_SHELL}" "${USERNAME}"
+	else
+		echo "No suitable command found to create user" >&2
+		exit 1
+	fi
 fi
 
 # Add user to Docker group if it exists
