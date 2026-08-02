@@ -3,7 +3,7 @@
 # directory (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/lib/version.sh"
+#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/version.sh"
 
 # github_resolve_version <version_input> <tool_name> <github_repo> [version_prefix] [strip_tag_v]
 #
@@ -122,4 +122,36 @@ github_resolve_version() {
 		return 1
 	fi
 	echo "${version_full}"
+}
+
+# pip_resolve_version <version_input> <pip_package_name>
+#
+# Resolves a user-supplied version ("latest", a partial "X.Y", or a full
+# "X.Y.Z") to a concrete published "X.Y.Z" version of a PyPI package, via
+# `pip index versions`. Prints the resolved version to stdout, which is
+# empty if no published version matches.
+pip_resolve_version() {
+	local version="$1"
+	local package="$2"
+
+	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+	if [ -n "${version_full}" ]; then
+		echo "${version_full}"
+		return 0
+	fi
+
+	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
+		pip index versions "${package}" 2>/dev/null \
+			| sed -n 's/^Available versions: //p' \
+			| tr ',' '\n' \
+			| sed 's/^ *//' \
+			| head -n1
+	else
+		pip index versions "${package}" 2>/dev/null \
+			| sed -n 's/^Available versions: //p' \
+			| tr ',' '\n' \
+			| sed 's/^ *//' \
+			| grep -E "^$(echo "${version}" | sed 's/\.*$//; s/\./\\./g')(\\.[0-9]+)*$" \
+			| head -n1
+	fi
 }
