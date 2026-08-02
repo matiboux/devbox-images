@@ -4,24 +4,11 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 LAZYGIT_VERSION_INPUT="${1:-latest}"
 
 # ---
-
-LAZYGIT_BINARY_ARCHIVE=''
-LAZYGIT_EXTRACT_DIR=''
-
-cleanup() {
-	if [ -n "${LAZYGIT_BINARY_ARCHIVE}" ]; then
-		rm -f "${LAZYGIT_BINARY_ARCHIVE}"
-	fi
-	if [ -n "${LAZYGIT_EXTRACT_DIR}" ]; then
-		rm -rf "${LAZYGIT_EXTRACT_DIR}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # Detect CPU platform
 ARCH_PLATFORM="$(detect_arch 'x86_64=x86_64' 'aarch64|arm64=arm64' 'i386|i686|x86=32-bit' 'armv7l=armv7' 'armv6l=armv6')" || exit 1
@@ -35,6 +22,7 @@ if [ -z "${LAZYGIT_VERSION}" ]; then
 fi
 
 LAZYGIT_BINARY_ARCHIVE="$(mktemp)"
+register_cleanup_path "${LAZYGIT_BINARY_ARCHIVE}"
 curl -sSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
     -o "${LAZYGIT_BINARY_ARCHIVE}"
 if [ $? -ne 0 ]; then
@@ -43,6 +31,7 @@ if [ $? -ne 0 ]; then
 fi
 
 LAZYGIT_EXTRACT_DIR="$(mktemp -d)"
+register_cleanup_path "${LAZYGIT_EXTRACT_DIR}"
 tar -xzf "${LAZYGIT_BINARY_ARCHIVE}" -C "${LAZYGIT_EXTRACT_DIR}"
 if [ $? -ne 0 ]; then
 	echo "Failed to extract lazygit binary from archive." >&2

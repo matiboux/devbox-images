@@ -3,6 +3,8 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 NVM_VERSION_INPUT="${1:-latest}"
 
@@ -12,22 +14,8 @@ NVM_BASHRC="${NVM_BASHRC:-/etc/bash.bashrc}"
 
 # ---
 
-NVM_INSTALLER_FILE=''
-
-cleanup() {
-	if [ -n "${NVM_INSTALLER_FILE}" ]; then
-		rm -f "${NVM_INSTALLER_FILE}"
-	fi
-}
-
-trap 'cleanup' EXIT
-
 # Detect Linux distribution
-if [ -f /etc/os-release ]; then
-    DISTRO=$(awk -F= '/^ID=/{print $2}' /etc/os-release | tr -d '"')
-else
-    DISTRO='unknown'
-fi
+DISTRO="$(detect_distro)"
 
 if [ "${DISTRO}" = 'alpine' ]; then
 	echo "Sorry, Alpine Linux is not supported for nvm installation." >&2
@@ -63,6 +51,7 @@ if ! command -v bash > /dev/null 2>&1; then
 fi
 
 NVM_INSTALLER_FILE="$(mktemp)"
+register_cleanup_path "${NVM_INSTALLER_FILE}"
 curl "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh" \
 	-o "${NVM_INSTALLER_FILE}"
 if [ $? -ne 0 ]; then

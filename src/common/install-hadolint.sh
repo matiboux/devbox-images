@@ -4,20 +4,11 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 HADOLINT_VERSION_INPUT="${1:-latest}"
 
 # ---
-
-HADOLINT_BINARY=''
-
-cleanup() {
-	if [ -n "${HADOLINT_BINARY}" ]; then
-		rm -f "${HADOLINT_BINARY}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # Detect CPU platform
 ARCH_PLATFORM="$(detect_arch 'x86_64=x86_64' 'aarch64|arm64=arm64')" || exit 1
@@ -31,6 +22,7 @@ if [ -z "${HADOLINT_VERSION}" ]; then
 fi
 
 HADOLINT_BINARY="$(mktemp)"
+register_cleanup_path "${HADOLINT_BINARY}"
 curl -sSL "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${ARCH_PLATFORM}" \
     -o "${HADOLINT_BINARY}"
 if [ $? -ne 0 ]; then

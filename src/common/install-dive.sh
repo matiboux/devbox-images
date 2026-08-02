@@ -4,24 +4,11 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 DIVE_VERSION_INPUT="${1:-latest}"
 
 # ---
-
-DIVE_BINARY_ARCHIVE=''
-DIVE_EXTRACT_DIR=''
-
-cleanup() {
-	if [ -n "${DIVE_BINARY_ARCHIVE}" ]; then
-		rm -f "${DIVE_BINARY_ARCHIVE}"
-	fi
-	if [ -n "${DIVE_EXTRACT_DIR}" ]; then
-		rm -rf "${DIVE_EXTRACT_DIR}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # Detect CPU platform
 ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'ppc64le=ppc64le')" || exit 1
@@ -35,6 +22,7 @@ if [ -z "${DIVE_VERSION}" ]; then
 fi
 
 DIVE_BINARY_ARCHIVE="$(mktemp)"
+register_cleanup_path "${DIVE_BINARY_ARCHIVE}"
 curl -sSL "https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
     -o "${DIVE_BINARY_ARCHIVE}"
 if [ $? -ne 0 ]; then
@@ -43,6 +31,7 @@ if [ $? -ne 0 ]; then
 fi
 
 DIVE_EXTRACT_DIR="$(mktemp -d)"
+register_cleanup_path "${DIVE_EXTRACT_DIR}"
 tar -xzf "${DIVE_BINARY_ARCHIVE}" -C "${DIVE_EXTRACT_DIR}"
 if [ $? -ne 0 ]; then
     echo "Failed to extract dive binary from archive." >&2

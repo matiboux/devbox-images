@@ -4,24 +4,11 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 YQ_VERSION_INPUT="${1:-latest}"
 
 # ---
-
-YQ_BINARY_ARCHIVE=''
-YQ_BINARY_FILE=''
-
-cleanup() {
-	if [ -n "${YQ_BINARY_ARCHIVE}" ]; then
-		rm -f "${YQ_BINARY_ARCHIVE}"
-	fi
-	if [ -n "${YQ_BINARY_FILE}" ]; then
-		rm -f "${YQ_BINARY_FILE}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # Detect CPU platform
 ARCH_PLATFORM="$(detect_arch \
@@ -49,6 +36,7 @@ if [ -z "${YQ_VERSION}" ]; then
 fi
 
 YQ_BINARY_ARCHIVE="$(mktemp)"
+register_cleanup_path "${YQ_BINARY_ARCHIVE}"
 curl -sSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${ARCH_PLATFORM}.tar.gz" \
     -o "${YQ_BINARY_ARCHIVE}"
 if [ $? -ne 0 ]; then
@@ -57,6 +45,7 @@ if [ $? -ne 0 ]; then
 fi
 
 YQ_EXTRACT_DIR="$(mktemp -d)"
+register_cleanup_path "${YQ_EXTRACT_DIR}"
 tar -xzf "${YQ_BINARY_ARCHIVE}" -C "${YQ_EXTRACT_DIR}"
 if [ $? -ne 0 ]; then
     echo "Failed to extract yq binary from archive." >&2

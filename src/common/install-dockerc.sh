@@ -3,20 +3,9 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 DOCKERC_VERSION_INPUT="${1:-latest}"
-
-# ---
-
-DOCKERC_BINARY=''
-
-cleanup() {
-	if [ -n "${DOCKERC_BINARY}" ]; then
-		rm -f "${DOCKERC_BINARY}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # ---
 
@@ -42,6 +31,7 @@ if [ -z "${DOCKERC_VERSION}" ]; then
 fi
 
 DOCKERC_BINARY="$(mktemp)"
+register_cleanup_path "${DOCKERC_BINARY}"
 curl -sSL "https://raw.githubusercontent.com/matiboux/dockerc/v${DOCKERC_VERSION}/dockerc" \
     -o "${DOCKERC_BINARY}"
 if [ $? -ne 0 ]; then

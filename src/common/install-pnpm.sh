@@ -3,6 +3,7 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 PNPM_VERSION_INPUT="${1:-latest}"
 
@@ -10,20 +11,6 @@ PNPM_HOME="${PNPM_HOME:-/opt/pnpm}"
 PNPM_BIN_DIR="${PNPM_BIN_DIR:-/usr/local/bin}"
 
 # ---
-
-PNPM_INSTALLER_FILE=''
-PNPM_SHRC_FILE=''
-
-cleanup() {
-	if [ -n "${PNPM_INSTALLER_FILE}" ]; then
-		rm -f "${PNPM_INSTALLER_FILE}"
-	fi
-	if [ -n "${PNPM_SHRC_FILE}" ]; then
-		rm -f "${PNPM_SHRC_FILE}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 PNPM_VERSION="$(github_resolve_version "${PNPM_VERSION_INPUT}" 'pnpm' 'pnpm/pnpm')" || exit 1
 if [ -z "${PNPM_VERSION}" ]; then
@@ -34,6 +21,7 @@ fi
 mkdir -p "${PNPM_HOME}"
 
 PNPM_INSTALLER_FILE="$(mktemp)"
+register_cleanup_path "${PNPM_INSTALLER_FILE}"
 curl -fsSL 'https://get.pnpm.io/install.sh' -o "${PNPM_INSTALLER_FILE}"
 if [ $? -ne 0 ]; then
     echo 'Failed to download pnpm installer.' >&2
@@ -42,6 +30,7 @@ fi
 
 # Avoid relying on shell env files for binary discovery
 PNPM_SHRC_FILE="$(mktemp)"
+register_cleanup_path "${PNPM_SHRC_FILE}"
 
 PNPM_VERSION="${PNPM_VERSION}" \
 PNPM_HOME="${PNPM_HOME}" \

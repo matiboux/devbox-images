@@ -4,20 +4,11 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 CTOP_VERSION_INPUT="${1:-latest}"
 
 # ---
-
-CTOP_BINARY=''
-
-cleanup() {
-	if [ -n "${CTOP_BINARY}" ]; then
-		rm -f "${CTOP_BINARY}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # Detect CPU platform
 ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'armv7l|armv6l=arm' 'ppc64le=ppc64le')" || exit 1
@@ -31,6 +22,7 @@ if [ -z "${CTOP_VERSION}" ]; then
 fi
 
 CTOP_BINARY="$(mktemp)"
+register_cleanup_path "${CTOP_BINARY}"
 curl -sSL "https://github.com/bcicen/ctop/releases/download/v${CTOP_VERSION}/ctop-${CTOP_VERSION}-linux-${ARCH_PLATFORM}" \
     -o "${CTOP_BINARY}"
 if [ $? -ne 0 ]; then

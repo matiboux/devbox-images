@@ -1,5 +1,9 @@
 #!/bin/sh
 
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+
 POETRY_VERSION_INPUT=${1:-latest}
 
 POETRY_HOME="${POETRY_HOME:-/opt/poetry}"
@@ -8,14 +12,7 @@ POETRY_BIN_DIR="${POETRY_BIN_DIR:-/usr/local/bin}"
 # ---
 
 POETRY_INSTALLER_FILE="$(mktemp)"
-
-cleanup() {
-    if [ -n "${POETRY_INSTALLER_FILE}" ]; then
-        rm -f "${POETRY_INSTALLER_FILE}"
-    fi
-}
-
-trap 'cleanup' EXIT
+register_cleanup_path "${POETRY_INSTALLER_FILE}"
 
 link_poetry_binaries() {
     for name in poetry; do

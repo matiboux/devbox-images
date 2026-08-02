@@ -4,24 +4,11 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 LAZYDOCKER_VERSION_INPUT="${1:-latest}"
 
 # ---
-
-LAZYDOCKER_BINARY_ARCHIVE=''
-LAZYDOCKER_EXTRACT_DIR=''
-
-cleanup() {
-	if [ -n "${LAZYDOCKER_BINARY_ARCHIVE}" ]; then
-		rm -f "${LAZYDOCKER_BINARY_ARCHIVE}"
-	fi
-	if [ -n "${LAZYDOCKER_EXTRACT_DIR}" ]; then
-		rm -rf "${LAZYDOCKER_EXTRACT_DIR}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # Detect CPU platform
 ARCH_PLATFORM="$(detect_arch 'x86_64=x86_64' 'aarch64|arm64=arm64' 'i386|i686|x86=x86' 'armv7l=armv7' 'armv6l=armv6')" || exit 1
@@ -35,6 +22,7 @@ if [ -z "${LAZYDOCKER_VERSION}" ]; then
 fi
 
 LAZYDOCKER_BINARY_ARCHIVE="$(mktemp)"
+register_cleanup_path "${LAZYDOCKER_BINARY_ARCHIVE}"
 curl -sSL "https://github.com/jesseduffield/lazydocker/releases/download/v${LAZYDOCKER_VERSION}/lazydocker_${LAZYDOCKER_VERSION}_Linux_${ARCH_PLATFORM}.tar.gz" \
     -o "${LAZYDOCKER_BINARY_ARCHIVE}"
 if [ $? -ne 0 ]; then
@@ -43,6 +31,7 @@ if [ $? -ne 0 ]; then
 fi
 
 LAZYDOCKER_EXTRACT_DIR="$(mktemp -d)"
+register_cleanup_path "${LAZYDOCKER_EXTRACT_DIR}"
 tar -xzf "${LAZYDOCKER_BINARY_ARCHIVE}" -C "${LAZYDOCKER_EXTRACT_DIR}"
 if [ $? -ne 0 ]; then
     echo "Failed to extract lazydocker binary from archive." >&2

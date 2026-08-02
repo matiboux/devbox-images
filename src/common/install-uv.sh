@@ -1,5 +1,9 @@
 #!/bin/sh
 
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+
 UV_VERSION_INPUT=${1:-latest}
 
 UV_HOME="${UV_HOME:-/opt/uv}"
@@ -8,14 +12,7 @@ UV_BIN_DIR="${UV_BIN_DIR:-/usr/local/bin}"
 # ---
 
 UV_INSTALLER_FILE="$(mktemp)"
-
-cleanup() {
-    if [ -n "${UV_INSTALLER_FILE}" ]; then
-        rm -f "${UV_INSTALLER_FILE}"
-    fi
-}
-
-trap 'cleanup' EXIT
+register_cleanup_path "${UV_INSTALLER_FILE}"
 
 link_uv_binaries() {
     for name in uv uvx; do

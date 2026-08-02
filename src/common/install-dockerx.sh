@@ -3,20 +3,9 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 
 DOCKERX_VERSION_INPUT="${1:-latest}"
-
-# ---
-
-DOCKERX_BINARY=''
-
-cleanup() {
-	if [ -n "${DOCKERX_BINARY}" ]; then
-		rm -f "${DOCKERX_BINARY}"
-	fi
-}
-
-trap 'cleanup' EXIT
 
 # ---
 
@@ -42,6 +31,7 @@ if [ -z "${DOCKERX_VERSION}" ]; then
 fi
 
 DOCKERX_BINARY="$(mktemp)"
+register_cleanup_path "${DOCKERX_BINARY}"
 curl -sSL "https://raw.githubusercontent.com/matiboux/dockerx/v${DOCKERX_VERSION}/dockerx" \
     -o "${DOCKERX_BINARY}"
 if [ $? -ne 0 ]; then
