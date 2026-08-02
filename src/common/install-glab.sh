@@ -48,7 +48,7 @@ esac
 
 get_glab_version() {
 	local version="$1"
-	local gitlab_repo='gitlab-org/cli'
+	local gitlab_repo='gitlab-org%2Fcli'
 	local version_prefix='v'
 	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 	if [ -n "${version_full}" ]; then
@@ -60,12 +60,12 @@ get_glab_version() {
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
 		if [ -n "${CI_JOB_TOKEN}" ]; then
 			response=$(
-			    curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_repo}/releases/latest" \
+			    curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_repo}/releases/permalink/latest" \
 					-H "PRIVATE-TOKEN: ${CI_JOB_TOKEN}"
 			)
 		else
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_repo}/releases/latest"
+				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_repo}/releases/permalink/latest"
 			)
 		fi
 		if [ $? -ne 0 ]; then
@@ -122,7 +122,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-mv "${GLAB_EXTRACT_DIR}/glab" /usr/local/bin/glab
+mv "${GLAB_EXTRACT_DIR}/bin/glab" /usr/local/bin/glab
 if [ $? -ne 0 ]; then
     echo "Failed to install glab binary in /usr/local/bin." >&2
     exit 1
