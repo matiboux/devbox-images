@@ -54,7 +54,9 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         tree \
         unzip \
         vim \
-        wget
+        wget \
+        xz \
+        zstd
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
@@ -82,7 +84,9 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         tree \
         unzip \
         vim \
-        wget
+        wget \
+        xz-utils \
+        zstd
 
     # Debian/Ubuntu package ships the binary as `fdfind` to avoid a name clash
     ln -sf "$(command -v fdfind)" /usr/local/bin/fd
