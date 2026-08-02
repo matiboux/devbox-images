@@ -45,7 +45,7 @@ permissions:
 
 # Set workflow concurrency rules
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.filter || 'all'}}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.filter || 'all'}}
   cancel-in-progress: true
 
 # Set environment variables for the workflow

@@ -71,11 +71,9 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         fd-find \
         fzf \
         git \
-        git-delta \
         gnupg \
         htop \
         jq \
-        lazygit \
         less \
         make \
         nano \
@@ -90,8 +88,20 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         xz-utils \
         zstd
 
-    # Debian/Ubuntu package ships the binary as `fdfind` to avoid a name clash
-    ln -sf "$(command -v fdfind)" /usr/local/bin/fd
+    if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
+        # Create a symlink to `fd` for consistency with other distributions
+        ln -sf "$(command -v fdfind)" /usr/local/bin/fd
+    fi
+
+    # Try to install community packages via apt-get first
+    # Fall back to install scripts if not available via apt-get
+    COMMON_SCRIPTS_DIR="$(dirname "$0")"
+    if ! apt-get install -y --no-install-recommends git-delta; then
+        sh "${COMMON_SCRIPTS_DIR}/install-delta.sh"
+    fi
+    if ! apt-get install -y --no-install-recommends lazygit; then
+        sh "${COMMON_SCRIPTS_DIR}/install-lazygit.sh"
+    fi
 
 else
 
