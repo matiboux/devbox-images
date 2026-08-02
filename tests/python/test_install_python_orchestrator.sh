@@ -71,40 +71,44 @@ calls="$(cat "${CALL_LOG}")"
 assert_contains "${calls}" 'install-node.sh 22'
 assert_not_contains "${calls}" 'install-nvm.sh'
 
-test_case 'DOCKER_VERSION triggers install-docker.sh'
+test_case 'DOCKER_VERSION triggers install-docker.sh and all Docker dev tools, defaulting their versions to empty'
 : > "${CALL_LOG}"
 DOCKER_VERSION='docker' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-docker.sh'
+calls="$(cat "${CALL_LOG}")"
+assert_contains "${calls}" 'install-docker.sh'
+assert_contains "${calls}" 'install-lazydocker.sh'
+assert_contains "${calls}" 'install-hadolint.sh'
+assert_contains "${calls}" 'install-ctop.sh'
+assert_contains "${calls}" 'install-dive.sh'
+assert_contains "${calls}" 'install-dockerc.sh'
+assert_contains "${calls}" 'install-dockerx.sh'
 
-test_case 'LAZYDOCKER_VERSION triggers install-lazydocker.sh with that version'
+test_case 'LAZYDOCKER_VERSION/HADOLINT_VERSION/CTOP_VERSION/DIVE_VERSION/DOCKERC_VERSION/DOCKERX_VERSION alone (without DOCKER_VERSION) do not trigger any install'
 : > "${CALL_LOG}"
-LAZYDOCKER_VERSION='0.23.3' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-lazydocker.sh 0.23.3'
+LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' CTOP_VERSION='0.7.7' \
+	DIVE_VERSION='0.13.1' DOCKERC_VERSION='2.2.0' DOCKERX_VERSION='0.1.0' \
+	sh "${FAKE_ROOT}/src/python/install-python.sh"
+calls="$(cat "${CALL_LOG}")"
+assert_not_contains "${calls}" 'install-docker.sh'
+assert_not_contains "${calls}" 'install-lazydocker.sh'
+assert_not_contains "${calls}" 'install-hadolint.sh'
+assert_not_contains "${calls}" 'install-ctop.sh'
+assert_not_contains "${calls}" 'install-dive.sh'
+assert_not_contains "${calls}" 'install-dockerc.sh'
+assert_not_contains "${calls}" 'install-dockerx.sh'
 
-test_case 'HADOLINT_VERSION triggers install-hadolint.sh with that version'
+test_case 'DOCKER_VERSION with LAZYDOCKER_VERSION/HADOLINT_VERSION/CTOP_VERSION/DIVE_VERSION/DOCKERC_VERSION/DOCKERX_VERSION set forwards each version'
 : > "${CALL_LOG}"
-HADOLINT_VERSION='2.12.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-hadolint.sh 2.12.0'
-
-test_case 'CTOP_VERSION triggers install-ctop.sh with that version'
-: > "${CALL_LOG}"
-CTOP_VERSION='0.7.7' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-ctop.sh 0.7.7'
-
-test_case 'DIVE_VERSION triggers install-dive.sh with that version'
-: > "${CALL_LOG}"
-DIVE_VERSION='0.13.1' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-dive.sh 0.13.1'
-
-test_case 'DOCKERC_VERSION triggers install-dockerc.sh with that version'
-: > "${CALL_LOG}"
-DOCKERC_VERSION='2.2.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-dockerc.sh 2.2.0'
-
-test_case 'DOCKERX_VERSION triggers install-dockerx.sh with that version'
-: > "${CALL_LOG}"
-DOCKERX_VERSION='0.1.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
-assert_contains "$(cat "${CALL_LOG}")" 'install-dockerx.sh 0.1.0'
+DOCKER_VERSION='docker' LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' \
+	CTOP_VERSION='0.7.7' DIVE_VERSION='0.13.1' DOCKERC_VERSION='2.2.0' \
+	DOCKERX_VERSION='0.1.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+calls="$(cat "${CALL_LOG}")"
+assert_contains "${calls}" 'install-lazydocker.sh 0.23.3'
+assert_contains "${calls}" 'install-hadolint.sh 2.12.0'
+assert_contains "${calls}" 'install-ctop.sh 0.7.7'
+assert_contains "${calls}" 'install-dive.sh 0.13.1'
+assert_contains "${calls}" 'install-dockerc.sh 2.2.0'
+assert_contains "${calls}" 'install-dockerx.sh 0.1.0'
 
 test_case 'SUDO_USER=true triggers install-sudo.sh'
 : > "${CALL_LOG}"
