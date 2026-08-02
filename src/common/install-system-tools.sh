@@ -38,6 +38,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         fd \
         fzf \
         git \
+        gnupg \
         htop \
         jq \
         less \
@@ -61,6 +62,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         fd-find \
         fzf \
         git \
+        gnupg \
         htop \
         jq \
         less \
