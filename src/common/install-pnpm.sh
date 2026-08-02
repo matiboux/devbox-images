@@ -2,14 +2,21 @@
 
 PNPM_VERSION_INPUT="${1:-latest}"
 
+PNPM_HOME="${PNPM_HOME:-/opt/pnpm}"
+PNPM_BIN_DIR="${PNPM_BIN_DIR:-/usr/local/bin}"
+
 # ---
 
 PNPM_INSTALLER_FILE=''
+PNPM_SHRC_FILE=''
 
 cleanup() {
-    if [ -n "${PNPM_INSTALLER_FILE}" ]; then
-        rm -f "${PNPM_INSTALLER_FILE}"
-    fi
+	if [ -n "${PNPM_INSTALLER_FILE}" ]; then
+		rm -f "${PNPM_INSTALLER_FILE}"
+	fi
+	if [ -n "${PNPM_SHRC_FILE}" ]; then
+		rm -f "${PNPM_SHRC_FILE}"
+	fi
 }
 
 trap 'cleanup' EXIT
@@ -105,11 +112,13 @@ get_pnpm_version() {
 	echo "${version_full}"
 }
 
-PNPM_VERSION="$(get_pnpm_version "${PNPM_VERSION_INPUT}")"
+PNPM_VERSION="$(get_pnpm_version "${PNPM_VERSION_INPUT}")" || exit 1
 if [ -z "${PNPM_VERSION}" ]; then
 	echo "Failed to find a valid pnpm version for '${PNPM_VERSION_INPUT}'." >&2
 	exit 1
 fi
+
+mkdir -p "${PNPM_HOME}"
 
 PNPM_INSTALLER_FILE="$(mktemp)"
 curl -fsSL 'https://get.pnpm.io/install.sh' -o "${PNPM_INSTALLER_FILE}"
@@ -118,8 +127,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Avoid relying on shell env files for binary discovery
+PNPM_SHRC_FILE="$(mktemp)"
+
 PNPM_VERSION="${PNPM_VERSION}" \
-ENV="${HOME}/.shrc" \
+PNPM_HOME="${PNPM_HOME}" \
+ENV="${PNPM_SHRC_FILE}" \
 SHELL='/bin/sh' \
 sh "${PNPM_INSTALLER_FILE}"
 if [ $? -ne 0 ]; then
@@ -127,4 +140,22 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Installed pnpm version ${PNPM_VERSION}."
+# Allow all users to access pnpm binaries and cache store
+chmod -R 777 "${PNPM_HOME}"
+
+# Create shims for pnpm, pnpx, pn, and pnx
+# Shims preserve original paths for pnpm to resolve its sibling files correctly
+for name in pnpm pnpx pn pnx; do
+	target=''
+	if [ -x "${PNPM_HOME}/bin/${name}" ]; then
+		target="${PNPM_HOME}/bin/${name}"
+	elif [ -x "${PNPM_HOME}/${name}" ]; then
+		target="${PNPM_HOME}/${name}"
+	fi
+	if [ -n "${target}" ]; then
+		printf '#!/bin/sh\nexec "%s" "$@"\n' "${target}" > "${PNPM_BIN_DIR}/${name}"
+		chmod 755 "${PNPM_BIN_DIR}/${name}"
+	fi
+done
+
+echo "Installed pnpm version ${PNPM_VERSION} to ${PNPM_HOME}."
