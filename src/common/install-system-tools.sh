@@ -38,6 +38,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         fd \
         fzf \
         git \
+        htop \
         jq \
         make \
         musl-dev \
@@ -56,6 +57,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         fd-find \
         fzf \
         git \
+        htop \
         jq \
         make \
         ripgrep \
