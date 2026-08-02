@@ -3,6 +3,7 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 
 YQ_VERSION_INPUT="${1:-latest}"
 
@@ -23,52 +24,21 @@ cleanup() {
 trap 'cleanup' EXIT
 
 # Detect CPU platform
-ARCH_INPUT="$(uname -m)"
-case "${ARCH_INPUT}" in
-    x86_64)
-        ARCH_PLATFORM='linux_amd64'
-        ;;
-    aarch64|arm64)
-        ARCH_PLATFORM='linux_arm64'
-        ;;
-    i386|i686|x86)
-        ARCH_PLATFORM='linux_386'
-        ;;
-    armv7l|armv6l|armv5l|armv5b)
-        ARCH_PLATFORM='linux_arm'
-        ;;
-    loongarch64)
-        ARCH_PLATFORM='linux_loong64'
-        ;;
-    mips)
-        ARCH_PLATFORM='linux_mips'
-        ;;
-    mips64)
-        ARCH_PLATFORM='linux_mips64'
-        ;;
-    mips64el)
-        ARCH_PLATFORM='linux_mips64le'
-        ;;
-    mipsel)
-        ARCH_PLATFORM='linux_mipsle'
-        ;;
-    ppc64)
-        ARCH_PLATFORM='linux_ppc64'
-        ;;
-    ppc64le)
-        ARCH_PLATFORM='linux_ppc64le'
-        ;;
-    riscv64)
-        ARCH_PLATFORM='linux_riscv64'
-        ;;
-    s390x)
-        ARCH_PLATFORM='linux_s390x'
-        ;;
-    *)
-        echo "Unsupported architecture: ${ARCH_INPUT}" >&2
-        exit 1
-        ;;
-esac
+ARCH_PLATFORM="$(detect_arch \
+    'x86_64=linux_amd64' \
+    'aarch64|arm64=linux_arm64' \
+    'i386|i686|x86=linux_386' \
+    'armv7l|armv6l|armv5l|armv5b=linux_arm' \
+    'loongarch64=linux_loong64' \
+    'mips=linux_mips' \
+    'mips64=linux_mips64' \
+    'mips64el=linux_mips64le' \
+    'mipsel=linux_mipsle' \
+    'ppc64=linux_ppc64' \
+    'ppc64le=linux_ppc64le' \
+    'riscv64=linux_riscv64' \
+    's390x=linux_s390x' \
+)" || exit 1
 
 # ---
 

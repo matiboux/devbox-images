@@ -1,5 +1,9 @@
 #!/bin/sh
 
+COMMON_SCRIPT_DIR="${0%/*}"
+[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
+
 GLAB_VERSION_INPUT="${1:-latest}"
 
 # ---
@@ -15,34 +19,7 @@ cleanup() {
 trap 'cleanup' EXIT
 
 # Detect CPU platform
-ARCH_INPUT="$(uname -m)"
-case "${ARCH_INPUT}" in
-    x86_64)
-        ARCH_PLATFORM='amd64'
-        ;;
-    aarch64|arm64)
-        ARCH_PLATFORM='arm64'
-        ;;
-    i386|i686|x86)
-        ARCH_PLATFORM='386'
-        ;;
-    armv7l|armv6l)
-        ARCH_PLATFORM='armv6'
-        ;;
-    s390x)
-        ARCH_PLATFORM='s390x'
-        ;;
-    ppc64le)
-        ARCH_PLATFORM='ppc64le'
-        ;;
-    ppc64)
-        ARCH_PLATFORM='ppc64'
-        ;;
-    *)
-        echo "Unsupported architecture: ${ARCH_INPUT}" >&2
-        exit 1
-        ;;
-esac
+ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'i386|i686|x86=386' 'armv7l|armv6l=armv6' 's390x=s390x' 'ppc64le=ppc64le' 'ppc64=ppc64')" || exit 1
 
 # ---
 

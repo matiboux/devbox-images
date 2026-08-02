@@ -3,6 +3,7 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 
 DELTA_VERSION_INPUT="${1:-latest}"
 
@@ -19,25 +20,7 @@ cleanup() {
 trap 'cleanup' EXIT
 
 # Detect CPU platform
-ARCH_INPUT="$(uname -m)"
-case "${ARCH_INPUT}" in
-    x86_64)
-        ARCH_PLATFORM='amd64'
-        ;;
-    aarch64|arm64)
-        ARCH_PLATFORM='arm64'
-        ;;
-    armv7l)
-        ARCH_PLATFORM='armhf'
-        ;;
-    i386|i686|x86)
-        ARCH_PLATFORM='i386'
-        ;;
-    *)
-        echo "Unsupported architecture: ${ARCH_INPUT}" >&2
-        exit 1
-        ;;
-esac
+ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'armv7l=armhf' 'i386|i686|x86=i386')" || exit 1
 
 # ---
 
