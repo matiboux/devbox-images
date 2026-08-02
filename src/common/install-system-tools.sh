@@ -39,6 +39,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         jq \
         make \
         musl-dev \
+        ripgrep \
         tmux \
         wget
 
@@ -53,6 +54,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         git \
         jq \
         make \
+        ripgrep \
         tmux \
         wget
 
