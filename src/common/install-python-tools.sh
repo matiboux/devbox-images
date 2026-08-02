@@ -7,4 +7,6 @@ PYTHON_COMMAND="$(command -v python3 || command -v python)"
 ${PYTHON_COMMAND} -m pip install \
 	--no-cache-dir \
 	--root-user-action ignore \
-	ruff pytest
+	mypy \
+	pytest \
+	ruff
