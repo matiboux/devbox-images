@@ -16,6 +16,7 @@
 REPO_ROOT="$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)"
 COMMON_DIR="${REPO_ROOT}/src/common"
 PYTHON_DIR="${REPO_ROOT}/src/python"
+NODE_DIR="${REPO_ROOT}/src/node"
 STUBS_DIR="${REPO_ROOT}/tests/support/shell/stubs"
 
 TESTS_RUN=0
