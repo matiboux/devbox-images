@@ -50,6 +50,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         ripgrep \
         tar \
         tmux \
+        tree \
         unzip \
         wget
 
@@ -75,6 +76,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         ripgrep \
         tar \
         tmux \
+        tree \
         unzip \
         wget
 
