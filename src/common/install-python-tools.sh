@@ -10,6 +10,7 @@ ${PYTHON_COMMAND} -m pip install \
 	black \
 	ipython \
 	mypy \
+	pip-tools \
 	pytest \
 	ruff \
 	ty
