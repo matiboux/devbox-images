@@ -12,6 +12,7 @@ ${PYTHON_COMMAND} -m pip install \
 	mypy \
 	pip-tools \
 	pipx \
+	pre-commit \
 	pytest \
 	ruff \
 	ty
