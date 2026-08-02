@@ -36,6 +36,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         build-base \
         ca-certificates \
         curl \
+        delta \
         fd \
         fzf \
         git \
@@ -64,6 +65,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         fd-find \
         fzf \
         git \
+        git-delta \
         gnupg \
         htop \
         jq \
