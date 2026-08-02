@@ -46,12 +46,14 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
         less \
         make \
         musl-dev \
+        nano \
         openssh \
         ripgrep \
         tar \
         tmux \
         tree \
         unzip \
+        vim \
         wget
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
@@ -72,12 +74,14 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
         jq \
         less \
         make \
+        nano \
         openssh-client \
         ripgrep \
         tar \
         tmux \
         tree \
         unzip \
+        vim \
         wget
 
     # Debian/Ubuntu package ships the binary as `fdfind` to avoid a name clash
