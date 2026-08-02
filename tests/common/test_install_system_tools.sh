@@ -26,6 +26,13 @@ DISTRO="$(host_distro)"
 setup_stub_bin
 stub_cmd_logging apk
 stub_cmd_logging apt-get
+# apt-get is stubbed (no real package install happens), so `fdfind` is
+# never actually installed; stub it as the `ln` target. `ln` itself is
+# also stubbed since the Debian branch's final step is an unconditional
+# `ln -sf ... /usr/local/bin/fd`, a real hardcoded system path with no
+# override, which must never actually run un-intercepted.
+stub_cmd fdfind 'exit 0'
+stub_cmd_logging ln
 
 test_case 'installs the expected package set for the host distribution (or errors on unsupported ones)'
 output=$(sh "${SCRIPT}" 2>&1)
