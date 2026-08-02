@@ -71,6 +71,22 @@ calls="$(cat "${CALL_LOG}")"
 assert_contains "${calls}" 'install-node.sh 22'
 assert_not_contains "${calls}" 'install-nvm.sh'
 
+test_case 'YARN_VERSION/PNPM_VERSION alone (without NODE_VERSION) do not trigger any install'
+: > "${CALL_LOG}"
+YARN_VERSION='4.5.0' PNPM_VERSION='9.12.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+calls="$(cat "${CALL_LOG}")"
+assert_not_contains "${calls}" 'install-node.sh'
+assert_not_contains "${calls}" 'install-yarn.sh'
+assert_not_contains "${calls}" 'install-pnpm.sh'
+
+test_case 'NODE_VERSION with YARN_VERSION/PNPM_VERSION set forwards each version'
+: > "${CALL_LOG}"
+NODE_VERSION='22' YARN_VERSION='4.5.0' PNPM_VERSION='9.12.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+calls="$(cat "${CALL_LOG}")"
+assert_contains "${calls}" 'install-node.sh 22'
+assert_contains "${calls}" 'install-yarn.sh 4.5.0'
+assert_contains "${calls}" 'install-pnpm.sh 9.12.0'
+
 test_case 'DOCKER_VERSION triggers install-docker.sh and all Docker dev tools, defaulting their versions to empty'
 : > "${CALL_LOG}"
 DOCKER_VERSION='docker' sh "${FAKE_ROOT}/src/python/install-python.sh"

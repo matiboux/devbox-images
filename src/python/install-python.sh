@@ -5,9 +5,10 @@ set -e
 # Orchestrates dynamic image building based on environment variables:
 # - POETRY_VERSION: Version of Poetry to install if set
 # - UV_VERSION: Version of uv to install if set
-# - NODE_VERSION: Version of Node.js to install if set
-# - YARN_VERSION: Version of Yarn to install if set
-# - PNPM_VERSION: Version of pnpm to install if set
+# - NODE_VERSION: Version of Node.js to install if set, required for
+#     YARN_VERSION/PNPM_VERSION below to have any effect
+# - YARN_VERSION: Version of Yarn to install if set (requires NODE_VERSION)
+# - PNPM_VERSION: Version of pnpm to install if set (requires NODE_VERSION)
 # - DOCKER_VERSION: Install Docker CLI tools if set, along with lazydocker,
 #     hadolint, ctop, dive, dockerc and dockerx (pin their versions via
 #     LAZYDOCKER_VERSION, HADOLINT_VERSION, CTOP_VERSION, DIVE_VERSION,
