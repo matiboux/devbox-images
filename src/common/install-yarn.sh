@@ -3,7 +3,8 @@ set -e
 
 CURRENT_DIR="${0%/*}"
 [ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
-. "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/version.sh"
+COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
+. "${COMMON_LIB_DIR}/version.sh"
 
 YARN_VERSION_INPUT="${1:-latest}"
 
