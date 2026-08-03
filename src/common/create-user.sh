@@ -3,7 +3,8 @@ set -e
 
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
-. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
+COMMON_LIB_DIR="$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib"
+for lib in distro group; do . "${COMMON_LIB_DIR}/${lib}.sh"; done
 
 USERNAME="$1"
 USER_ID="$2"
@@ -82,13 +83,7 @@ if [ "${USER_READY}" = 'false' ]; then
 fi
 
 # Add user to Docker group if it exists
-if getent group docker > /dev/null 2>&1; then
-	if command -v usermod > /dev/null 2>&1; then
-		usermod -aG docker "${USERNAME}"
-	elif command -v adduser > /dev/null 2>&1; then
-		adduser "${USERNAME}" docker
-	fi
-fi
+add_user_to_group "${USERNAME}" docker
 
 # Add user to sudoers
 if [ "${SUDO_USER}" = 'true' ]; then
@@ -116,35 +111,11 @@ if [ "${SUDO_USER}" = 'true' ]; then
 
 	if [ "${SUDO_COMMAND_NAME}" = 'sudo' ]; then
 
-		if ! getent group sudo > /dev/null 2>&1; then
-			echo "Group 'sudo' does not exist" >&2
-			exit 1
-		fi
-
-		if command -v usermod > /dev/null 2>&1; then
-			usermod -aG sudo "${USERNAME}"
-		elif command -v adduser > /dev/null 2>&1; then
-			adduser "${USERNAME}" sudo
-		else
-			echo "No suitable command found to add user to sudo group" >&2
-			exit 1
-		fi
+		add_user_to_group "${USERNAME}" sudo 1 || exit 1
 
 	elif [ "${SUDO_COMMAND_NAME}" = 'doas' ]; then
 
-		if ! getent group wheel > /dev/null 2>&1; then
-			echo "Group 'wheel' does not exist" >&2
-			exit 1
-		fi
-
-		if command -v usermod > /dev/null 2>&1; then
-			usermod -aG wheel "${USERNAME}"
-		elif command -v adduser > /dev/null 2>&1; then
-			adduser "${USERNAME}" wheel
-		else
-			echo "No suitable command found to add user to wheel group" >&2
-			exit 1
-		fi
+		add_user_to_group "${USERNAME}" wheel 1 || exit 1
 
 	else
 
