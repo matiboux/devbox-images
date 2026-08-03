@@ -3,7 +3,7 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 COMMON_LIB_DIR="$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib"
-for lib in version distro tmpfile; do . "${COMMON_LIB_DIR}/${lib}.sh"; done
+for lib in version distro tmpfile exec; do . "${COMMON_LIB_DIR}/${lib}.sh"; done
 
 NVM_VERSION_INPUT="${1:-latest}"
 
@@ -51,12 +51,9 @@ fi
 
 NVM_INSTALLER_FILE="$(mktemp)"
 register_cleanup_path "${NVM_INSTALLER_FILE}"
-curl "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh" \
-	-o "${NVM_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download nvm installer for version ${NVM_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download nvm installer for version ${NVM_VERSION}." \
+	curl "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh" \
+	-o "${NVM_INSTALLER_FILE}" || exit 1
 
 BASH_ENV="${NVM_BASH_ENV}"
 touch "${BASH_ENV}"
@@ -64,11 +61,8 @@ if ! grep -q ". ${NVM_BASH_ENV}" "${NVM_BASHRC}" 2>/dev/null; then
 	echo ". ${NVM_BASH_ENV}" >> "${NVM_BASHRC}"
 fi
 
-NVM_DIR="${NVM_DIR}" PROFILE="${BASH_ENV}" bash "${NVM_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to install nvm." >&2
-	exit 1
-fi
+run_or_fail 'Failed to install nvm.' \
+	env NVM_DIR="${NVM_DIR}" PROFILE="${BASH_ENV}" bash "${NVM_INSTALLER_FILE}" || exit 1
 
 # Create user directories
 while IFS= read -r dir; do

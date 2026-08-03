@@ -3,7 +3,7 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 COMMON_LIB_DIR="$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib"
-for lib in version tmpfile; do . "${COMMON_LIB_DIR}/${lib}.sh"; done
+for lib in version tmpfile exec; do . "${COMMON_LIB_DIR}/${lib}.sh"; done
 
 UV_VERSION_INPUT=${1:-latest}
 
@@ -26,11 +26,8 @@ export UV_UNMANAGED_INSTALL="${UV_HOME}"
 
 UV_INSTALLER_FILE="$(mktemp)"
 register_cleanup_path "${UV_INSTALLER_FILE}"
-curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}"
-if [ $? -ne 0 ]; then
-    echo "Failed to install uv version ${UV_VERSION}." >&2
-    exit 1
-fi
+run_or_fail "Failed to install uv version ${UV_VERSION}." \
+    curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}" || exit 1
 
 sh "${UV_INSTALLER_FILE}"
 EXIT_CODE=$?
