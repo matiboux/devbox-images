@@ -13,17 +13,11 @@ DOCKERC_VERSION_INPUT="${1:-latest}"
 # DockerC is a plain POSIX shell script wrapping `docker compose`, published
 # straight from its repository (no per-arch release assets), so both
 # prerequisites must already be in place.
-docker --help > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-	echo 'Docker is not installed.' >&2
-	exit 1
-fi
+run_or_fail 'Docker is not installed.' \
+	sh -c 'docker --help > /dev/null 2>&1' || exit 1
 
-docker compose --help > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-	echo 'Docker compose is not installed.' >&2
-	exit 1
-fi
+run_or_fail 'Docker compose is not installed.' \
+	sh -c 'docker compose --help > /dev/null 2>&1' || exit 1
 
 DOCKERC_VERSION="$(github_resolve_version "${DOCKERC_VERSION_INPUT}" 'dockerc' 'matiboux/dockerc')"
 if [ -z "${DOCKERC_VERSION}" ]; then
