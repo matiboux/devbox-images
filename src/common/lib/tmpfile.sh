@@ -3,7 +3,7 @@
 # the parent directory (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/tmpfile.sh"
 #   ARCHIVE="$(mktemp)"
 #   register_cleanup_path "${ARCHIVE}"
 #   EXTRACT_DIR="$(mktemp -d)"

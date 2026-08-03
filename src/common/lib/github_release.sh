@@ -5,7 +5,7 @@
 # sourced.
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/github_release.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/github_release.sh"
 
 # install_github_tarball_binary <tool_name> <archive_url> <path_in_archive> <dest_path>
 #

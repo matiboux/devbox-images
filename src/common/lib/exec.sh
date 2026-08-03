@@ -3,7 +3,7 @@
 # directory (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/exec.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/exec.sh"
 
 # run_or_fail <error-message> <command> [args...]
 #

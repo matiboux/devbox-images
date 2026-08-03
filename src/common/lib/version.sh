@@ -3,7 +3,7 @@
 # directory (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/version.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/version.sh"
 
 # github_resolve_version <version_input> <tool_name> <github_repo> [version_prefix] [strip_tag_v]
 #
