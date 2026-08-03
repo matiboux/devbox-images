@@ -36,8 +36,8 @@ stub_sudo() {
 	log_file="${STUB_BIN_DIR}/sudo.log"
 	stub_cmd sudo "
 echo \"sudo \$*\" >> '${log_file}'
-if [ \"\$1\" = '-u' ]; then
-	shift 2
+if [ \"\$1\" = '-n' ] && [ \"\$2\" = '-u' ]; then
+	shift 3
 	exec \"\$@\"
 fi
 exit ${fixup_exit_code}
@@ -69,8 +69,8 @@ code=$?
 assert_exit_code "${code}" 0 "${output}"
 assert_contains "${output}" "DOCKER_HOST=unix://${FAKE_SOCK}"
 sudo_log="$(cat "${STUB_BIN_DIR}/sudo.log")"
-assert_contains "${sudo_log}" 'sh -c'
-assert_contains "${sudo_log}" "-u $(id -un) env"
+assert_contains "${sudo_log}" 'sudo -n sh -c'
+assert_contains "${sudo_log}" "-n -u $(id -un) env"
 rm -f "${FAKE_SOCK}" "${STUB_BIN_DIR}/sudo.log"
 
 test_case 'docker socket present, GID differs and sudo fixup fails: warns, does not re-exec'

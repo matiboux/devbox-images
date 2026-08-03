@@ -11,14 +11,14 @@ if [ -S "${DOCKER_SOCK}" ] && command -v docker > /dev/null 2>&1; then
 	if [ -n "${SOCK_GID}" ] && [ -n "${DOCKER_GROUP_GID}" ] && [ "${SOCK_GID}" != "${DOCKER_GROUP_GID}" ]; then
 		if \
 			command -v sudo > /dev/null 2>&1 \
-			&& sudo sh -c '
+			&& sudo -n sh -c '
 				set -e
 				sock_gid="$1"
 				sed -i "s/^docker:\([^:]*\):[0-9]*:/docker:\1:${sock_gid}:/" /etc/group
 			' sh "${SOCK_GID}" 2>/dev/null
 		then
 			# Re-exec as ourselves to refresh supplementary groups
-			REEXEC="sudo -u $(id -un)"
+			REEXEC="sudo -n -u $(id -un)"
 		else
 			echo "Warning: Could not align Docker group GID with Docker socket GID; Docker access may not work for non-root users." >&2
 		fi
