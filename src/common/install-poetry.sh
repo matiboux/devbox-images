@@ -13,10 +13,7 @@ POETRY_BIN_DIR="${POETRY_BIN_DIR:-/usr/local/bin}"
 # ---
 
 POETRY_VERSION="$(pip_resolve_version "${POETRY_VERSION_INPUT}" 'poetry')"
-if [ -z "${POETRY_VERSION}" ]; then
-	echo "Failed to find a valid Poetry version for '${POETRY_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${POETRY_VERSION}" 'Poetry' "${POETRY_VERSION_INPUT}" || exit 1
 
 mkdir -p "${POETRY_HOME}"
 

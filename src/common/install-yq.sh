@@ -29,10 +29,7 @@ ARCH_PLATFORM="$(detect_arch \
 # ---
 
 YQ_VERSION="$(github_resolve_version "${YQ_VERSION_INPUT}" 'yq' 'mikefarah/yq')"
-if [ -z "${YQ_VERSION}" ]; then
-	echo "Failed to find a valid yq version for '${YQ_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${YQ_VERSION}" 'yq' "${YQ_VERSION_INPUT}" || exit 1
 
 install_github_tarball_binary 'yq' \
 	"https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${ARCH_PLATFORM}.tar.gz" \

@@ -13,10 +13,7 @@ UV_BIN_DIR="${UV_BIN_DIR:-/usr/local/bin}"
 # ---
 
 UV_VERSION="$(pip_resolve_version "${UV_VERSION_INPUT}" 'uv')"
-if [ -z "${UV_VERSION}" ]; then
-	echo "Failed to find a valid uv version for '${UV_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${UV_VERSION}" 'uv' "${UV_VERSION_INPUT}" || exit 1
 
 mkdir -p "${UV_HOME}"
 

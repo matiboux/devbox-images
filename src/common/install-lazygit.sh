@@ -15,10 +15,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=x86_64' 'aarch64|arm64=arm64' 'i386|i686|x8
 # ---
 
 LAZYGIT_VERSION="$(github_resolve_version "${LAZYGIT_VERSION_INPUT}" 'lazygit' 'jesseduffield/lazygit')"
-if [ -z "${LAZYGIT_VERSION}" ]; then
-	echo "Failed to find a valid lazygit version for '${LAZYGIT_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${LAZYGIT_VERSION}" 'lazygit' "${LAZYGIT_VERSION_INPUT}" || exit 1
 
 install_github_tarball_binary 'lazygit' \
 	"https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \

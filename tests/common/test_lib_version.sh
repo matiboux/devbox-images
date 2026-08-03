@@ -144,4 +144,18 @@ test_case 'no matching version available resolves to an empty string'
 output=$(PIP_STUB_VERSIONS='1.3.0, 1.2.9' pip_resolve_version '1.5' 'sometool')
 assert_equal "${output}" ''
 
+# --- require_resolved_version ---
+
+test_case 'a non-empty resolved version returns 0 and prints nothing'
+output=$(require_resolved_version '1.2.3' 'sometool' 'latest' 2>&1)
+code=$?
+assert_exit_code "${code}" 0
+assert_equal "${output}" ''
+
+test_case 'an empty resolved version reports the tool name and requested input, and returns 1'
+output=$(require_resolved_version '' 'sometool' '9.9.9-rc' 2>&1)
+code=$?
+assert_exit_code "${code}" 1
+assert_contains "${output}" "Failed to find a valid sometool version for '9.9.9-rc'."
+
 summary

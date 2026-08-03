@@ -15,10 +15,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=x86_64' 'aarch64|arm64=arm64')" || exit 1
 # ---
 
 HADOLINT_VERSION="$(github_resolve_version "${HADOLINT_VERSION_INPUT}" 'hadolint' 'hadolint/hadolint')"
-if [ -z "${HADOLINT_VERSION}" ]; then
-	echo "Failed to find a valid hadolint version for '${HADOLINT_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${HADOLINT_VERSION}" 'hadolint' "${HADOLINT_VERSION_INPUT}" || exit 1
 
 install_github_raw_binary 'hadolint' \
 	"https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${ARCH_PLATFORM}" \

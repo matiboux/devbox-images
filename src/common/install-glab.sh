@@ -15,10 +15,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'i386|i686|x86
 # ---
 
 GLAB_VERSION="$(gitlab_resolve_version "${GLAB_VERSION_INPUT}" 'gitlab-org%2Fcli')"
-if [ -z "${GLAB_VERSION}" ]; then
-	echo "Failed to find a valid glab version for '${GLAB_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${GLAB_VERSION}" 'glab' "${GLAB_VERSION_INPUT}" || exit 1
 
 install_github_tarball_binary 'glab' \
 	"https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \

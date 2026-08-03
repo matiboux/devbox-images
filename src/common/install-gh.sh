@@ -15,10 +15,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'i386|i686|x86
 # ---
 
 GH_VERSION="$(github_resolve_version "${GH_VERSION_INPUT}" 'gh' 'cli/cli')"
-if [ -z "${GH_VERSION}" ]; then
-	echo "Failed to find a valid gh version for '${GH_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${GH_VERSION}" 'gh' "${GH_VERSION_INPUT}" || exit 1
 
 install_github_tarball_binary 'gh' \
 	"https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \

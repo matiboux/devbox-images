@@ -19,10 +19,7 @@ run_or_fail 'Docker compose is not installed.' \
 	sh -c 'docker compose --help > /dev/null 2>&1' || exit 1
 
 DOCKERX_VERSION="$(github_resolve_version "${DOCKERX_VERSION_INPUT}" 'dockerx' 'matiboux/dockerx')"
-if [ -z "${DOCKERX_VERSION}" ]; then
-	echo "Failed to find a valid dockerx version for '${DOCKERX_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${DOCKERX_VERSION}" 'dockerx' "${DOCKERX_VERSION_INPUT}" || exit 1
 
 install_github_raw_binary 'dockerx' \
 	"https://raw.githubusercontent.com/matiboux/dockerx/v${DOCKERX_VERSION}/dockerx" \

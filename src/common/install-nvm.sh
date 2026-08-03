@@ -22,10 +22,7 @@ if [ "${DISTRO}" = 'alpine' ]; then
 fi
 
 NVM_VERSION="$(github_resolve_version "${NVM_VERSION_INPUT}" 'nvm' 'nvm-sh/nvm')"
-if [ -z "${NVM_VERSION}" ]; then
-	echo "Failed to find a valid nvm version for '${NVM_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${NVM_VERSION}" 'nvm' "${NVM_VERSION_INPUT}" || exit 1
 
 mkdir -p "${NVM_DIR}"
 

@@ -15,10 +15,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'armv7l|armv6l
 # ---
 
 CTOP_VERSION="$(github_resolve_version "${CTOP_VERSION_INPUT}" 'ctop' 'bcicen/ctop')"
-if [ -z "${CTOP_VERSION}" ]; then
-	echo "Failed to find a valid ctop version for '${CTOP_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${CTOP_VERSION}" 'ctop' "${CTOP_VERSION_INPUT}" || exit 1
 
 install_github_raw_binary 'ctop' \
 	"https://github.com/bcicen/ctop/releases/download/v${CTOP_VERSION}/ctop-${CTOP_VERSION}-linux-${ARCH_PLATFORM}" \

@@ -62,12 +62,8 @@ fi
 
 # ---
 
-YARN_VERSION="$(github_resolve_version "${YARN_VERSION_INPUT}" 'Yarn' 'yarnpkg/berry' '@yarnpkg/cli/')" || exit 1
-
-if [ -z "${YARN_VERSION}" ]; then
-	echo "Failed to find a valid Yarn version for '${YARN_VERSION_INPUT}'." >&2
-	exit 1
-fi
+YARN_VERSION="$(github_resolve_version "${YARN_VERSION_INPUT}" 'Yarn' 'yarnpkg/berry' '@yarnpkg/cli/')"
+require_resolved_version "${YARN_VERSION}" 'Yarn' "${YARN_VERSION_INPUT}" || exit 1
 
 echo "Installing yarn version ${YARN_VERSION}..."
 corepack install -g "yarn@${YARN_VERSION}" || {

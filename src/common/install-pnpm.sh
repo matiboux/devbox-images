@@ -12,11 +12,8 @@ PNPM_BIN_DIR="${PNPM_BIN_DIR:-/usr/local/bin}"
 
 # ---
 
-PNPM_VERSION="$(github_resolve_version "${PNPM_VERSION_INPUT}" 'pnpm' 'pnpm/pnpm')" || exit 1
-if [ -z "${PNPM_VERSION}" ]; then
-	echo "Failed to find a valid pnpm version for '${PNPM_VERSION_INPUT}'." >&2
-	exit 1
-fi
+PNPM_VERSION="$(github_resolve_version "${PNPM_VERSION_INPUT}" 'pnpm' 'pnpm/pnpm')"
+require_resolved_version "${PNPM_VERSION}" 'pnpm' "${PNPM_VERSION_INPUT}" || exit 1
 
 mkdir -p "${PNPM_HOME}"
 

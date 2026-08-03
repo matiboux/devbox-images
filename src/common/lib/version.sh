@@ -225,3 +225,21 @@ gitlab_resolve_version() {
 	fi
 	echo "${version_full}"
 }
+
+# require_resolved_version <resolved_version> <tool_name> <version_input>
+#
+# Guards the "bail out if version resolution came back empty" idiom used
+# right after every *_resolve_version call above. On success (non-empty
+# <resolved_version>) returns 0 silently. On failure, prints
+# "Failed to find a valid <tool_name> version for '<version_input>'." to
+# stderr and returns 1.
+require_resolved_version() {
+	local resolved_version="$1"
+	local tool_name="$2"
+	local version_input="$3"
+
+	if [ -z "${resolved_version}" ]; then
+		echo "Failed to find a valid ${tool_name} version for '${version_input}'." >&2
+		return 1
+	fi
+}

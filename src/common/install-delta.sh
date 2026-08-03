@@ -15,10 +15,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'armv7l=armhf'
 # ---
 
 DELTA_VERSION="$(github_resolve_version "${DELTA_VERSION_INPUT}" 'delta' 'dandavison/delta' '' 0)"
-if [ -z "${DELTA_VERSION}" ]; then
-	echo "Failed to find a valid delta version for '${DELTA_VERSION_INPUT}'." >&2
-	exit 1
-fi
+require_resolved_version "${DELTA_VERSION}" 'delta' "${DELTA_VERSION_INPUT}" || exit 1
 
 DELTA_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${DELTA_BINARY_ARCHIVE}"
