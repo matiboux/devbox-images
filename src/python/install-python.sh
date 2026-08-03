@@ -59,16 +59,8 @@ if [ -n "${NODE_VERSION}" ]; then
 fi
 
 if [ -n "${DOCKER_VERSION}" ]; then
-    # Install Docker CLI tools
-    sh "${COMMON_SCRIPTS_DIR}/install-docker.sh"
-
-    # Install Docker development tools
-    sh "${COMMON_SCRIPTS_DIR}/install-lazydocker.sh" "${LAZYDOCKER_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-hadolint.sh" "${HADOLINT_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-ctop.sh" "${CTOP_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-dive.sh" "${DIVE_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-dockerc.sh" "${DOCKERC_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-dockerx.sh" "${DOCKERX_VERSION}"
+    # Install Docker CLI tools and companion Docker development tools
+    sh "${COMMON_SCRIPTS_DIR}/install-docker-tools.sh"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then
