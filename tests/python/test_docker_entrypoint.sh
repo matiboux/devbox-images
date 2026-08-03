@@ -125,6 +125,25 @@ else
 	rm -f "${FAKE_SOCK}"
 fi
 
+# --- NVM_DIR/nvm.sh sourcing (python's entrypoint only) ---
+
+test_case 'an existing NVM_DIR/nvm.sh is sourced into the entrypoint shell before the final exec'
+FAKE_NVM_DIR="${WORKDIR}/nvm"
+mkdir -p "${FAKE_NVM_DIR}"
+printf 'export NVM_SH_WAS_SOURCED=1\n' > "${FAKE_NVM_DIR}/nvm.sh"
+stub_cmd docker 'exit 0'
+output=$(NVM_DIR="${FAKE_NVM_DIR}" DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "${output}" 'NVM_SH_WAS_SOURCED=1'
+rm -rf "${FAKE_NVM_DIR}"
+
+test_case 'no NVM_DIR/nvm.sh present: sourcing is skipped, the rest of the entrypoint still runs'
+stub_cmd docker 'exit 0'
+output=$(NVM_DIR="${WORKDIR}/missing-nvm" DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+
 rm -rf "${WORKDIR}"
 
 summary
