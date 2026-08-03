@@ -1,0 +1,16 @@
+# Services definition for devcontainer
+
+name: python-devbox
+
+services:
+
+  devcontainer:
+    # Build
+    image: ghcr.io/matiboux/devbox-python:3.14-uv
+    # Deploy
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    working_dir: /workdir
+    command: sleep infinity
+    volumes:
+      - ..:/workdir
