@@ -3,7 +3,7 @@
 # install-*.sh scripts in the parent directory (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/distro.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/distro.sh"
 
 # detect_distro
 #

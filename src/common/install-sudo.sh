@@ -3,9 +3,10 @@ set -e
 
 # Script to install sudo.
 
-COMMON_SCRIPT_DIR="${0%/*}"
-[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
-. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
+CURRENT_DIR="${0%/*}"
+[ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
+. "${COMMON_LIB_DIR}/distro.sh"
 
 DISTRO="$(detect_distro)"
 PACKAGE_MANAGER_NAME="$(require_package_manager "${DISTRO}")" || exit 1

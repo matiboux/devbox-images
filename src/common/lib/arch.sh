@@ -3,7 +3,7 @@
 # parent directory (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/arch.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/arch.sh"
 
 # detect_arch <pattern>=<value> [<pattern>=<value> ...]
 #

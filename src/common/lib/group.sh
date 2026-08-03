@@ -3,7 +3,7 @@
 # (src/common/).
 #
 # Usage (from a script in the parent directory):
-#   . "$(CDPATH= cd -- "${SCRIPT_DIR}" && pwd)/lib/group.sh"
+#   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/group.sh"
 
 # add_user_to_group <username> <groupname> [required]
 #
