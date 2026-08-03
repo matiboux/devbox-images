@@ -5,6 +5,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/github_release.sh"
 
 DOCKERX_VERSION_INPUT="${1:-latest}"
 
@@ -25,13 +26,8 @@ if [ -z "${DOCKERX_VERSION}" ]; then
 	exit 1
 fi
 
-DOCKERX_BINARY="$(mktemp)"
-register_cleanup_path "${DOCKERX_BINARY}"
-run_or_fail "Failed to download dockerx script for version ${DOCKERX_VERSION}." \
-	curl -sSL "https://raw.githubusercontent.com/matiboux/dockerx/v${DOCKERX_VERSION}/dockerx" \
-	-o "${DOCKERX_BINARY}" || exit 1
-
-run_or_fail 'Failed to install dockerx script in /usr/local/bin.' \
-	install -m 0755 "${DOCKERX_BINARY}" /usr/local/bin/dockerx || exit 1
+install_github_raw_binary 'dockerx' \
+	"https://raw.githubusercontent.com/matiboux/dockerx/v${DOCKERX_VERSION}/dockerx" \
+	/usr/local/bin/dockerx || exit 1
 
 echo "Installed dockerx version ${DOCKERX_VERSION} to /usr/local/bin/dockerx."

@@ -69,7 +69,7 @@ stub_cmd_logging install 1
 output=$(sh "${SCRIPT}" '2.2.0' 2>&1)
 code=$?
 assert_exit_code "${code}" 1
-assert_contains "${output}" 'Failed to install dockerc script in /usr/local/bin.'
+assert_contains "${output}" 'Failed to install dockerc binary in /usr/local/bin.'
 stub_cmd_logging install
 
 summary
