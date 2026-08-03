@@ -8,14 +8,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/distro.sh"
 
 DISTRO="$(detect_distro)"
-PACKAGE_MANAGER="$(detect_package_manager "${DISTRO}")"
-
-if [ -z "${PACKAGE_MANAGER}" ]; then
-    echo "Unsupported distribution: ${DISTRO}" >&2
-    exit 1
-fi
-
-PACKAGE_MANAGER_NAME="$(basename "${PACKAGE_MANAGER}")"
+PACKAGE_MANAGER_NAME="$(require_package_manager "${DISTRO}")" || exit 1
 
 if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 

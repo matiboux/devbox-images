@@ -33,3 +33,20 @@ detect_package_manager() {
 			;;
 	esac
 }
+
+# require_package_manager <distro>
+#
+# Resolves <distro> to its package manager via detect_package_manager and
+# prints just its command name (e.g. 'apk', 'apt-get') to stdout. If
+# <distro> isn't recognized (or its package manager isn't on PATH), prints
+# "Unsupported distribution: <distro>" to stderr and returns 1.
+require_package_manager() {
+	local distro="$1"
+	local package_manager
+	package_manager="$(detect_package_manager "${distro}")"
+	if [ -z "${package_manager}" ]; then
+		echo "Unsupported distribution: ${distro}" >&2
+		return 1
+	fi
+	basename "${package_manager}"
+}

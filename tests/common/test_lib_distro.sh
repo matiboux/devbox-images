@@ -53,4 +53,26 @@ test_case 'detect_package_manager prints nothing for alpine if apk is not on PAT
 output=$(detect_package_manager alpine)
 assert_equal "${output}" ''
 
+# --- require_package_manager ---
+
+test_case 'require_package_manager prints the command name for a recognized distro'
+stub_cmd apt-get 'exit 0'
+output=$(require_package_manager debian)
+code=$?
+assert_exit_code "${code}" 0
+assert_equal "${output}" 'apt-get'
+rm -f "${STUB_BIN_DIR}/apt-get"
+
+test_case 'require_package_manager reports an unsupported distribution and returns 1'
+output=$(require_package_manager fedora 2>&1)
+code=$?
+assert_exit_code "${code}" 1
+assert_contains "${output}" 'Unsupported distribution: fedora'
+
+test_case 'require_package_manager reports unsupported when the package manager binary is missing from PATH'
+output=$(require_package_manager alpine 2>&1)
+code=$?
+assert_exit_code "${code}" 1
+assert_contains "${output}" 'Unsupported distribution: alpine'
+
 summary
