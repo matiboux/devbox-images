@@ -3,7 +3,9 @@
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 COMMON_LIB_DIR="$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib"
-for lib in version tmpfile exec; do . "${COMMON_LIB_DIR}/${lib}.sh"; done
+. "${COMMON_LIB_DIR}/version.sh"
+. "${COMMON_LIB_DIR}/tmpfile.sh"
+. "${COMMON_LIB_DIR}/exec.sh"
 
 POETRY_VERSION_INPUT=${1:-latest}
 
