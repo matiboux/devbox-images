@@ -8,7 +8,9 @@ NVM_DIR="${NVM_DIR:-/opt/nvm}"
 
 # ---
 
-COMMON_DIR="$(dirname "$(realpath "$0")")"
+CURRENT_DIR="${0%/*}"
+[ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+COMMON_DIR="$(CDPATH= cd -- "${CURRENT_DIR}" && pwd)"
 
 if [ ! -s "${NVM_DIR}/nvm.sh" ]; then
 	# nvm is not installed, install it first

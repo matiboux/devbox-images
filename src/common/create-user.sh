@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-COMMON_SCRIPT_DIR="${0%/*}"
-[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
-COMMON_LIB_DIR="$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib"
+CURRENT_DIR="${0%/*}"
+[ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
 . "${COMMON_LIB_DIR}/distro.sh"
 . "${COMMON_LIB_DIR}/group.sh"
 

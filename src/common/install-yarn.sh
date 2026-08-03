@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-COMMON_SCRIPT_DIR="${0%/*}"
-[ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
-. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
+CURRENT_DIR="${0%/*}"
+[ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+. "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/version.sh"
 
 YARN_VERSION_INPUT="${1:-latest}"
 
