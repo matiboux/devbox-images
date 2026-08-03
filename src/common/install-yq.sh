@@ -5,6 +5,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 YQ_VERSION_INPUT="${1:-latest}"
 
@@ -37,25 +38,16 @@ fi
 
 YQ_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${YQ_BINARY_ARCHIVE}"
-curl -sSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${ARCH_PLATFORM}.tar.gz" \
-    -o "${YQ_BINARY_ARCHIVE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download yq binary archive for version ${YQ_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download yq binary archive for version ${YQ_VERSION}." \
+	curl -sSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${ARCH_PLATFORM}.tar.gz" \
+	-o "${YQ_BINARY_ARCHIVE}" || exit 1
 
 YQ_EXTRACT_DIR="$(mktemp -d)"
 register_cleanup_path "${YQ_EXTRACT_DIR}"
-tar -xzf "${YQ_BINARY_ARCHIVE}" -C "${YQ_EXTRACT_DIR}"
-if [ $? -ne 0 ]; then
-    echo "Failed to extract yq binary from archive." >&2
-    exit 1
-fi
+run_or_fail 'Failed to extract yq binary from archive.' \
+	tar -xzf "${YQ_BINARY_ARCHIVE}" -C "${YQ_EXTRACT_DIR}" || exit 1
 
-mv "${YQ_EXTRACT_DIR}/yq_${ARCH_PLATFORM}" /usr/local/bin/yq
-if [ $? -ne 0 ]; then
-    echo "Failed to install yq binary in /usr/local/bin." >&2
-    exit 1
-fi
+run_or_fail 'Failed to install yq binary in /usr/local/bin.' \
+	mv "${YQ_EXTRACT_DIR}/yq_${ARCH_PLATFORM}" /usr/local/bin/yq || exit 1
 
 echo "Installed yq version ${YQ_VERSION} to /usr/local/bin/yq."

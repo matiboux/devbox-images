@@ -4,6 +4,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 GLAB_VERSION_INPUT="${1:-latest}"
 
@@ -77,25 +78,16 @@ fi
 
 GLAB_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${GLAB_BINARY_ARCHIVE}"
-curl -sSL "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
-    -o "${GLAB_BINARY_ARCHIVE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download glab binary archive for version ${GLAB_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download glab binary archive for version ${GLAB_VERSION}." \
+	curl -sSL "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
+	-o "${GLAB_BINARY_ARCHIVE}" || exit 1
 
 GLAB_EXTRACT_DIR="$(mktemp -d)"
 register_cleanup_path "${GLAB_EXTRACT_DIR}"
-tar -xzf "${GLAB_BINARY_ARCHIVE}" -C "${GLAB_EXTRACT_DIR}"
-if [ $? -ne 0 ]; then
-    echo "Failed to extract glab binary from archive." >&2
-    exit 1
-fi
+run_or_fail 'Failed to extract glab binary from archive.' \
+	tar -xzf "${GLAB_BINARY_ARCHIVE}" -C "${GLAB_EXTRACT_DIR}" || exit 1
 
-mv "${GLAB_EXTRACT_DIR}/bin/glab" /usr/local/bin/glab
-if [ $? -ne 0 ]; then
-    echo "Failed to install glab binary in /usr/local/bin." >&2
-    exit 1
-fi
+run_or_fail 'Failed to install glab binary in /usr/local/bin.' \
+	mv "${GLAB_EXTRACT_DIR}/bin/glab" /usr/local/bin/glab || exit 1
 
 echo "Installed glab version ${GLAB_VERSION} to /usr/local/bin/glab."

@@ -5,6 +5,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 DELTA_VERSION_INPUT="${1:-latest}"
 
@@ -23,17 +24,11 @@ fi
 
 DELTA_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${DELTA_BINARY_ARCHIVE}"
-curl -sSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_${ARCH_PLATFORM}.deb" \
-    -o "${DELTA_BINARY_ARCHIVE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download delta package for version ${DELTA_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download delta package for version ${DELTA_VERSION}." \
+	curl -sSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_${ARCH_PLATFORM}.deb" \
+	-o "${DELTA_BINARY_ARCHIVE}" || exit 1
 
-dpkg -i "${DELTA_BINARY_ARCHIVE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to install delta package." >&2
-	exit 1
-fi
+run_or_fail 'Failed to install delta package.' \
+	dpkg -i "${DELTA_BINARY_ARCHIVE}" || exit 1
 
 echo "Installed delta version ${DELTA_VERSION} to /usr/local/bin/delta."

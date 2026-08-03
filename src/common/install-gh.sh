@@ -5,6 +5,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 GH_VERSION_INPUT="${1:-latest}"
 
@@ -23,25 +24,16 @@ fi
 
 GH_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${GH_BINARY_ARCHIVE}"
-curl -sSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
-    -o "${GH_BINARY_ARCHIVE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download gh binary archive for version ${GH_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download gh binary archive for version ${GH_VERSION}." \
+	curl -sSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
+	-o "${GH_BINARY_ARCHIVE}" || exit 1
 
 GH_EXTRACT_DIR="$(mktemp -d)"
 register_cleanup_path "${GH_EXTRACT_DIR}"
-tar -xzf "${GH_BINARY_ARCHIVE}" -C "${GH_EXTRACT_DIR}"
-if [ $? -ne 0 ]; then
-    echo "Failed to extract gh binary from archive." >&2
-    exit 1
-fi
+run_or_fail 'Failed to extract gh binary from archive.' \
+	tar -xzf "${GH_BINARY_ARCHIVE}" -C "${GH_EXTRACT_DIR}" || exit 1
 
-mv "${GH_EXTRACT_DIR}/gh_${GH_VERSION}_linux_${ARCH_PLATFORM}/bin/gh" /usr/local/bin/gh
-if [ $? -ne 0 ]; then
-    echo "Failed to install gh binary in /usr/local/bin." >&2
-    exit 1
-fi
+run_or_fail 'Failed to install gh binary in /usr/local/bin.' \
+	mv "${GH_EXTRACT_DIR}/gh_${GH_VERSION}_linux_${ARCH_PLATFORM}/bin/gh" /usr/local/bin/gh || exit 1
 
 echo "Installed gh version ${GH_VERSION} to /usr/local/bin/gh."

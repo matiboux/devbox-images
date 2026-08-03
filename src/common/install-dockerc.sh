@@ -4,6 +4,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 DOCKERC_VERSION_INPUT="${1:-latest}"
 
@@ -32,17 +33,11 @@ fi
 
 DOCKERC_BINARY="$(mktemp)"
 register_cleanup_path "${DOCKERC_BINARY}"
-curl -sSL "https://raw.githubusercontent.com/matiboux/dockerc/v${DOCKERC_VERSION}/dockerc" \
-    -o "${DOCKERC_BINARY}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download dockerc script for version ${DOCKERC_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download dockerc script for version ${DOCKERC_VERSION}." \
+	curl -sSL "https://raw.githubusercontent.com/matiboux/dockerc/v${DOCKERC_VERSION}/dockerc" \
+	-o "${DOCKERC_BINARY}" || exit 1
 
-install -m 0755 "${DOCKERC_BINARY}" /usr/local/bin/dockerc
-if [ $? -ne 0 ]; then
-	echo "Failed to install dockerc script in /usr/local/bin." >&2
-	exit 1
-fi
+run_or_fail 'Failed to install dockerc script in /usr/local/bin.' \
+	install -m 0755 "${DOCKERC_BINARY}" /usr/local/bin/dockerc || exit 1
 
 echo "Installed dockerc version ${DOCKERC_VERSION} to /usr/local/bin/dockerc."

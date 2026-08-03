@@ -5,6 +5,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 LAZYGIT_VERSION_INPUT="${1:-latest}"
 
@@ -23,25 +24,16 @@ fi
 
 LAZYGIT_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${LAZYGIT_BINARY_ARCHIVE}"
-curl -sSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
-    -o "${LAZYGIT_BINARY_ARCHIVE}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download lazygit binary archive for version ${LAZYGIT_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download lazygit binary archive for version ${LAZYGIT_VERSION}." \
+	curl -sSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH_PLATFORM}.tar.gz" \
+	-o "${LAZYGIT_BINARY_ARCHIVE}" || exit 1
 
 LAZYGIT_EXTRACT_DIR="$(mktemp -d)"
 register_cleanup_path "${LAZYGIT_EXTRACT_DIR}"
-tar -xzf "${LAZYGIT_BINARY_ARCHIVE}" -C "${LAZYGIT_EXTRACT_DIR}"
-if [ $? -ne 0 ]; then
-	echo "Failed to extract lazygit binary from archive." >&2
-	exit 1
-fi
+run_or_fail 'Failed to extract lazygit binary from archive.' \
+	tar -xzf "${LAZYGIT_BINARY_ARCHIVE}" -C "${LAZYGIT_EXTRACT_DIR}" || exit 1
 
-mv "${LAZYGIT_EXTRACT_DIR}/lazygit" /usr/local/bin/lazygit
-if [ $? -ne 0 ]; then
-	echo "Failed to install lazygit binary in /usr/local/bin." >&2
-	exit 1
-fi
+run_or_fail 'Failed to install lazygit binary in /usr/local/bin.' \
+	mv "${LAZYGIT_EXTRACT_DIR}/lazygit" /usr/local/bin/lazygit || exit 1
 
 echo "Installed lazygit version ${LAZYGIT_VERSION} to /usr/local/bin/lazygit."

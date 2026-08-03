@@ -5,6 +5,7 @@ COMMON_SCRIPT_DIR="${0%/*}"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
 
 CTOP_VERSION_INPUT="${1:-latest}"
 
@@ -23,17 +24,11 @@ fi
 
 CTOP_BINARY="$(mktemp)"
 register_cleanup_path "${CTOP_BINARY}"
-curl -sSL "https://github.com/bcicen/ctop/releases/download/v${CTOP_VERSION}/ctop-${CTOP_VERSION}-linux-${ARCH_PLATFORM}" \
-    -o "${CTOP_BINARY}"
-if [ $? -ne 0 ]; then
-	echo "Failed to download ctop binary for version ${CTOP_VERSION}." >&2
-	exit 1
-fi
+run_or_fail "Failed to download ctop binary for version ${CTOP_VERSION}." \
+	curl -sSL "https://github.com/bcicen/ctop/releases/download/v${CTOP_VERSION}/ctop-${CTOP_VERSION}-linux-${ARCH_PLATFORM}" \
+	-o "${CTOP_BINARY}" || exit 1
 
-install -m 0755 "${CTOP_BINARY}" /usr/local/bin/ctop
-if [ $? -ne 0 ]; then
-	echo "Failed to install ctop binary in /usr/local/bin." >&2
-	exit 1
-fi
+run_or_fail 'Failed to install ctop binary in /usr/local/bin.' \
+	install -m 0755 "${CTOP_BINARY}" /usr/local/bin/ctop || exit 1
 
 echo "Installed ctop version ${CTOP_VERSION} to /usr/local/bin/ctop."
