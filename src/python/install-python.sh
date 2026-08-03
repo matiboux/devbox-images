@@ -5,9 +5,10 @@ set -e
 # Orchestrates dynamic image building based on environment variables:
 # - POETRY_VERSION: Version of Poetry to install if set
 # - UV_VERSION: Version of uv to install if set
-# - NODE_VERSION: Version of Node.js to install if set
-# - YARN_VERSION: Version of Yarn to install if set
-# - PNPM_VERSION: Version of pnpm to install if set
+# - NODE_VERSION: Version of Node.js to install if set, required for
+#     YARN_VERSION/PNPM_VERSION below to have any effect
+# - YARN_VERSION: Version of Yarn to install if set (requires NODE_VERSION)
+# - PNPM_VERSION: Version of pnpm to install if set (requires NODE_VERSION)
 # - DOCKER_VERSION: Install Docker CLI tools if set, along with lazydocker,
 #     hadolint, ctop, dive, dockerc and dockerx (pin their versions via
 #     LAZYDOCKER_VERSION, HADOLINT_VERSION, CTOP_VERSION, DIVE_VERSION,
@@ -45,29 +46,21 @@ fi
 if [ -n "${NODE_VERSION}" ]; then
     # Install Node.js
     sh "${COMMON_SCRIPTS_DIR}/install-node.sh" "${NODE_VERSION}"
-fi
 
-if [ -n "${YARN_VERSION}" ]; then
-    # Install Yarn
-    sh "${COMMON_SCRIPTS_DIR}/install-yarn.sh" "${YARN_VERSION}"
-fi
+    if [ -n "${YARN_VERSION}" ]; then
+        # Install Yarn
+        sh "${COMMON_SCRIPTS_DIR}/install-yarn.sh" "${YARN_VERSION}"
+    fi
 
-if [ -n "${PNPM_VERSION}" ]; then
-    # Install pnpm
-    sh "${COMMON_SCRIPTS_DIR}/install-pnpm.sh" "${PNPM_VERSION}"
+    if [ -n "${PNPM_VERSION}" ]; then
+        # Install pnpm
+        sh "${COMMON_SCRIPTS_DIR}/install-pnpm.sh" "${PNPM_VERSION}"
+    fi
 fi
 
 if [ -n "${DOCKER_VERSION}" ]; then
-    # Install Docker CLI tools
-    sh "${COMMON_SCRIPTS_DIR}/install-docker.sh"
-
-    # Install Docker development tools
-    sh "${COMMON_SCRIPTS_DIR}/install-lazydocker.sh" "${LAZYDOCKER_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-hadolint.sh" "${HADOLINT_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-ctop.sh" "${CTOP_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-dive.sh" "${DIVE_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-dockerc.sh" "${DOCKERC_VERSION}"
-    sh "${COMMON_SCRIPTS_DIR}/install-dockerx.sh" "${DOCKERX_VERSION}"
+    # Install Docker CLI tools and companion Docker development tools
+    sh "${COMMON_SCRIPTS_DIR}/install-docker-tools.sh"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then

@@ -36,8 +36,8 @@ stub_sudo() {
 	log_file="${STUB_BIN_DIR}/sudo.log"
 	stub_cmd sudo "
 echo \"sudo \$*\" >> '${log_file}'
-if [ \"\$1\" = '-u' ]; then
-	shift 2
+if [ \"\$1\" = '-n' ] && [ \"\$2\" = '-u' ]; then
+	shift 3
 	exec \"\$@\"
 fi
 exit ${fixup_exit_code}
@@ -69,8 +69,8 @@ code=$?
 assert_exit_code "${code}" 0 "${output}"
 assert_contains "${output}" "DOCKER_HOST=unix://${FAKE_SOCK}"
 sudo_log="$(cat "${STUB_BIN_DIR}/sudo.log")"
-assert_contains "${sudo_log}" 'sh -c'
-assert_contains "${sudo_log}" "-u $(id -un) env"
+assert_contains "${sudo_log}" 'sudo -n sh -c'
+assert_contains "${sudo_log}" "-n -u $(id -un) env"
 rm -f "${FAKE_SOCK}" "${STUB_BIN_DIR}/sudo.log"
 
 test_case 'docker socket present, GID differs and sudo fixup fails: warns, does not re-exec'
@@ -124,6 +124,25 @@ else
 	assert_not_contains "${output}" 'DOCKER_HOST'
 	rm -f "${FAKE_SOCK}"
 fi
+
+# --- NVM_DIR/nvm.sh sourcing (python's entrypoint only) ---
+
+test_case 'an existing NVM_DIR/nvm.sh is sourced into the entrypoint shell before the final exec'
+FAKE_NVM_DIR="${WORKDIR}/nvm"
+mkdir -p "${FAKE_NVM_DIR}"
+printf 'export NVM_SH_WAS_SOURCED=1\n' > "${FAKE_NVM_DIR}/nvm.sh"
+stub_cmd docker 'exit 0'
+output=$(NVM_DIR="${FAKE_NVM_DIR}" DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "${output}" 'NVM_SH_WAS_SOURCED=1'
+rm -rf "${FAKE_NVM_DIR}"
+
+test_case 'no NVM_DIR/nvm.sh present: sourcing is skipped, the rest of the entrypoint still runs'
+stub_cmd docker 'exit 0'
+output=$(NVM_DIR="${WORKDIR}/missing-nvm" DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
 
 rm -rf "${WORKDIR}"
 

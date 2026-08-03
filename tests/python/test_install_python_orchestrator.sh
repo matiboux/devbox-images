@@ -21,9 +21,8 @@ CALL_LOG="${FAKE_ROOT}/calls.log"
 
 for name in install-system-tools.sh install-yq.sh install-gh.sh install-glab.sh \
 	install-python-tools.sh install-poetry.sh install-uv.sh install-nvm.sh \
-	install-node.sh install-yarn.sh install-pnpm.sh install-docker.sh \
-	install-lazydocker.sh install-hadolint.sh install-ctop.sh install-dive.sh \
-	install-dockerc.sh install-dockerx.sh install-sudo.sh create-user.sh; do
+	install-node.sh install-yarn.sh install-pnpm.sh install-docker-tools.sh \
+	install-sudo.sh create-user.sh; do
 	cat > "${FAKE_ROOT}/src/common/${name}" <<EOF
 #!/bin/sh
 echo "${name} \$*" >> '${CALL_LOG}'
@@ -49,13 +48,7 @@ assert_not_contains "${calls}" 'install-nvm.sh'
 assert_not_contains "${calls}" 'install-node.sh'
 assert_not_contains "${calls}" 'install-yarn.sh'
 assert_not_contains "${calls}" 'install-pnpm.sh'
-assert_not_contains "${calls}" 'install-docker.sh'
-assert_not_contains "${calls}" 'install-lazydocker.sh'
-assert_not_contains "${calls}" 'install-hadolint.sh'
-assert_not_contains "${calls}" 'install-ctop.sh'
-assert_not_contains "${calls}" 'install-dive.sh'
-assert_not_contains "${calls}" 'install-dockerc.sh'
-assert_not_contains "${calls}" 'install-dockerx.sh'
+assert_not_contains "${calls}" 'install-docker-tools.sh'
 assert_not_contains "${calls}" 'install-sudo.sh'
 assert_not_contains "${calls}" 'create-user.sh'
 
@@ -71,44 +64,33 @@ calls="$(cat "${CALL_LOG}")"
 assert_contains "${calls}" 'install-node.sh 22'
 assert_not_contains "${calls}" 'install-nvm.sh'
 
-test_case 'DOCKER_VERSION triggers install-docker.sh and all Docker dev tools, defaulting their versions to empty'
+test_case 'YARN_VERSION/PNPM_VERSION alone (without NODE_VERSION) do not trigger any install'
+: > "${CALL_LOG}"
+YARN_VERSION='4.5.0' PNPM_VERSION='9.12.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+calls="$(cat "${CALL_LOG}")"
+assert_not_contains "${calls}" 'install-node.sh'
+assert_not_contains "${calls}" 'install-yarn.sh'
+assert_not_contains "${calls}" 'install-pnpm.sh'
+
+test_case 'NODE_VERSION with YARN_VERSION/PNPM_VERSION set forwards each version'
+: > "${CALL_LOG}"
+NODE_VERSION='22' YARN_VERSION='4.5.0' PNPM_VERSION='9.12.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
+calls="$(cat "${CALL_LOG}")"
+assert_contains "${calls}" 'install-node.sh 22'
+assert_contains "${calls}" 'install-yarn.sh 4.5.0'
+assert_contains "${calls}" 'install-pnpm.sh 9.12.0'
+
+test_case 'DOCKER_VERSION triggers install-docker-tools.sh'
 : > "${CALL_LOG}"
 DOCKER_VERSION='docker' sh "${FAKE_ROOT}/src/python/install-python.sh"
-calls="$(cat "${CALL_LOG}")"
-assert_contains "${calls}" 'install-docker.sh'
-assert_contains "${calls}" 'install-lazydocker.sh'
-assert_contains "${calls}" 'install-hadolint.sh'
-assert_contains "${calls}" 'install-ctop.sh'
-assert_contains "${calls}" 'install-dive.sh'
-assert_contains "${calls}" 'install-dockerc.sh'
-assert_contains "${calls}" 'install-dockerx.sh'
+assert_contains "$(cat "${CALL_LOG}")" 'install-docker-tools.sh'
 
-test_case 'LAZYDOCKER_VERSION/HADOLINT_VERSION/CTOP_VERSION/DIVE_VERSION/DOCKERC_VERSION/DOCKERX_VERSION alone (without DOCKER_VERSION) do not trigger any install'
+test_case 'LAZYDOCKER_VERSION/HADOLINT_VERSION/CTOP_VERSION/DIVE_VERSION/DOCKERC_VERSION/DOCKERX_VERSION alone (without DOCKER_VERSION) do not trigger install-docker-tools.sh'
 : > "${CALL_LOG}"
 LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' CTOP_VERSION='0.7.7' \
 	DIVE_VERSION='0.13.1' DOCKERC_VERSION='2.2.0' DOCKERX_VERSION='0.1.0' \
 	sh "${FAKE_ROOT}/src/python/install-python.sh"
-calls="$(cat "${CALL_LOG}")"
-assert_not_contains "${calls}" 'install-docker.sh'
-assert_not_contains "${calls}" 'install-lazydocker.sh'
-assert_not_contains "${calls}" 'install-hadolint.sh'
-assert_not_contains "${calls}" 'install-ctop.sh'
-assert_not_contains "${calls}" 'install-dive.sh'
-assert_not_contains "${calls}" 'install-dockerc.sh'
-assert_not_contains "${calls}" 'install-dockerx.sh'
-
-test_case 'DOCKER_VERSION with LAZYDOCKER_VERSION/HADOLINT_VERSION/CTOP_VERSION/DIVE_VERSION/DOCKERC_VERSION/DOCKERX_VERSION set forwards each version'
-: > "${CALL_LOG}"
-DOCKER_VERSION='docker' LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' \
-	CTOP_VERSION='0.7.7' DIVE_VERSION='0.13.1' DOCKERC_VERSION='2.2.0' \
-	DOCKERX_VERSION='0.1.0' sh "${FAKE_ROOT}/src/python/install-python.sh"
-calls="$(cat "${CALL_LOG}")"
-assert_contains "${calls}" 'install-lazydocker.sh 0.23.3'
-assert_contains "${calls}" 'install-hadolint.sh 2.12.0'
-assert_contains "${calls}" 'install-ctop.sh 0.7.7'
-assert_contains "${calls}" 'install-dive.sh 0.13.1'
-assert_contains "${calls}" 'install-dockerc.sh 2.2.0'
-assert_contains "${calls}" 'install-dockerx.sh 0.1.0'
+assert_not_contains "$(cat "${CALL_LOG}")" 'install-docker-tools.sh'
 
 test_case 'SUDO_USER=true triggers install-sudo.sh'
 : > "${CALL_LOG}"

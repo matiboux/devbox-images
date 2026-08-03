@@ -69,7 +69,7 @@ stub_cmd_logging install 1
 output=$(sh "${SCRIPT}" '0.1.0' 2>&1)
 code=$?
 assert_exit_code "${code}" 1
-assert_contains "${output}" 'Failed to install dockerx script in /usr/local/bin.'
+assert_contains "${output}" 'Failed to install dockerx binary in /usr/local/bin.'
 stub_cmd_logging install
 
 summary
