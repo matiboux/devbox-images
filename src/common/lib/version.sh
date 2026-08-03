@@ -155,3 +155,73 @@ pip_resolve_version() {
 			| head -n1
 	fi
 }
+
+# gitlab_resolve_version <version_input> <gitlab_project>
+#
+# Resolves a user-supplied version to a concrete "X.Y.Z" release version of
+# a GitLab project, via the GitLab REST API. Prints the resolved version to
+# stdout and returns 0, or prints an error to stderr and returns 1.
+#
+#   version_input   - 'latest' (or empty) resolves via the project's
+#                      releases/permalink/latest endpoint; a full X.Y.Z
+#                      version is returned as-is; any other value (e.g. a
+#                      partial version) is also returned as-is, with no API
+#                      call or existence check -- GitLab has no equivalent
+#                      of GitHub's matching-refs partial-version lookup
+#   gitlab_project  - URL-encoded '<owner>%2F<repo>' path segment
+gitlab_resolve_version() {
+	local version="$1"
+	local gitlab_project="$2"
+
+	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+	if [ -n "${version_full}" ]; then
+		echo "${version_full}"
+		return 0
+	fi
+
+	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
+		local http_code
+		local response
+		if [ -n "${CI_JOB_TOKEN}" ]; then
+			response=$(
+				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_project}/releases/permalink/latest" \
+					-H "PRIVATE-TOKEN: ${CI_JOB_TOKEN}"
+			)
+		else
+			response=$(
+				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_project}/releases/permalink/latest"
+			)
+		fi
+		if [ $? -ne 0 ]; then
+			echo 'Failed to connect to GitLab API.' >&2
+			return 1
+		fi
+		http_code=$(echo "${response}" | tail -n1)
+		response=$(echo "${response}" | sed '$d')
+		if [ "${http_code}" != '200' ]; then
+			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
+				echo "GitLab API rate limit exceeded. Please try again later or use a personal access token." >&2
+			else
+				echo "GitLab API error (HTTP ${http_code})." >&2
+			fi
+			return 1
+		fi
+		if [ -z "${response}" ]; then
+			echo 'Empty response from GitLab API.' >&2
+			return 1
+		fi
+		version_full=$(
+			echo "${response}" \
+			| sed -n 's/.*"tag_name"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
+			| sed 's/^v//'
+		)
+	else
+		version_full="${version}"
+	fi
+
+	if [ -z "${version_full}" ]; then
+		echo 'Failed to parse version from GitLab API response.' >&2
+		return 1
+	fi
+	echo "${version_full}"
+}

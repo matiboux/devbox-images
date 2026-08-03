@@ -2,6 +2,7 @@
 
 COMMON_SCRIPT_DIR="${0%/*}"
 [ "${COMMON_SCRIPT_DIR}" = "$0" ] && COMMON_SCRIPT_DIR='.'
+. "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/version.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/arch.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/tmpfile.sh"
 . "$(CDPATH= cd -- "${COMMON_SCRIPT_DIR}" && pwd)/lib/exec.sh"
@@ -15,62 +16,7 @@ ARCH_PLATFORM="$(detect_arch 'x86_64=amd64' 'aarch64|arm64=arm64' 'i386|i686|x86
 
 # ---
 
-get_glab_version() {
-	local version="$1"
-	local gitlab_repo='gitlab-org%2Fcli'
-	local version_prefix='v'
-	local version_full="$(echo "${version}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
-	if [ -n "${version_full}" ]; then
-		echo "${version_full}"
-		return 0
-	fi
-	local http_code
-	local response
-	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
-		if [ -n "${CI_JOB_TOKEN}" ]; then
-			response=$(
-			    curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_repo}/releases/permalink/latest" \
-					-H "PRIVATE-TOKEN: ${CI_JOB_TOKEN}"
-			)
-		else
-			response=$(
-				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_repo}/releases/permalink/latest"
-			)
-		fi
-		if [ $? -ne 0 ]; then
-			echo 'Failed to connect to GitLab API.' >&2
-			return 1
-		fi
-		http_code=$(echo "${response}" | tail -n1)
-		response=$(echo "${response}" | sed '$d')
-		if [ "${http_code}" != '200' ]; then
-			if [ "${http_code}" = '403' ] || [ "${http_code}" = '429' ]; then
-				echo "GitLab API rate limit exceeded. Please try again later or use a personal access token." >&2
-			else
-				echo "GitLab API error (HTTP ${http_code})." >&2
-			fi
-			return 1
-		fi
-		if [ -z "${response}" ]; then
-			echo 'Empty response from GitLab API.' >&2
-			return 1
-		fi
-		version_full=$(
-			echo "${response}" \
-			| sed -n 's/.*"tag_name"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
-			| sed 's/^v//'
-		)
-	else
-		version_full="${version}"
-	fi
-	if [ -z "${version_full}" ]; then
-		echo 'Failed to parse version from GitLab API response.' >&2
-		return 1
-	fi
-	echo "${version_full}"
-}
-
-GLAB_VERSION="$(get_glab_version "${GLAB_VERSION_INPUT}")"
+GLAB_VERSION="$(gitlab_resolve_version "${GLAB_VERSION_INPUT}" 'gitlab-org%2Fcli')"
 if [ -z "${GLAB_VERSION}" ]; then
 	echo "Failed to find a valid glab version for '${GLAB_VERSION_INPUT}'." >&2
 	exit 1

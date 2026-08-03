@@ -73,6 +73,53 @@ output=$(CURL_STUB_LOG="${CURL_LOG}" CURL_STUB_API_BODY='[{"ref":"refs/tags/@sco
 assert_contains "$(cat "${CURL_LOG}")" 'matching-refs/tags/@scope/cli/4.5'
 assert_equal "${output}" '4.5.0'
 
+# --- gitlab_resolve_version ---
+
+test_case 'a fully-qualified X.Y.Z version is returned as-is, with no API call'
+: > "${CURL_LOG}"
+output=$(CURL_STUB_LOG="${CURL_LOG}" gitlab_resolve_version '1.2.3' 'someorg%2Fsometool')
+code=$?
+assert_exit_code "${code}" 0
+assert_equal "${output}" '1.2.3'
+assert_equal "$(cat "${CURL_LOG}")" ''
+
+test_case 'a partial version is returned as-is too, with no API call or validation'
+: > "${CURL_LOG}"
+output=$(CURL_STUB_LOG="${CURL_LOG}" gitlab_resolve_version '1.2' 'someorg%2Fsometool')
+assert_equal "${output}" '1.2'
+assert_equal "$(cat "${CURL_LOG}")" ''
+
+test_case "'latest' (default) resolves the tag_name from the releases/permalink/latest endpoint"
+output=$(CURL_STUB_API_BODY='{"tag_name":"v1.2.3"}' gitlab_resolve_version 'latest' 'someorg%2Fsometool')
+assert_equal "${output}" '1.2.3'
+
+test_case 'an empty version_input behaves the same as "latest"'
+output=$(CURL_STUB_API_BODY='{"tag_name":"v1.2.3"}' gitlab_resolve_version '' 'someorg%2Fsometool')
+assert_equal "${output}" '1.2.3'
+
+test_case 'a non-200 response is reported as a GitLab API error'
+output=$(CURL_STUB_HTTP_CODE=500 CURL_STUB_API_BODY='' gitlab_resolve_version 'latest' 'someorg%2Fsometool' 2>&1)
+code=$?
+assert_exit_code "${code}" 1
+assert_contains "${output}" 'GitLab API error (HTTP 500).'
+
+test_case 'a 403/429 response is reported as a rate-limit error'
+output=$(CURL_STUB_HTTP_CODE=403 CURL_STUB_API_BODY='' gitlab_resolve_version 'latest' 'someorg%2Fsometool' 2>&1)
+code=$?
+assert_exit_code "${code}" 1
+assert_contains "${output}" 'GitLab API rate limit exceeded.'
+
+test_case 'an empty response for "latest" is reported clearly'
+output=$(CURL_STUB_API_BODY='' gitlab_resolve_version 'latest' 'someorg%2Fsometool' 2>&1)
+code=$?
+assert_exit_code "${code}" 1
+assert_contains "${output}" 'Empty response from GitLab API.'
+
+test_case 'CI_JOB_TOKEN, when set, is forwarded as a PRIVATE-TOKEN header'
+: > "${CURL_LOG}"
+output=$(CI_JOB_TOKEN='s3cr3t' CURL_STUB_LOG="${CURL_LOG}" CURL_STUB_API_BODY='{"tag_name":"v1.2.3"}' gitlab_resolve_version 'latest' 'someorg%2Fsometool')
+assert_contains "$(cat "${CURL_LOG}")" 'PRIVATE-TOKEN: s3cr3t'
+
 # --- pip_resolve_version ---
 
 PIP_LOG="${STUB_BIN_DIR}/pip-calls.log"
