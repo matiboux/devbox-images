@@ -31,21 +31,21 @@ mkdir -p "${NVM_DIR}"
 
 BASH_INSTALLED='false'
 if ! command -v bash > /dev/null 2>&1; then
-    if command -v apt-get > /dev/null 2>&1; then
+	if command -v apt-get > /dev/null 2>&1; then
 		apt-get update && apt-get install -y --no-install-recommends bash || {
 			echo "Failed to install bash temporarily, required to install nvm." >&2
 			exit 1
 		}
-    elif command -v apk > /dev/null 2>&1; then
-        apk add --no-cache bash || {
-            echo "Failed to install bash temporarily, required to install nvm." >&2
-            exit 1
-        }
-    else
-        echo 'Bash is required to install nvm. No supported package manager found to install bash.' >&2
-        exit 1
-    fi
-    echo 'Installed bash temporarily to install nvm.' >&2
+	elif command -v apk > /dev/null 2>&1; then
+		apk add --no-cache bash || {
+			echo "Failed to install bash temporarily, required to install nvm." >&2
+			exit 1
+		}
+	else
+		echo 'Bash is required to install nvm. No supported package manager found to install bash.' >&2
+		exit 1
+	fi
+	echo 'Installed bash temporarily to install nvm.' >&2
 	BASH_INSTALLED='true'
 fi
 

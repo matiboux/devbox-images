@@ -12,15 +12,15 @@ PACKAGE_MANAGER_NAME="$(require_package_manager "${DISTRO}")" || exit 1
 
 if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 
-    # Install for Alpine Linux
-    apk add --no-cache doas doas-sudo-shim
+	# Install for Alpine Linux
+	apk add --no-cache doas doas-sudo-shim
 
 	# Allow members of group 'wheel' to execute commands without a password
 	echo 'permit nopass :wheel' >> /etc/doas.conf
 
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
-    # Install for Debian/Ubuntu
+	# Install for Debian/Ubuntu
 	apt-get update
 	apt-get install -y --no-install-recommends sudo
 
@@ -29,7 +29,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
 else
 
-    echo "Unsupported package manager: ${PACKAGE_MANAGER_NAME}" >&2
-    exit 1
+	echo "Unsupported package manager: ${PACKAGE_MANAGER_NAME}" >&2
+	exit 1
 
 fi
