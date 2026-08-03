@@ -1,19 +1,20 @@
 {
 	"name": "python-devbox",
-	"image": "ghcr.io/matiboux/devbox-python:3.14-uv",
-	"remoteUser": "user",
-	"workspaceMount": "source=${localWorkspaceFolder},target=/home/user/workspace,type=bind",
-	"workspaceFolder": "/home/user/workspace",
+	"dockerComposeFile": ["docker-compose.yml"],
+	"service": "devcontainer",
+	"workspaceFolder": "/workdir",
+	"shutdownAction": "stopCompose",
 	"postCreateCommand": "uv sync --frozen",
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				"charliermarsh.ruff",
 				"ms-python.python",
-				"charliermarsh.ruff"
-			],
-			"settings": {
-				"python.defaultInterpreterPath": "/home/user/workspace/.venv/bin/python"
-			}
+				"mhutchie.git-graph"
+			]
+		},
+		"settings": {
+			"python.defaultInterpreterPath": "/workdir/.venv/bin/python"
 		}
 	}
 }
