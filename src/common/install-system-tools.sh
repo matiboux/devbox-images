@@ -5,6 +5,7 @@ set -e
 
 CURRENT_DIR="${0%/*}"
 [ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+COMMON_SCRIPT_DIR="$(CDPATH= cd -- "${CURRENT_DIR}" && pwd)"
 COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
 . "${COMMON_LIB_DIR}/distro.sh"
 
