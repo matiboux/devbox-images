@@ -7,6 +7,7 @@ CURRENT_DIR="${0%/*}"
 [ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
 COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
 . "${COMMON_LIB_DIR}/distro.sh"
+. "${COMMON_LIB_DIR}/apt.sh"
 
 DISTRO="$(detect_distro)"
 PACKAGE_MANAGER_NAME="$(require_package_manager "${DISTRO}")" || exit 1
@@ -22,8 +23,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
 	# Install for Debian/Ubuntu
-	apt-get update
-	apt-get install -y --no-install-recommends sudo
+	apt_get_update_install sudo
 
 	# Allow members of group 'sudo' to execute commands without a password
 	echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
