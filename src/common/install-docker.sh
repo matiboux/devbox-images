@@ -7,6 +7,7 @@ CURRENT_DIR="${0%/*}"
 [ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
 COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
 . "${COMMON_LIB_DIR}/distro.sh"
+. "${COMMON_LIB_DIR}/apt.sh"
 
 DISTRO="$(detect_distro)"
 PACKAGE_MANAGER_NAME="$(require_package_manager "${DISTRO}")" || exit 1
@@ -22,8 +23,7 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
 	# Install for Debian/Ubuntu
-	apt-get update
-	apt-get install -y --no-install-recommends \
+	apt_get_update_install \
 		ca-certificates \
 		curl
 
@@ -37,8 +37,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 	echo "deb [arch=${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${DISTRO} ${CODENAME} stable" \
 		> /etc/apt/sources.list.d/docker.list
 
-	apt-get update
-	apt-get install -y --no-install-recommends \
+	apt_get_update_install \
 		docker-ce-cli \
 		docker-buildx-plugin \
 		docker-compose-plugin
