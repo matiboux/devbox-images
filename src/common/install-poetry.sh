@@ -26,7 +26,7 @@ export POETRY_VERSION
 POETRY_INSTALLER_FILE="$(mktemp)"
 register_cleanup_path "${POETRY_INSTALLER_FILE}"
 run_or_fail "Failed to install Poetry version ${POETRY_VERSION}." \
-	curl -sSL https://install.python-poetry.org -o "${POETRY_INSTALLER_FILE}" || exit 1
+	curl -fsSL --retry 3 --retry-connrefused https://install.python-poetry.org -o "${POETRY_INSTALLER_FILE}" || exit 1
 
 PYTHON_COMMAND="$(command -v python3 || command -v python)"
 "${PYTHON_COMMAND}" "${POETRY_INSTALLER_FILE}"
