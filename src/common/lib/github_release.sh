@@ -4,6 +4,11 @@
 # register_cleanup_path) and lib/exec.sh (for run_or_fail) to already be
 # sourced.
 #
+# Downloads use `curl -f` so an HTTP error response (e.g. a 404 from a bad
+# release URL) fails the curl invocation instead of silently writing the
+# error page to the archive/binary file, plus `--retry` to ride out
+# transient network/5xx blips from GitHub's release CDN.
+#
 # Usage (from a script in the parent directory):
 #   . "$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)/github_release.sh"
 
@@ -24,7 +29,7 @@ install_github_tarball_binary() {
 	archive_file="$(mktemp)"
 	register_cleanup_path "${archive_file}"
 	run_or_fail "Failed to download ${tool_name} binary archive." \
-		curl -sSL "${archive_url}" -o "${archive_file}" || return 1
+		curl -fsSL --retry 3 --retry-connrefused "${archive_url}" -o "${archive_file}" || return 1
 
 	local extract_dir
 	extract_dir="$(mktemp -d)"
@@ -52,7 +57,7 @@ install_github_raw_binary() {
 	binary_file="$(mktemp)"
 	register_cleanup_path "${binary_file}"
 	run_or_fail "Failed to download ${tool_name} binary." \
-		curl -sSL "${download_url}" -o "${binary_file}" || return 1
+		curl -fsSL --retry 3 --retry-connrefused "${download_url}" -o "${binary_file}" || return 1
 
 	run_or_fail "Failed to install ${tool_name} binary in $(dirname "${dest_path}")." \
 		install -m "${mode}" "${binary_file}" "${dest_path}" || return 1

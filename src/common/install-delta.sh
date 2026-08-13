@@ -23,7 +23,7 @@ require_resolved_version "${DELTA_VERSION}" 'delta' "${DELTA_VERSION_INPUT}" || 
 DELTA_BINARY_ARCHIVE="$(mktemp)"
 register_cleanup_path "${DELTA_BINARY_ARCHIVE}"
 run_or_fail "Failed to download delta package for version ${DELTA_VERSION}." \
-	curl -sSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_${ARCH_PLATFORM}.deb" \
+	curl -fsSL --retry 3 --retry-connrefused "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_${ARCH_PLATFORM}.deb" \
 	-o "${DELTA_BINARY_ARCHIVE}" || exit 1
 
 run_or_fail 'Failed to install delta package.' \
