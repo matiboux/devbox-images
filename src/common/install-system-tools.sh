@@ -27,7 +27,6 @@ if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
 		git \
 		gnupg \
 		htop \
-		jq \
 		lazygit \
 		less \
 		make \
@@ -57,7 +56,6 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 		git \
 		gnupg \
 		htop \
-		jq \
 		less \
 		make \
 		nano \
