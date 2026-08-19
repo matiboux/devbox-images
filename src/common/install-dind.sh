@@ -1,0 +1,64 @@
+#!/bin/sh
+set -e
+
+# Script to install a Docker Engine (dockerd), for use as an isolated
+# Docker-in-Docker daemon inside the container (as opposed to
+# install-docker.sh, which only installs the Docker CLI tools to talk to
+# an external -- typically host-mounted -- daemon).
+
+CURRENT_DIR="${0%/*}"
+[ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
+. "${COMMON_LIB_DIR}/distro.sh"
+. "${COMMON_LIB_DIR}/apt.sh"
+
+DISTRO="$(detect_distro)"
+PACKAGE_MANAGER_NAME="$(require_package_manager "${DISTRO}")" || exit 1
+
+if [ "${PACKAGE_MANAGER_NAME}" = 'apk' ]; then
+
+	# Install for Alpine Linux
+	apk add --no-cache \
+		docker \
+		docker-cli-buildx \
+		docker-cli-compose
+
+elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
+
+	# Install for Debian/Ubuntu
+	apt_get_update_install \
+		ca-certificates \
+		curl
+
+	# Add Docker's official apt repository
+	install -m 0755 -d /etc/apt/keyrings
+	curl -fsSL "https://download.docker.com/linux/${DISTRO}/gpg" -o /etc/apt/keyrings/docker.asc
+	chmod a+r /etc/apt/keyrings/docker.asc
+
+	CODENAME="$(awk -F= '/^VERSION_CODENAME=/{print $2}' /etc/os-release | tr -d '"')"
+	ARCH="$(dpkg --print-architecture)"
+	echo "deb [arch=${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${DISTRO} ${CODENAME} stable" \
+		> /etc/apt/sources.list.d/docker.list
+
+	apt_get_update_install \
+		docker-ce \
+		docker-ce-cli \
+		containerd.io \
+		docker-buildx-plugin \
+		docker-compose-plugin
+
+else
+
+	echo "Unsupported package manager: ${PACKAGE_MANAGER_NAME}" >&2
+	exit 1
+
+fi
+
+# Create a Docker group for non-root users
+if ! getent group docker > /dev/null 2>&1; then
+	if command -v groupadd > /dev/null 2>&1; then
+		groupadd --system docker
+	elif command -v addgroup > /dev/null 2>&1; then
+		addgroup -S docker
+	fi
+fi

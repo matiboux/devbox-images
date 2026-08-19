@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+# Installs a Docker Engine (dockerd) for Docker-in-Docker use, along with
+# companion Docker development tools (lazydocker, hadolint, ctop, dive,
+# dockerc, dockerx). Each tool's version can be pinned via its own
+# *_VERSION env var (default: latest) -- LAZYDOCKER_VERSION,
+# HADOLINT_VERSION, CTOP_VERSION, DIVE_VERSION, DOCKERC_VERSION,
+# DOCKERX_VERSION.
+
+CURRENT_DIR="${0%/*}"
+[ "${CURRENT_DIR}" = "$0" ] && CURRENT_DIR='.'
+COMMON_SCRIPT_DIR="$(CDPATH= cd -- "${CURRENT_DIR}" && pwd)"
+
+sh "${COMMON_SCRIPT_DIR}/install-dind.sh"
+sh "${COMMON_SCRIPT_DIR}/install-lazydocker.sh" "${LAZYDOCKER_VERSION}"
+sh "${COMMON_SCRIPT_DIR}/install-hadolint.sh" "${HADOLINT_VERSION}"
+sh "${COMMON_SCRIPT_DIR}/install-ctop.sh" "${CTOP_VERSION}"
+sh "${COMMON_SCRIPT_DIR}/install-dive.sh" "${DIVE_VERSION}"
+sh "${COMMON_SCRIPT_DIR}/install-dockerc.sh" "${DOCKERC_VERSION}"
+sh "${COMMON_SCRIPT_DIR}/install-dockerx.sh" "${DOCKERX_VERSION}"
