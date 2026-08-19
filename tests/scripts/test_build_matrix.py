@@ -117,6 +117,26 @@ def test_component_tag_level_major_for_non_latest_node(tmp_path):
 	)
 
 
+def test_effective_latest_versions_pnpm_relative_to_node(tmp_path):
+	"""pnpm's effective "latest" must respect the pnpm/node skip_combinations
+	rule: for Node 20 it's pnpm 10, for Node 22 it's pnpm 11."""
+	bm = make_matrix(
+		tmp_path,
+		['node', 'pnpm'],
+		{'node': ['22.0.0', '20.19.0'], 'pnpm': ['11.0.0', '10.12.1']},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_PNPM_NODE},
+	)
+	detected_versions = {'node': ['22.0.0', '20.19.0'], 'pnpm': ['11.0.0', '10.12.1']}
+
+	assert bm._get_effective_latest_versions(
+		{'node': '20.19.0', 'pnpm': '10.12.1'}, detected_versions
+	)['pnpm'] == '10.12.1'
+
+	assert bm._get_effective_latest_versions(
+		{'node': '22.0.0', 'pnpm': '11.0.0'}, detected_versions
+	)['pnpm'] == '11.0.0'
+
+
 def test_component_tag_level_global_for_static_pseudo_version(tmp_path):
 	# A package whose "version" is literally its own name (e.g. 'docker',
 	# see DetectVersions._return_static_package) always "matches latest"
@@ -547,3 +567,40 @@ def test_generate_build_matrix_skips_pnpm11_for_node20(tmp_path):
 	assert 'node20.19.0-pnpm10.12.1' in tags
 	assert 'node22.0.0-pnpm11.0.0' in tags
 	assert 'node22.0.0-pnpm10.12.1' in tags
+
+
+def test_generate_build_matrix_pnpm_latest_is_relative_to_node(tmp_path):
+	"""The bare "pnpm" (latest) alias must resolve to pnpm 10 for Node 20 and
+	to pnpm 11 for Node 22, instead of only ever pointing at the globally
+	latest pnpm (11), which would leave Node 20 without a "latest pnpm" tag.
+	"""
+	bm = make_matrix(
+		tmp_path,
+		['node?', 'pnpm'],
+		{
+			'node': ['22.0.0', '20.19.0'],
+			'pnpm': ['11.0.0', '10.12.1'],
+		},
+		latest_version={'node': '22.0.0', 'pnpm': '11.0.0'},
+		constraints={'skip_combinations': SKIP_COMBINATIONS_PNPM_NODE},
+	)
+	matrix = bm.generate_build_matrix(skip_published_tags=False)
+	by_tag = {e['image_tag']: e['image_tag_list'] for e in matrix}
+
+	# For Node 20, the "latest compatible" pnpm is 10.x, so the widest alias
+	# must drop the pnpm version entirely (e.g. "20-pnpm"), matching what a
+	# scheduled build filtering on "<python>-20-...-pnpm" (no pnpm version)
+	# expects to find.
+	assert '20-pnpm' in by_tag['20.19.0-pnpm10.12.1']
+
+	# For Node 22, the globally latest pnpm (11.x) is also its latest
+	# compatible version, and Node 22 is itself the global latest node, so
+	# both drop entirely, leaving the bare "pnpm" alias.
+	assert 'pnpm' in by_tag['22.0.0-pnpm11.0.0']
+
+	# Node 20 + pnpm 11 is incompatible and must not appear at all.
+	assert '20.19.0-pnpm11.0.0' not in by_tag
+
+	# Node 22 + pnpm 10 is compatible but not the "latest" pnpm for Node 22.
+	assert 'pnpm' not in by_tag['22.0.0-pnpm10.12.1']
+	assert '22-pnpm' not in by_tag['22.0.0-pnpm10.12.1']

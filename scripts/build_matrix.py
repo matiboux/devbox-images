@@ -145,6 +145,25 @@ class BuildMatrix:
 
 		return True
 
+	def _get_effective_latest_versions(
+		self, packages_version: dict[str, str], detected_versions: dict[str, list[str]]
+	) -> dict[str, str]:
+		"""Compute the "latest" version of each package relative to the rest of
+		*packages_version*, i.e. the highest version of that package which keeps
+		the combination compatible according to `skip_combinations`, rather than
+		its absolute latest across all combinations.
+
+		For example, if pnpm 11 requires Node >= 22, then for a combination
+		pinned to Node 20, the effective latest pnpm is 10, not 11.
+		"""
+		effective_latest_versions = {}
+		for package, versions in detected_versions.items():
+			for candidate in versions:
+				if self._is_compatible({**packages_version, package: candidate}):
+					effective_latest_versions[package] = candidate
+					break
+		return effective_latest_versions
+
 	def _get_component_tag_level(
 		self, packages_version: dict[str, str], latest_versions: dict[str, str], package: str
 	) -> str:
@@ -175,7 +194,6 @@ class BuildMatrix:
 		print(f'Generating build matrix for packages: {", ".join(self.packages)}...')
 
 		all_detected_versions = self.versions.get('detected_versions', {})
-		all_latest_versions = self.versions.get('latest_version', {})
 		all_base_variants = {
 			'python': {'', 'slim', 'alpine'},
 			'node': {'', 'slim', 'alpine'},
@@ -185,7 +203,6 @@ class BuildMatrix:
 		other_packages = self.packages[1:]
 
 		detected_versions = {}
-		latest_versions = {}
 		for package in self.packages:
 			package_versions = all_detected_versions.get(package, [])
 			if not package_versions:
@@ -194,7 +211,6 @@ class BuildMatrix:
 				)
 				sys.exit(1)
 			detected_versions[package] = package_versions
-			latest_versions[package] = all_latest_versions.get(package, package_versions[0])
 
 		base_variants = all_base_variants.get(base_package)
 		selected_base_variants = (
@@ -227,13 +243,17 @@ class BuildMatrix:
 			if not self._is_compatible(packages_version):
 				continue  # Skip incompatible version combinations
 
+			effective_latest_versions = self._get_effective_latest_versions(
+				packages_version, detected_versions
+			)
+
 			for base_variant in selected_base_variants:
 				image_tag_components: list[tuple[str, str, str, str | None]] = [
 					(
 						base_package,
 						packages_version[base_package],
 						self._get_component_tag_level(
-							packages_version, latest_versions, base_package
+							packages_version, effective_latest_versions, base_package
 						),
 						self._get_component_unlabeled_flag(base_package),
 					),
@@ -247,7 +267,7 @@ class BuildMatrix:
 							other_package,
 							packages_version[other_package],
 							self._get_component_tag_level(
-								packages_version, latest_versions, other_package
+								packages_version, effective_latest_versions, other_package
 							),
 							self._get_component_unlabeled_flag(other_package),
 						)
