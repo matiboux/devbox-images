@@ -299,6 +299,17 @@ jobs:
         run: |
           uv sync --frozen
 
+      # Restore last known-good detected versions, so that a detection
+      # failure this run (e.g. an upstream rate limit) can still fall back
+      # to real cached data instead of an empty file.
+      - name: Restore cached package versions
+        uses: actions/cache/restore@v4
+        with:
+          path: dist/versions.yml
+          key: package-versions-${{ github.run_id }}
+          restore-keys: |
+            package-versions-
+
       - name: Detect all package versions
         env:
           PACKAGES: ${{ env.PACKAGES }}
@@ -314,6 +325,15 @@ jobs:
             uv run python -m scripts.detect_versions "${package}" || true
 
           done <<< "${PACKAGES}"
+
+      # Save detected versions unconditionally (even if a later step in this
+      # job fails) so the next run always has fresh data to fall back on.
+      - name: Save cached package versions
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: dist/versions.yml
+          key: package-versions-${{ github.run_id }}
 
       - name: Fetch all published tags
         if: ${{ inputs.skip_published_tags == true }}
