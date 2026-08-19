@@ -5,9 +5,30 @@ if [ -s "${NVM_DIR}/nvm.sh" ]; then
     \. "${NVM_DIR}/nvm.sh"
 fi
 
+DOCKER_SOCK="${DOCKER_SOCK:-/var/run/docker.sock}"
+
+# Start an isolated Docker Engine (dockerd) for Docker-in-Docker use, if one
+# is installed and no external Docker daemon is already wired up (a
+# host-mounted socket, or an explicit DOCKER_HOST)
+# (requires sudo; otherwise skipped with a warning)
+if [ ! -S "${DOCKER_SOCK}" ] && [ -z "${DOCKER_HOST}" ] && command -v dockerd > /dev/null 2>&1; then
+	if command -v sudo > /dev/null 2>&1; then
+		sudo -n dockerd > /tmp/dockerd.log 2>&1 &
+		DOCKERD_WAIT=0
+		while [ ! -S "${DOCKER_SOCK}" ] && [ "${DOCKERD_WAIT}" -lt 30 ]; do
+			sleep 0.5
+			DOCKERD_WAIT=$((DOCKERD_WAIT + 1))
+		done
+		if [ ! -S "${DOCKER_SOCK}" ]; then
+			echo "Warning: Docker Engine did not start in time; see /tmp/dockerd.log." >&2
+		fi
+	else
+		echo "Warning: Could not start Docker Engine (dockerd); sudo is not available." >&2
+	fi
+fi
+
 # Align Docker group GID with host-mounted Docker socket GID
 # (requires sudo; otherwise skipped with a warning)
-DOCKER_SOCK="${DOCKER_SOCK:-/var/run/docker.sock}"
 REEXEC=''
 if [ -S "${DOCKER_SOCK}" ] && command -v docker > /dev/null 2>&1; then
 	export DOCKER_HOST="unix://${DOCKER_SOCK}"

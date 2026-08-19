@@ -105,6 +105,85 @@ else
 fi
 rm -f "${FAKE_SOCK}"
 
+# --- Docker-in-Docker (dockerd auto-start) ---
+
+# Stubs sudo so `sudo -n dockerd ...` creates a real AF_UNIX socket at
+# DOCKER_SOCK (simulating dockerd coming up), and everything else behaves
+# like a no-op success.
+stub_sudo_dockerd() {
+	log_file="${STUB_BIN_DIR}/sudo.log"
+	stub_cmd sudo "
+echo \"sudo \$*\" >> '${log_file}'
+if [ \"\$1\" = '-n' ] && [ \"\$2\" = 'dockerd' ]; then
+	python3 -c '
+import socket, os
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.bind(os.environ[\"DOCKER_SOCK\"])
+'
+	exit 0
+fi
+if [ \"\$1\" = '-n' ] && [ \"\$2\" = '-u' ]; then
+	shift 3
+	exec \"\$@\"
+fi
+exit 0
+"
+}
+
+test_case 'no external Docker wired up, dockerd installed: it is started via sudo and DOCKER_HOST is exported once its socket appears'
+stub_cmd docker 'exit 0'
+stub_cmd dockerd 'exit 0'
+stub_cmd stat 'echo 1000'
+stub_cmd getent 'echo "docker:x:1000:user"'
+stub_sudo_dockerd
+output=$(DOCKER_SOCK="${FAKE_SOCK}" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "${output}" "DOCKER_HOST=unix://${FAKE_SOCK}"
+sudo_log="$(cat "${STUB_BIN_DIR}/sudo.log")"
+assert_contains "${sudo_log}" 'sudo -n dockerd'
+rm -f "${FAKE_SOCK}" "${STUB_BIN_DIR}/sudo.log"
+
+test_case 'DOCKER_HOST already set: dockerd is not auto-started even if installed'
+stub_cmd docker 'exit 0'
+stub_cmd dockerd 'exit 0'
+stub_sudo_dockerd
+output=$(DOCKER_HOST='tcp://dind:2375' DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_contains "${output}" 'DOCKER_HOST=tcp://dind:2375'
+if [ -f "${STUB_BIN_DIR}/sudo.log" ]; then
+	fail 'expected sudo to not run when DOCKER_HOST is already set'
+fi
+rm -f "${STUB_BIN_DIR}/sudo.log"
+
+test_case 'dockerd installed but sudo unavailable: warns and continues without starting it'
+stub_cmd docker 'exit 0'
+stub_cmd dockerd 'exit 0'
+rm -f "${STUB_BIN_DIR}/sudo"
+if command -v sudo > /dev/null 2>&1; then
+	skip_case 'host has a real sudo binary on PATH outside the stub dir; cannot safely simulate "sudo not installed" here'
+else
+	output=$(DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+	code=$?
+	assert_exit_code "${code}" 0 "${output}"
+	assert_contains "${output}" 'Warning: Could not start Docker Engine (dockerd); sudo is not available.'
+	assert_not_contains "${output}" 'DOCKER_HOST'
+fi
+
+test_case 'dockerd not installed: no attempt is made to start it'
+stub_cmd docker 'exit 0'
+rm -f "${STUB_BIN_DIR}/dockerd"
+stub_sudo_dockerd
+output=$(DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
+code=$?
+assert_exit_code "${code}" 0 "${output}"
+assert_not_contains "${output}" 'DOCKER_HOST'
+if [ -f "${STUB_BIN_DIR}/sudo.log" ]; then
+	fail 'expected sudo to not run when dockerd is not installed'
+fi
+rm -f "${STUB_BIN_DIR}/sudo.log"
+
 test_case 'no docker socket mounted: DOCKER_HOST is left unset, no GID alignment attempted'
 stub_cmd docker 'exit 0'
 output=$(DOCKER_SOCK="${WORKDIR}/missing.sock" sh "${SCRIPT}" env 2>&1)
