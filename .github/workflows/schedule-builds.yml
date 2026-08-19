@@ -308,7 +308,7 @@ jobs:
       # failure this run (e.g. an upstream rate limit) can still fall back
       # to real cached data instead of an empty file.
       - name: Restore cached package versions
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: dist/versions.yml
           key: package-versions-${{ github.run_id }}
@@ -335,7 +335,7 @@ jobs:
       # job fails) so the next run always has fresh data to fall back on.
       - name: Save cached package versions
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: dist/versions.yml
           key: package-versions-${{ github.run_id }}
