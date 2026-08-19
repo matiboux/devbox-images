@@ -24,6 +24,11 @@ Examples of available images:
 
 <span></span>
 
+- `devbox-python-dind`: Python 3.x with a Docker Engine (Docker-in-Docker)
+  - Same tags as `devbox-python` above
+
+<span></span>
+
 - `devbox-python-node`: Python 3.x with Node x
   - `3.x-x` - Base image
   - `3.x-x-poetry` - Base image, with Poetry package manager
@@ -42,6 +47,11 @@ Examples of available images:
 
 <span></span>
 
+- `devbox-python-node-dind`: Python 3.x with Node x and a Docker Engine (Docker-in-Docker)
+  - Same tags as `devbox-python-node` above
+
+<span></span>
+
 - `devbox-node`: Node x only
   - `x` - Base image
   - `x-slim` - Base slim image
@@ -52,6 +62,11 @@ Examples of available images:
 <span></span>
 
 - `devbox-node-docker`: Node x with Docker CLI tools
+  - Same tags as `devbox-node` above
+
+<span></span>
+
+- `devbox-node-dind`: Node x with a Docker Engine (Docker-in-Docker)
   - Same tags as `devbox-node` above
 
 
@@ -79,3 +94,29 @@ In a `devcontainer.json`, the equivalent is:
   ]
 }
 ```
+
+
+## How to use images with a Docker Engine (Docker-in-Docker)
+
+The `-dind` images ship a full Docker Engine (`dockerd`) instead of just the Docker CLI tools, giving each container its own isolated daemon rather than sharing the host's. The entrypoint starts `dockerd` automatically on first use, as long as no `/var/run/docker.sock` is bind-mounted and no `DOCKER_HOST` is already set.
+
+Running a Docker Engine inside a container requires elevated privileges. For example:
+
+```sh
+docker run --rm -it \
+  --privileged \
+  ghcr.io/matiboux/devbox-python-dind:3.14-uv \
+  docker ps
+```
+
+In a `devcontainer.json`, the equivalent is:
+
+```json
+{
+  "image": "ghcr.io/matiboux/devbox-python-dind:3.14-uv",
+  "remoteUser": "user",
+  "runArgs": ["--privileged"]
+}
+```
+
+Alternatively, an existing `-docker` (CLI-only) image can be paired with a separate `docker:dind` sidecar container, pointing `DOCKER_HOST` at it (see `.devcontainer/docker-compose.yml` in this repository for an example) -- this keeps the main image itself unprivileged.
