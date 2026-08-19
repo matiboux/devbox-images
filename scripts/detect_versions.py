@@ -220,9 +220,11 @@ class DetectVersions:
 			if not data:
 				print(
 					'Warning: Could not fetch package versions from Docker Hub, '
-					'using previously cached versions',
+					'using versions detected from previous pages (if any) '
+					'and previously cached versions',
 					file=sys.stderr,
 				)
+				break
 			if 'results' not in data:
 				break
 			found_version = False
