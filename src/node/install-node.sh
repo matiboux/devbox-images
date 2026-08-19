@@ -9,6 +9,9 @@ set -e
 #     hadolint, ctop, dive, dockerc and dockerx (pin their versions via
 #     LAZYDOCKER_VERSION, HADOLINT_VERSION, CTOP_VERSION, DIVE_VERSION,
 #     DOCKERC_VERSION, DOCKERX_VERSION -- each defaults to latest)
+# - DIND_VERSION: Install a Docker Engine (dockerd) for Docker-in-Docker
+#     use if set, along with the same companion Docker development tools
+#     as DOCKER_VERSION above
 # - GH_VERSION: Version of GitHub CLI to install if set
 # - GLAB_VERSION: Version of GitLab CLI to install if set
 # - USERNAME: Non-root username to create if set
@@ -39,6 +42,12 @@ fi
 if [ -n "${DOCKER_VERSION}" ]; then
     # Install Docker CLI tools and companion Docker development tools
     sh "${COMMON_SCRIPTS_DIR}/install-docker-tools.sh"
+fi
+
+if [ -n "${DIND_VERSION}" ]; then
+    # Install a Docker Engine (dockerd) for Docker-in-Docker use, and
+    # companion Docker development tools
+    sh "${COMMON_SCRIPTS_DIR}/install-dind-tools.sh"
 fi
 
 if [ "${SUDO_USER}" = 'true' ]; then

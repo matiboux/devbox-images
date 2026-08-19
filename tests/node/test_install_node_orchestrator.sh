@@ -20,7 +20,7 @@ cp "${REAL_SCRIPT}" "${FAKE_ROOT}/src/node/install-node.sh"
 CALL_LOG="${FAKE_ROOT}/calls.log"
 
 for name in install-system-tools.sh install-yq.sh install-gh.sh install-glab.sh \
-	install-yarn.sh install-pnpm.sh install-docker-tools.sh \
+	install-yarn.sh install-pnpm.sh install-docker-tools.sh install-dind-tools.sh \
 	install-sudo.sh create-user.sh; do
 	cat > "${FAKE_ROOT}/src/common/${name}" <<EOF
 #!/bin/sh
@@ -38,6 +38,7 @@ assert_contains "${calls}" 'install-yq.sh'
 assert_not_contains "${calls}" 'install-yarn.sh'
 assert_not_contains "${calls}" 'install-pnpm.sh'
 assert_not_contains "${calls}" 'install-docker-tools.sh'
+assert_not_contains "${calls}" 'install-dind-tools.sh'
 assert_not_contains "${calls}" 'install-sudo.sh'
 assert_not_contains "${calls}" 'create-user.sh'
 
@@ -62,6 +63,18 @@ LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' CTOP_VERSION='0.7.7' \
 	DIVE_VERSION='0.13.1' DOCKERC_VERSION='2.2.0' DOCKERX_VERSION='0.1.0' \
 	sh "${FAKE_ROOT}/src/node/install-node.sh"
 assert_not_contains "$(cat "${CALL_LOG}")" 'install-docker-tools.sh'
+
+test_case 'DIND_VERSION triggers install-dind-tools.sh'
+: > "${CALL_LOG}"
+DIND_VERSION='dind' sh "${FAKE_ROOT}/src/node/install-node.sh"
+assert_contains "$(cat "${CALL_LOG}")" 'install-dind-tools.sh'
+
+test_case 'LAZYDOCKER_VERSION/HADOLINT_VERSION/CTOP_VERSION/DIVE_VERSION/DOCKERC_VERSION/DOCKERX_VERSION alone (without DIND_VERSION) do not trigger install-dind-tools.sh'
+: > "${CALL_LOG}"
+LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' CTOP_VERSION='0.7.7' \
+	DIVE_VERSION='0.13.1' DOCKERC_VERSION='2.2.0' DOCKERX_VERSION='0.1.0' \
+	sh "${FAKE_ROOT}/src/node/install-node.sh"
+assert_not_contains "$(cat "${CALL_LOG}")" 'install-dind-tools.sh'
 
 test_case 'SUDO_USER=true triggers install-sudo.sh'
 : > "${CALL_LOG}"
