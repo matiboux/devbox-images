@@ -68,6 +68,13 @@ env:
     - images_prefix: devbox-python-docker
       src_dirname: python
       package_versions: python?,docker?,uv
+    # Devbox Python + Docker-in-Docker
+    - images_prefix: devbox-python-dind
+      src_dirname: python
+      package_versions: python?,dind?
+    - images_prefix: devbox-python-dind
+      src_dirname: python
+      package_versions: python?,dind?,uv
     # Devbox Python + Node
     - images_prefix: devbox-python-node
       src_dirname: python
@@ -124,6 +131,34 @@ env:
     - images_prefix: devbox-python-node-docker
       src_dirname: python
       package_versions: python?,node?,docker?,uv,pnpm
+    # Devbox Python + Node + Docker-in-Docker
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,poetry
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,uv
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,yarn
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,poetry,yarn
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,uv,yarn
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,pnpm
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,poetry,pnpm
+    - images_prefix: devbox-python-node-dind
+      src_dirname: python
+      package_versions: python?,node?,dind?,uv,pnpm
     # Devbox Node
     - images_prefix: devbox-node
       src_dirname: node
@@ -144,6 +179,16 @@ env:
     - images_prefix: devbox-node-docker
       src_dirname: node
       package_versions: node?,docker?,pnpm
+    # Devbox Node + Docker-in-Docker
+    - images_prefix: devbox-node-dind
+      src_dirname: node
+      package_versions: node?,dind?
+    - images_prefix: devbox-node-dind
+      src_dirname: node
+      package_versions: node?,dind?,yarn
+    - images_prefix: devbox-node-dind
+      src_dirname: node
+      package_versions: node?,dind?,pnpm
 
 jobs:
 

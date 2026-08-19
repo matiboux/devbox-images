@@ -45,6 +45,7 @@ class DetectVersions:
 			'yarn': self._detect_github_repo,
 			'pnpm': self._detect_github_repo,
 			'docker': self._return_static_package,
+			'dind': self._return_static_package,
 		}
 
 		if self.package_name not in self._detectors:
@@ -68,6 +69,7 @@ class DetectVersions:
 			'yarn': 'major',
 			'pnpm': 'major',
 			'docker': 'major',
+			'dind': 'major',
 		}
 		return defaults.get(self.package_name, 'minor')
 

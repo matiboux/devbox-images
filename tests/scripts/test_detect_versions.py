@@ -54,6 +54,7 @@ def test_missing_constraints_file_warns_and_defaults_empty(tmp_path, capsys):
 		('yarn', 'major'),
 		('pnpm', 'major'),
 		('docker', 'major'),
+		('dind', 'major'),
 	],
 )
 def test_default_scope_per_package(tmp_path, package, expected_scope):
@@ -65,6 +66,12 @@ def test_docker_detects_static_pseudo_version(tmp_path):
 	detector = make_detector(tmp_path, 'docker')
 	assert detector.detect_versions() == ['docker']
 	assert detector.latest_version == 'docker'
+
+
+def test_dind_detects_static_pseudo_version(tmp_path):
+	detector = make_detector(tmp_path, 'dind')
+	assert detector.detect_versions() == ['dind']
+	assert detector.latest_version == 'dind'
 
 
 def test_invalid_scope_raises(tmp_path):
