@@ -6,10 +6,12 @@ services:
 
   devcontainer:
     # Build
-    image: ghcr.io/matiboux/devbox-python-docker:3.13-uv0.10
+    image: ghcr.io/matiboux/devbox-python-docker:3.14-uv
     # Deploy
     extra_hosts:
       - host.docker.internal:host-gateway
+    environment:
+      COMPOSE_IGNORE_ORPHANS: 'true'
     working_dir: /workdir
     command: sleep infinity
     volumes:
