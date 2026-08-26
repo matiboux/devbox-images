@@ -25,8 +25,21 @@ export UV_UNMANAGED_INSTALL="${UV_HOME}"
 
 UV_INSTALLER_FILE="$(mktemp)"
 register_cleanup_path "${UV_INSTALLER_FILE}"
+
+# astral.sh/uv/<version>/install.sh redirects to a CDN mirror
+# (releases.astral.sh) that can lag behind a freshly published GitHub
+# release and 404 for a while. Retry with a cooldown for transient errors,
+# then fall back to the GitHub release asset directly if the mirror is
+# still stale.
+download_uv_installer() {
+	curl -LsSf --retry 5 --retry-all-errors --retry-delay 10 \
+		"https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}" \
+	|| curl -LsSf --retry 5 --retry-all-errors --retry-delay 10 \
+		"https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh" -o "${UV_INSTALLER_FILE}"
+}
+
 run_or_fail "Failed to install uv version ${UV_VERSION}." \
-	curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${UV_INSTALLER_FILE}" || exit 1
+	download_uv_installer || exit 1
 
 sh "${UV_INSTALLER_FILE}"
 EXIT_CODE=$?
