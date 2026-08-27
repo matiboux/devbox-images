@@ -21,7 +21,7 @@ ARG DOCKER_VERSION=
 ARG USERNAME=user
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-ARG SUDO_USER=true
+ARG USER_SUDO=true
 
 
 # --
@@ -47,7 +47,7 @@ ARG DOCKER_VERSION
 ARG USERNAME
 ARG USER_ID
 ARG GROUP_ID
-ARG SUDO_USER
+ARG USER_SUDO
 
 # Run installation script for Devbox Python image
 RUN --mount=type=bind,source=./src/common,target=/tmp/devbox/common \

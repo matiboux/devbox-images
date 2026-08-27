@@ -10,7 +10,7 @@ COMMON_LIB_DIR="$(CDPATH= cd -- "${CURRENT_DIR}/lib" && pwd)"
 USERNAME="$1"
 USER_ID="$2"
 GROUP_ID="$3"
-SUDO_USER="$4"
+USER_SUDO="$4"
 
 if [ -z "${USERNAME}" ]; then
 	USERNAME='user'
@@ -24,8 +24,8 @@ if [ -z "${GROUP_ID}" ]; then
 	GROUP_ID='1000'
 fi
 
-if [ -z "${SUDO_USER}" ]; then
-	SUDO_USER='false'
+if [ -z "${USER_SUDO}" ]; then
+	USER_SUDO='false'
 fi
 
 # Create or reuse group
@@ -87,7 +87,7 @@ fi
 add_user_to_group "${USERNAME}" docker
 
 # Add user to sudoers
-if [ "${SUDO_USER}" = 'true' ]; then
+if [ "${USER_SUDO}" = 'true' ]; then
 
 	# Detect Linux distribution
 	DISTRO="$(detect_distro)"
