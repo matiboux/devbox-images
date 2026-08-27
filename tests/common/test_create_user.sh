@@ -2,7 +2,7 @@
 # Tests for src/common/create-user.sh
 #
 # NOTE: create-user.sh reads the fixed path /etc/os-release to detect the
-# Linux distribution when SUDO_USER=true. That path can't be overridden by
+# Linux distribution when USER_SUDO=true. That path can't be overridden by
 # environment/stubs, so on a non-Linux dev machine (no /etc/os-release) the
 # script always falls into DISTRO='unknown'. The alpine/debian-specific
 # sudo-group branches are exercised in practice inside the actual Docker

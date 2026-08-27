@@ -18,7 +18,7 @@ set -e
 # - USERNAME: Non-root username to create if set
 # - USER_ID: Non-root user ID to create if set
 # - GROUP_ID: Non-root group ID to create if set
-# - SUDO_USER: Give sudo privileges to non-root user if true
+# - USER_SUDO: Give sudo privileges to non-root user if true
 
 COMMON_SCRIPTS_DIR="$(dirname "$(dirname "$0")")/common"
 
@@ -64,12 +64,12 @@ if [ -n "${DOCKER_VERSION}" ]; then
     sh "${COMMON_SCRIPTS_DIR}/install-docker-tools.sh"
 fi
 
-if [ "${SUDO_USER}" = 'true' ]; then
+if [ "${USER_SUDO}" = 'true' ]; then
     # Install sudo
     sh "${COMMON_SCRIPTS_DIR}/install-sudo.sh"
 fi
 
 if [ -n "${USERNAME}" ] || [ -n "${USER_ID}" ] || [ -n "${GROUP_ID}" ]; then
     # Create non-root user
-    sh "${COMMON_SCRIPTS_DIR}/create-user.sh" "${USERNAME}" "${USER_ID}" "${GROUP_ID}" "${SUDO_USER}"
+    sh "${COMMON_SCRIPTS_DIR}/create-user.sh" "${USERNAME}" "${USER_ID}" "${GROUP_ID}" "${USER_SUDO}"
 fi

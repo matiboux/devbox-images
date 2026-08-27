@@ -92,19 +92,19 @@ LAZYDOCKER_VERSION='0.23.3' HADOLINT_VERSION='2.12.0' CTOP_VERSION='0.7.7' \
 	sh "${FAKE_ROOT}/src/python/install-python.sh"
 assert_not_contains "$(cat "${CALL_LOG}")" 'install-docker-tools.sh'
 
-test_case 'SUDO_USER=true triggers install-sudo.sh'
+test_case 'USER_SUDO=true triggers install-sudo.sh'
 : > "${CALL_LOG}"
-SUDO_USER='true' sh "${FAKE_ROOT}/src/python/install-python.sh"
+USER_SUDO='true' sh "${FAKE_ROOT}/src/python/install-python.sh"
 assert_contains "$(cat "${CALL_LOG}")" 'install-sudo.sh'
 
-test_case 'SUDO_USER set to anything other than "true" does not trigger install-sudo.sh'
+test_case 'USER_SUDO set to anything other than "true" does not trigger install-sudo.sh'
 : > "${CALL_LOG}"
-SUDO_USER='yes' sh "${FAKE_ROOT}/src/python/install-python.sh"
+USER_SUDO='yes' sh "${FAKE_ROOT}/src/python/install-python.sh"
 assert_not_contains "$(cat "${CALL_LOG}")" 'install-sudo.sh'
 
 test_case 'USERNAME alone triggers create-user.sh with all four positional args'
 : > "${CALL_LOG}"
-USERNAME='dev' SUDO_USER='true' sh "${FAKE_ROOT}/src/python/install-python.sh"
+USERNAME='dev' USER_SUDO='true' sh "${FAKE_ROOT}/src/python/install-python.sh"
 assert_contains "$(cat "${CALL_LOG}")" 'create-user.sh dev   true'
 
 test_case 'none of USERNAME/USER_ID/GROUP_ID set does not trigger create-user.sh'
