@@ -96,3 +96,10 @@ If you find these images useful, consider supporting the project:
 
 - [GitHub Sponsors](https://github.com/sponsors/matiboux)
 - [Ko-fi](https://ko-fi.com/matiboux)
+
+
+## License
+
+Copyright (c) 2026 [Matiboux](https://github.com/matiboux) ([matiboux.me](https://matiboux.me))
+
+Licensed under the [MIT License](https://opensource.org/license/MIT). You can see a copy in the [LICENSE](LICENSE) file.
