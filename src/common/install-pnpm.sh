@@ -22,19 +22,30 @@ mkdir -p "${PNPM_HOME}"
 PNPM_INSTALLER_FILE="$(mktemp)"
 register_cleanup_path "${PNPM_INSTALLER_FILE}"
 run_or_fail 'Failed to download pnpm installer.' \
-	curl -fsSL 'https://get.pnpm.io/install.sh' -o "${PNPM_INSTALLER_FILE}" || exit 1
+	curl -fsSL --retry 3 --retry-connrefused 'https://get.pnpm.io/install.sh' -o "${PNPM_INSTALLER_FILE}" || exit 1
 
 # Avoid relying on shell env files for binary discovery
 PNPM_SHRC_FILE="$(mktemp)"
 register_cleanup_path "${PNPM_SHRC_FILE}"
 
-run_or_fail "Failed to install pnpm version ${PNPM_VERSION}." \
+install_pnpm() {
 	env \
 	PNPM_VERSION="${PNPM_VERSION}" \
 	PNPM_HOME="${PNPM_HOME}" \
 	ENV="${PNPM_SHRC_FILE}" \
 	SHELL='/bin/sh' \
-	sh "${PNPM_INSTALLER_FILE}" || exit 1
+	sh "${PNPM_INSTALLER_FILE}"
+}
+
+PNPM_INSTALL_ATTEMPT=1
+until install_pnpm; do
+	if [ "${PNPM_INSTALL_ATTEMPT}" -ge 3 ]; then
+		echo "Failed to install pnpm version ${PNPM_VERSION}." >&2
+		exit 1
+	fi
+	PNPM_INSTALL_ATTEMPT=$((PNPM_INSTALL_ATTEMPT + 1))
+	sleep 10
+done
 
 # Allow all users to access pnpm binaries and cache store
 chmod -R 777 "${PNPM_HOME}"
