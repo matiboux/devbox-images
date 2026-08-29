@@ -39,12 +39,12 @@ github_resolve_version() {
 	if [ -z "${version}" ] || [ "${version}" = 'latest' ]; then
 		if [ -n "${GITHUB_TOKEN}" ]; then
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest" \
+				curl -sSL --retry 3 --retry-connrefused -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest" \
 					-H "Authorization: token ${GITHUB_TOKEN}"
 			)
 		else
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest"
+				curl -sSL --retry 3 --retry-connrefused -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/releases/latest"
 			)
 		fi
 		if [ $? -ne 0 ]; then
@@ -80,12 +80,12 @@ github_resolve_version() {
 	else
 		if [ -n "${GITHUB_TOKEN}" ]; then
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}" \
+				curl -sSL --retry 3 --retry-connrefused -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}" \
 					-H "Authorization: token ${GITHUB_TOKEN}"
 			)
 		else
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}"
+				curl -sSL --retry 3 --retry-connrefused -w "\n%{http_code}" "https://api.github.com/repos/${github_repo}/git/matching-refs/tags/${version_prefix}${version}"
 			)
 		fi
 		if [ $? -ne 0 ]; then
@@ -184,12 +184,12 @@ gitlab_resolve_version() {
 		local response
 		if [ -n "${CI_JOB_TOKEN}" ]; then
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_project}/releases/permalink/latest" \
+				curl -sSL --retry 3 --retry-connrefused -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_project}/releases/permalink/latest" \
 					-H "PRIVATE-TOKEN: ${CI_JOB_TOKEN}"
 			)
 		else
 			response=$(
-				curl -sSL -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_project}/releases/permalink/latest"
+				curl -sSL --retry 3 --retry-connrefused -w "\n%{http_code}" "https://gitlab.com/api/v4/projects/${gitlab_project}/releases/permalink/latest"
 			)
 		fi
 		if [ $? -ne 0 ]; then
