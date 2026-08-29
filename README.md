@@ -88,3 +88,11 @@ In a `devcontainer.json`, the equivalent is:
   ]
 }
 ```
+
+
+## Support my work
+
+If you find these images useful, consider supporting the project:
+
+- [GitHub Sponsors](https://github.com/sponsors/matiboux)
+- [Ko-fi](https://ko-fi.com/matiboux)
