@@ -3,8 +3,17 @@
 Docker images for development and testing environments, automatically built and updated following upstream releases, ready to use in CI/CD pipelines, dev containers, and `docker run` local commands.
 
 
-## Available images
+## Registries
 
+Images are published to both:
+
+- GitHub Container Registry: `ghcr.io/matiboux/*`
+- Docker Hub: `matiboux/*`
+
+For example, `devbox-python` is available as `ghcr.io/matiboux/devbox-python` and `matiboux/devbox-python`.
+
+
+## Available images
 
 All images ship with common dev tools.
 
