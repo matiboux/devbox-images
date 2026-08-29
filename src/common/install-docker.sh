@@ -29,7 +29,7 @@ elif [ "${PACKAGE_MANAGER_NAME}" = 'apt-get' ]; then
 
 	# Add Docker's official apt repository
 	install -m 0755 -d /etc/apt/keyrings
-	curl -fsSL "https://download.docker.com/linux/${DISTRO}/gpg" -o /etc/apt/keyrings/docker.asc
+	curl -fsSL --retry 3 --retry-connrefused "https://download.docker.com/linux/${DISTRO}/gpg" -o /etc/apt/keyrings/docker.asc
 	chmod a+r /etc/apt/keyrings/docker.asc
 
 	CODENAME="$(awk -F= '/^VERSION_CODENAME=/{print $2}' /etc/os-release | tr -d '"')"

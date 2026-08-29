@@ -52,7 +52,7 @@ fi
 NVM_INSTALLER_FILE="$(mktemp)"
 register_cleanup_path "${NVM_INSTALLER_FILE}"
 run_or_fail "Failed to download nvm installer for version ${NVM_VERSION}." \
-	curl "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh" \
+	curl -fsSL --retry 3 --retry-connrefused "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh" \
 	-o "${NVM_INSTALLER_FILE}" || exit 1
 
 BASH_ENV="${NVM_BASH_ENV}"
